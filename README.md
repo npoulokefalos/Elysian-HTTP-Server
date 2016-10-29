@@ -16,16 +16,17 @@ and will not be supported.
 
 
 Supported features include:
-- Extremely lightweight: requires ~50kb FLASH and ~4kb RAM.
+- Extremely lightweight: requires ~60kb FLASH and ~5kb RAM.
 - Ported OS enviroments: FreeRtos, ChibiOS, Unix and Windows
 - Ported TCP\IP enviroments: LwIP, Unix and Windows
 - Ported filesystems: FatFS, Unix and Windows
-- Dynamic content
+- Support for dynamic content using the model-view-controller (MVC) design pattern
 - Single thread implementation
+- Extremely robust: all temporary failed operations (due to memory or network unavailability)
+   are executed again with exponential backoff. Other clients are serviced normally in parallel.
 - Supports GET/HEAD/POST/PUT HTTP requests
 - Multiple client support
 - HTTP pipelining and keep-alive connections
-- Model-view-controller (MVC) design pattern
 - Multi-partition scheme for file storage: Seperate partitions for files in ROM and external disk are used.
 - Bounded memory usage
 
