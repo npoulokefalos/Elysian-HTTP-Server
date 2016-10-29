@@ -79,6 +79,17 @@ void cbuf_list_print(elysian_cbuf_t* cbuf);
 ** HTTP
 */
 typedef enum{
+    ELYSIAN_HTTP_METHOD_GET = 1 << 1,
+    ELYSIAN_HTTP_METHOD_HEAD = 1 << 2,
+    ELYSIAN_HTTP_METHOD_POST = 1 << 3,
+    ELYSIAN_HTTP_METHOD_PUT = 1 << 4,
+    ELYSIAN_HTTP_METHOD_SUBSCRIBE = 1 << 5,
+    ELYSIAN_HTTP_METHOD_UNSUBSCRIBE = 1 << 6,
+    ELYSIAN_HTTP_METHOD_MAX,
+	ELYSIAN_HTTP_METHOD_NA
+}elysian_http_method_e;
+
+typedef enum{
 	ELYSIAN_HTTP_STATUS_CODE_100 = 0,
 	ELYSIAN_HTTP_STATUS_CODE_200,
 	ELYSIAN_HTTP_STATUS_CODE_206,
@@ -312,8 +323,8 @@ typedef struct elysian_mvc_controller_t elysian_mvc_controller_t;
 struct elysian_mvc_controller_t{
     const char* url;
     elysian_mvc_controller_cb_t cb;
-    uint8_t http_methods_mask;
-	uint8_t flags;
+    //uint8_t http_methods_mask;
+	elysian_mvc_controller_flag_e flags;
     elysian_mvc_controller_t* next;
 };
 

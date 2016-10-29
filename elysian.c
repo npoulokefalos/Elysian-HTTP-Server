@@ -185,7 +185,7 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server, uint32_t* store_size
         filename = client->httpreq.body_filename;
 		
 		controller = elysian_mvc_controller_get(server, client->httpreq.url, client->httpreq.method);
-		if(controller && controller->flags) {
+		if((controller) && (controller->flags & ELYSIAN_MVC_CONTROLLER_FLAG_SAVE_TO_DISK)) {
 			 ELYSIAN_LOG("))))))))))))))))))))))))))))))))))))))))))) Body file will be saved in disk!");
 			filename_template = ELYSIAN_FS_DISK_VRT_ROOT"/b_%u";
 		} else {

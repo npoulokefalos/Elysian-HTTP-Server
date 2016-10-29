@@ -271,7 +271,7 @@ elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url){
 /* --------------------------------------------------------------------------------------------------------------------------------
 | Controllers
 -------------------------------------------------------------------------------------------------------------------------------- */
-elysian_err_t elysian_mvc_controller_add(elysian_t* server, const char* url, elysian_mvc_controller_cb_t cb, uint8_t http_methods_mask, uint8_t flags){
+elysian_err_t elysian_mvc_controller_add(elysian_t* server, const char* url, elysian_mvc_controller_cb_t cb, elysian_mvc_controller_flag_e flags){
     elysian_mvc_controller_t* controller;
     
     ELYSIAN_ASSERT(server != NULL, "");
@@ -285,7 +285,7 @@ elysian_err_t elysian_mvc_controller_add(elysian_t* server, const char* url, ely
     
     controller->url = url;
     controller->cb = cb;
-    controller->http_methods_mask = http_methods_mask;
+    //controller->http_methods_mask = http_methods_mask;
 	controller->flags = flags;
     controller->next = server->controllers;
     server->controllers = controller;
@@ -293,12 +293,22 @@ elysian_err_t elysian_mvc_controller_add(elysian_t* server, const char* url, ely
     return ELYSIAN_ERR_OK;
 }
 
+
+
 elysian_mvc_controller_t* elysian_mvc_controller_get(elysian_t* server, char* url, elysian_http_method_e method_id){
     elysian_mvc_controller_t* controller = server->controllers;
     ELYSIAN_LOG("Searching user defined controller for url '%s' and method '%s'", url, elysian_http_get_method_name(method_id));
     while(controller){
-        if((strcmp(controller->url, url) == 0) && (controller->http_methods_mask & method_id)){
-            return controller;
+        if (strcmp(controller->url, url) == 0) {
+			if ( (controller->flags & ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET) && ((method_id == ELYSIAN_HTTP_METHOD_GET) || (method_id == ELYSIAN_HTTP_METHOD_HEAD))) {
+				return controller;
+			} else if ((controller->flags & ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST) && (method_id == ELYSIAN_HTTP_METHOD_POST)) {
+				return controller;
+			} else if ((controller->flags & ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT) && (method_id == ELYSIAN_HTTP_METHOD_PUT)) {
+				return controller;
+			}else {
+				return NULL;
+			}
         }
         controller = controller->next;
     }

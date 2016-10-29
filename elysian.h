@@ -43,16 +43,15 @@ typedef enum{
     //ELYSIAN_ERR_FILENOTFOUND,
 }elysian_err_t;
 
+
+
 typedef enum{
-    ELYSIAN_HTTP_METHOD_GET = 1 << 1,
-    ELYSIAN_HTTP_METHOD_HEAD = 1 << 2,
-    ELYSIAN_HTTP_METHOD_POST = 1 << 3,
-    ELYSIAN_HTTP_METHOD_PUT = 1 << 4,
-    ELYSIAN_HTTP_METHOD_SUBSCRIBE = 1 << 5,
-    ELYSIAN_HTTP_METHOD_UNSUBSCRIBE = 1 << 6,
-    ELYSIAN_HTTP_METHOD_MAX,
-	ELYSIAN_HTTP_METHOD_NA
-}elysian_http_method_e;
+	ELYSIAN_MVC_CONTROLLER_FLAG_NONE 			= 0,
+	ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET		= 1 << 0, // HTTP GET and HEAD
+	ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST 		= 1 << 1,
+	ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT 		= 1 << 2,
+	ELYSIAN_MVC_CONTROLLER_FLAG_SAVE_TO_DISK 	= 1 << 3, // Save HTTP body to disk
+}elysian_mvc_controller_flag_e;
 
 
 #include "elysian_internal.h"
@@ -81,7 +80,7 @@ void elysian_stop(elysian_t* server);
 /*======================================================================================================================================
  Controllers and MVC                                                       															
  ======================================================================================================================================*/
-elysian_err_t elysian_mvc_controller_add(elysian_t* server, const char* url, elysian_mvc_controller_cb_t cb, uint8_t http_methods_mask, uint8_t flags);
+elysian_err_t elysian_mvc_controller_add(elysian_t* server, const char* url, elysian_mvc_controller_cb_t cb, elysian_mvc_controller_flag_e flags);
 elysian_err_t elysian_mvc_attribute_set(elysian_t* server, char* name, char* value);
 
 elysian_err_t elysian_mvc_set_reqserved_cb(elysian_t* server, elysian_reqserved_cb_t cb, void* data);
