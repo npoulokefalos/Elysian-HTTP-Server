@@ -232,6 +232,7 @@ elysian_err_t controller_file_upload(elysian_t* server){
     uint8_t file1_data[128];
 	char data[256];
     elysian_err_t err;
+	char* requested_url;
 
     ELYSIAN_LOG("[[ %s ]]", __func__);
     
@@ -295,17 +296,25 @@ elysian_err_t controller_file_upload(elysian_t* server){
 	
 	/*
 	** Set the MVC view to be sent to the client
+	** Check if this was called from a ROM or DISK page
 	*/
-    err = elysian_mvc_set_view(server, ELYSIAN_FS_ROM_VRT_ROOT"/file_upload.html");
-    if(err != ELYSIAN_ERR_OK){ 
+	elysian_mvc_get_requested_url(server, &requested_url);
+	if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
 	
+	if (strcmp(requested_url, ELYSIAN_FS_ROM_VRT_ROOT"/file_upload.html") == 0) {
+		err = elysian_mvc_set_view(server, ELYSIAN_FS_ROM_VRT_ROOT"/file_upload.html");
+	} else {
+		err = elysian_mvc_set_view(server, ELYSIAN_FS_DISK_VRT_ROOT"/elysian_fs_root/file_upload_disk.html");
+	}
+
     return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t controller_file_upload_html(elysian_t* server){
 	//elysian_client_t* client = elysian_current_client(server);
+	char* requested_url;
 	char max_upload_size[32];
     elysian_err_t err;
 
@@ -327,7 +336,20 @@ elysian_err_t controller_file_upload_html(elysian_t* server){
         return err;
     }
 	
-    err = elysian_mvc_set_view(server, ELYSIAN_FS_ROM_VRT_ROOT"/file_upload.html");
+	/*
+	** Check if this was called from a ROM or DISK page
+	*/
+	elysian_mvc_get_requested_url(server, &requested_url);
+	if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+	
+	if (strcmp(requested_url, ELYSIAN_FS_ROM_VRT_ROOT"/file_upload.html") == 0) {
+		err = elysian_mvc_set_view(server, ELYSIAN_FS_ROM_VRT_ROOT"/file_upload.html");
+	} else {
+		err = elysian_mvc_set_view(server, ELYSIAN_FS_DISK_VRT_ROOT"/elysian_fs_root/file_upload_disk.html");
+	}
+	
     if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
@@ -471,7 +493,7 @@ elysian_err_t controller_dynamic_page_disk_html(elysian_t* server){
     ELYSIAN_LOG("[[ %s ]]", __func__);
     
 	elysian_fs_finit(server, &disk_file);
-	err = elysian_fs_fopen(server, ELYSIAN_FS_DISK_VRT_ROOT"/elysian_fs_root/disk/img1.jpg", ELYSIAN_FILE_MODE_READ, &disk_file);
+	err = elysian_fs_fopen(server, ELYSIAN_FS_DISK_VRT_ROOT"/elysian_fs_root/img1.jpg", ELYSIAN_FILE_MODE_READ, &disk_file);
 	if(err != ELYSIAN_ERR_OK){ 
 		return err;
 	}
@@ -490,13 +512,14 @@ elysian_err_t controller_dynamic_page_disk_html(elysian_t* server){
         return err;
     }
 	
-    err = elysian_mvc_set_view(server, ELYSIAN_FS_DISK_VRT_ROOT"/elysian_fs_root/disk/dynamic_page_disk.html");
+    err = elysian_mvc_set_view(server, ELYSIAN_FS_DISK_VRT_ROOT"/elysian_fs_root/dynamic_page_disk.html");
     if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
 	
     return ELYSIAN_ERR_OK;
 }
+
 
 int main(){
 	uint8_t stop = 0;
@@ -506,6 +529,9 @@ int main(){
 	
     server = elysian_new();
     
+	/*
+	** Rom partition controllers
+	*/
 	elysian_mvc_controller_add(server, ELYSIAN_FS_ROM_VRT_ROOT"/dynamic_page.html", controller_dynamic_page_html, ELYSIAN_HTTP_METHOD_GET);
 	
 	elysian_mvc_controller_add(server, ELYSIAN_FS_ROM_VRT_ROOT"/form_get.html", controller_form_get_html, ELYSIAN_HTTP_METHOD_GET);
@@ -524,12 +550,15 @@ int main(){
 	
 	elysian_mvc_controller_add(server, ELYSIAN_FS_ROM_VRT_ROOT"/file_download.html", controller_file_download_html, ELYSIAN_HTTP_METHOD_GET);
 	
-	elysian_mvc_controller_add(server, ELYSIAN_FS_DISK_VRT_ROOT"/elysian_fs_root/disk/dynamic_page_disk.html", controller_dynamic_page_disk_html, ELYSIAN_HTTP_METHOD_GET);
+	/*
+	** Disk partition controllers
+	*/
+	elysian_mvc_controller_add(server, ELYSIAN_FS_DISK_VRT_ROOT"/elysian_fs_root/dynamic_page_disk.html", controller_dynamic_page_disk_html, ELYSIAN_HTTP_METHOD_GET);
 	
-    //elysian_mvc_controller_add(server, ELYSIAN_FS_ROM_VRT_ROOT"ctrl1.html", controller1, ELYSIAN_HTTP_METHOD_GET | ELYSIAN_HTTP_METHOD_POST);
-    //elysian_mvc_controller_add(server, ELYSIAN_FS_ROM_VRT_ROOT"ctrl2.html", controller2, ELYSIAN_HTTP_METHOD_GET | ELYSIAN_HTTP_METHOD_POST);
-    //elysian_mvc_controller_add(server, ELYSIAN_FS_ROM_VRT_ROOT"form", controller3, ELYSIAN_HTTP_METHOD_GET | ELYSIAN_HTTP_METHOD_POST);
-    
+	// Hits the same controller with the ROM alternative
+	elysian_mvc_controller_add(server, ELYSIAN_FS_DISK_VRT_ROOT"/elysian_fs_root/file_upload_disk.html", controller_file_upload_html, ELYSIAN_HTTP_METHOD_GET);
+	elysian_mvc_controller_add(server, ELYSIAN_FS_DISK_VRT_ROOT"/elysian_fs_root/file_upload_disk_controller", controller_file_upload, ELYSIAN_HTTP_METHOD_POST | ELYSIAN_HTTP_METHOD_PUT);
+
 	elysian_rom_fs(server, rom_fs, sizeof(rom_fs) / sizeof(elysian_file_rom_t));
 				   
     elysian_start(server, 9000, authentication_cb);

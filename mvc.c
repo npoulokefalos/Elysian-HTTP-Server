@@ -213,6 +213,13 @@ elysian_err_t elysian_mvc_set_view(elysian_t* server, char* view){
     return ELYSIAN_ERR_OK;
 }
 
+
+elysian_err_t elysian_mvc_get_requested_url(elysian_t* server, char** requested_url) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	*requested_url = client->httpreq.url;
+	return ELYSIAN_ERR_OK;
+}
+
 /* --------------------------------------------------------------------------------------------------------------------------------
 | Redirection
 -------------------------------------------------------------------------------------------------------------------------------- */
