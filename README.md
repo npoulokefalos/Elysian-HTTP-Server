@@ -25,15 +25,16 @@ Supported features include:
 - Extremely robust: all temporary failed operations (due to memory or network unavailability)
    are executed again with exponential backoff. Other clients are serviced normally in parallel.
 - Support for GET/HEAD/POST/PUT HTTP requests
+- Support for multipart HTTP requests for file uploading.
 - Multiple client support
 - HTTP pipelining and keep-alive connections
 - Multi-partition scheme for file storage: Seperate partitions for files in ROM and external disk are used.
 - Bounded memory usage
+- Single demo application demonstrating the whole API. 
 
-
-# Give it a try:
-- Set your enviroment in elysian_config.h (choose from ELYSIAN_ENV_UNIX, ELYSIAN_ENV_WINDOWS, ELYSIAN_ENV_EMBEDDED). 
-   Default is ELYSIAN_ENV_UNIX (could be also run from Cygwin).
+# Give it a try using Unix or Cygwin under Windows:
+-  (Optionally )Set your enviroment in elysian_config.h (choose from ELYSIAN_ENV_UNIX, ELYSIAN_ENV_WINDOWS, ELYSIAN_ENV_EMBEDDED). 
+   Default is ELYSIAN_ENV_UNIX (works also on Windows under Cygwin).
 - Issue "make". Image size may be big for embedded devices (~200 Kbytes), but that's because the default demo app contains images and audio files.
 - Run the "elysian.out" executable.
 - Open a browser and navigate to "http://localhost:9000"
