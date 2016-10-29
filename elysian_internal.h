@@ -353,7 +353,7 @@ struct elysian_req_param_t{
     //uint32_t len;
     
 	
-	uint32_t data_len;
+	uint32_t data_size;
 	
 	/*
 	** Initial data index

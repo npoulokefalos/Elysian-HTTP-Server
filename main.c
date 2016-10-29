@@ -223,7 +223,8 @@ elysian_err_t controller_form_post_html(elysian_t* server){
 
 elysian_err_t controller_file_upload(elysian_t* server){
 	//elysian_client_t* client = elysian_current_client(server);
-	char max_upload_size[32];
+	uint32_t param_file1_size;
+	char max_upload_size[16];
 	char* param1_data;
     uint8_t param_found;
 	elysian_req_param_t param_file1;
@@ -234,38 +235,67 @@ elysian_err_t controller_file_upload(elysian_t* server){
 
     ELYSIAN_LOG("[[ %s ]]", __func__);
     
+	/*
+	** Set the value to the attr_max_upload_size attribute
+	*/
 	sprintf(max_upload_size, "%u", ELYSIAN_MAX_UPLOAD_SIZE_KB);
 	err = elysian_mvc_attribute_set(server, "attr_max_upload_size", max_upload_size);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
 	
+	/*
+	** Read the complete param1 parameter as string and just print it..
+	*/
     err = elysian_mvc_get_param_str(server, "param1", &param1_data, &param_found);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
     ELYSIAN_LOG("param1 = %s", param1_data);
     
+	/*
+	** Retrieve the file1 parameter
+	*/
 	err = elysian_mvc_get_param(server, "file1", &param_file1);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
 	
-	elysian_mvc_read_param(server, &param_file1, file1_data, sizeof(file1_data), &read_size);
+	/*
+	** Read the first bytes of the file1 parameter
+	*/
+	err = elysian_mvc_read_param(server, &param_file1, file1_data, sizeof(file1_data) - 1, &read_size);
+	if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
 	file1_data[read_size] = '\0';
-
-	sprintf(data, "<b>The size of the uploaded file was %u bytes.</b> <br><br>", param_file1.data_len);
+	
+	/*
+	** Set the value to the attr_uploaded_file_size attribute
+	*/
+	err = elysian_mvc_param_size(server, &param_file1, &param_file1_size);
+	if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+	
+	sprintf(data, "<b>The size of the uploaded file was %u bytes.</b> <br><br>", param_file1_size);
 	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_size", data);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
 	
+	/*
+	** Set the value to the attr_uploaded_file_data attribute
+	*/
 	sprintf(data, "<b>The first %u bytes of the uploaded file were:</b><br>'%s'", read_size, file1_data);
 	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_data", (char*) data);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
 	
+	/*
+	** Set the MVC view to be sent to the client
+	*/
     err = elysian_mvc_set_view(server, ELYSIAN_FS_ROM_VRT_ROOT"/file_upload.html");
     if(err != ELYSIAN_ERR_OK){ 
         return err;
