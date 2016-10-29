@@ -174,6 +174,7 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server, uint32_t* store_size
     char* filename_template;
     uint32_t actual_write_sz;
     elysian_err_t err;
+	elysian_mvc_controller_t* controller;
 	
     if(is_http_headers){
         file = &client->httpreq.headers_file;
@@ -182,7 +183,14 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server, uint32_t* store_size
     }else{
         file = &client->httpreq.body_file;
         filename = client->httpreq.body_filename;
-        filename_template = ELYSIAN_FS_RAM_VRT_ROOT"/b_%u";
+		
+		controller = elysian_mvc_controller_get(server, client->httpreq.url, client->httpreq.method);
+		if(controller && controller->flags) {
+			 ELYSIAN_LOG("))))))))))))))))))))))))))))))))))))))))))) Body file will be saved in disk!");
+			filename_template = ELYSIAN_FS_DISK_VRT_ROOT"/b_%u";
+		} else {
+			filename_template = ELYSIAN_FS_RAM_VRT_ROOT"/b_%u";
+		}
     }
     
     if(elysian_fs_fisopened(server, file) || strlen(filename) == 0){

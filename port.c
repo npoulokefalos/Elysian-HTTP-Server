@@ -446,9 +446,8 @@ elysian_err_t elysian_port_fs_disk_fopen(elysian_t* server, char* abs_path, elys
 	
 #if defined(ELYSIAN_FS_ENV_UNIX)
 	char new_abs_path[256];
-	
 	sprintf(new_abs_path, "%s%s", ELYSIAN_FS_DISK_VRT_ROOT, abs_path);
-    file->descriptor.disk.fd = fopen(&new_abs_path[1], "r");
+    file->descriptor.disk.fd = fopen(&new_abs_path[1], (mode == ELYSIAN_FILE_MODE_READ)? "r":"w");
     if(!file->descriptor.disk.fd){
         return ELYSIAN_ERR_NOTFOUND;
     }
@@ -555,6 +554,7 @@ int elysian_port_fs_disk_fwrite(elysian_t* server, elysian_file_t* file, uint8_t
 #if defined(ELYSIAN_FS_ENV_UNIX)
 	int result;
     elysian_file_disk_t* file_disk = &file->descriptor.disk;
+	
 	result = fwrite(buf, 1, buf_size, file_disk->fd);
 	if(result == buf_size){
 		return result;
@@ -599,8 +599,11 @@ elysian_err_t elysian_port_fs_disk_fclose(elysian_t* server, elysian_file_t* fil
 }
 
 elysian_err_t elysian_port_fs_disk_fremove(elysian_t* server, char* abs_path){
+	ELYSIAN_LOG("[[ Removing disk file '%s']]", abs_path);
 #if defined(ELYSIAN_FS_ENV_UNIX)
-    remove(abs_path);
+	char new_abs_path[256];
+	sprintf(new_abs_path, "%s%s", ELYSIAN_FS_DISK_VRT_ROOT, abs_path);
+    remove(&new_abs_path[1]);
     return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
 	return ELYSIAN_ERR_FATAL;

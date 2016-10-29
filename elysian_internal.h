@@ -313,6 +313,7 @@ struct elysian_mvc_controller_t{
     const char* url;
     elysian_mvc_controller_cb_t cb;
     uint8_t http_methods_mask;
+	uint8_t flags;
     elysian_mvc_controller_t* next;
 };
 

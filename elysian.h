@@ -54,6 +54,7 @@ typedef enum{
 	ELYSIAN_HTTP_METHOD_NA
 }elysian_http_method_e;
 
+
 #include "elysian_internal.h"
 
 struct elysian_t{
@@ -80,7 +81,7 @@ void elysian_stop(elysian_t* server);
 /*======================================================================================================================================
  Controllers and MVC                                                       															
  ======================================================================================================================================*/
-elysian_err_t elysian_mvc_controller_add(elysian_t* server, const char* url, elysian_mvc_controller_cb_t cb, uint8_t http_methods_mask);
+elysian_err_t elysian_mvc_controller_add(elysian_t* server, const char* url, elysian_mvc_controller_cb_t cb, uint8_t http_methods_mask, uint8_t flags);
 elysian_err_t elysian_mvc_attribute_set(elysian_t* server, char* name, char* value);
 
 elysian_err_t elysian_mvc_set_reqserved_cb(elysian_t* server, elysian_reqserved_cb_t cb, void* data);

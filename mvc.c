@@ -271,7 +271,7 @@ elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url){
 /* --------------------------------------------------------------------------------------------------------------------------------
 | Controllers
 -------------------------------------------------------------------------------------------------------------------------------- */
-elysian_err_t elysian_mvc_controller_add(elysian_t* server, const char* url, elysian_mvc_controller_cb_t cb, uint8_t http_methods_mask){
+elysian_err_t elysian_mvc_controller_add(elysian_t* server, const char* url, elysian_mvc_controller_cb_t cb, uint8_t http_methods_mask, uint8_t flags){
     elysian_mvc_controller_t* controller;
     
     ELYSIAN_ASSERT(server != NULL, "");
@@ -286,6 +286,7 @@ elysian_err_t elysian_mvc_controller_add(elysian_t* server, const char* url, ely
     controller->url = url;
     controller->cb = cb;
     controller->http_methods_mask = http_methods_mask;
+	controller->flags = flags;
     controller->next = server->controllers;
     server->controllers = controller;
     
