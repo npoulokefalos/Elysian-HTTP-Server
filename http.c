@@ -53,8 +53,24 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 	
 	client->httpreq.url = NULL;
 	client->httpreq.body_len = 0;
+	client->httpreq.expect_status_code = ELYSIAN_HTTP_STATUS_CODE_NA;
 	client->httpreq.content_type = ELYSIAN_HTTP_CONTENT_TYPE_NA;
 	client->httpreq.method = ELYSIAN_HTTP_METHOD_NA;
+	
+	
+	/*
+	** Get any "Expect: 100-continue"
+	*/
+	err = elysian_http_request_get_header(server, "Expect" , &header_value);
+	if(err != ELYSIAN_ERR_OK){
+        goto handle_error;
+    }
+	if(!header_value){
+    }else{
+		ELYSIAN_LOG("Request with expectation!");
+		client->httpreq.expect_status_code = ELYSIAN_HTTP_STATUS_CODE_100;
+		elysian_mem_free(server, header_value);
+	}
 	
 	/*
 	** Get method
@@ -74,6 +90,8 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
     }
 	ELYSIAN_LOG("URL = '%s'!", url);
     client->httpreq.url = url;
+	
+
 	
 	/*
 	** Get Transfer-Encoding
@@ -226,19 +244,7 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
         elysian_mem_free(server, header_value);
     }
 	
-	/*
-	** Get any "Expect: 100-continue"
-	*/
-	err = elysian_http_request_get_header(server, "Expect" , &header_value);
-	if(err != ELYSIAN_ERR_OK){
-        goto handle_error;
-    }
-	if(!header_value){
-    }else{
-		ELYSIAN_LOG("Request with expectation!");
-		client->httpreq.expect_status_code = ELYSIAN_HTTP_STATUS_CODE_100;
-		elysian_mem_free(server, header_value);
-	}
+
     
 	
 	return ELYSIAN_ERR_OK;
@@ -256,6 +262,17 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 		client->httpreq.body_len = 0;
 		client->httpreq.content_type = ELYSIAN_HTTP_CONTENT_TYPE_NA;
 		client->httpreq.method = ELYSIAN_HTTP_METHOD_NA;
+		
+#if 1 // HTTP expectation
+		if( (err == ELYSIAN_ERR_FATAL) && (client->httpreq.expect_status_code == ELYSIAN_HTTP_STATUS_CODE_100)) {
+			/*
+			** Don't close the connection, send the expectation failed msg first
+			*/
+			err = ELYSIAN_ERR_OK;
+			client->httpreq.expect_status_code = ELYSIAN_HTTP_STATUS_CODE_417;
+		}
+#endif
+		
         return err;
 }
 
@@ -670,7 +687,7 @@ const elysian_http_status_code_t elysian_http_status_codes[] = {
 	[ELYSIAN_HTTP_STATUS_CODE_417] = {
 		.code_num = 417,
 		.code_msg = "Expectation Failed",
-		.code_body = "Error 417: Expectation Failed."
+		.code_body = ""
 	},
 	[ELYSIAN_HTTP_STATUS_CODE_500] = {
 		.code_num = 500,

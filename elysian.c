@@ -115,7 +115,6 @@ void elysian_state_http_request_headers_receive(elysian_t* server, elysian_schdl
 			elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_LOW);
 			
 			client->http_pipelining_enabled = 0;
-			client->httpreq.expect_status_code = ELYSIAN_HTTP_STATUS_CODE_NA;
 			client->httpresp.status_code = ELYSIAN_HTTP_STATUS_CODE_NA;
 			client->httpresp.fatal_status_code = ELYSIAN_HTTP_STATUS_CODE_NA;
 			client->httpresp.attempts = 0;
@@ -334,17 +333,14 @@ void elysian_state_http_request_headers_parse(elysian_t* server, elysian_schdlr_
             err = elysian_http_request_headers_parse(server);
             switch(err){
                 case ELYSIAN_ERR_OK:
+					ELYSIAN_LOG("Expect status code is %u\r\n", client->httpreq.expect_status_code);
 					if(client->httpreq.expect_status_code != ELYSIAN_HTTP_STATUS_CODE_NA){
 						elysian_schdlr_state_set(server, elysian_state_http_expect_reply);
 						return;
+					} else {
+						elysian_schdlr_state_set(server, elysian_state_http_request_body_receive);
+						return;
 					}
-                    if(client->httpreq.body_len){
-                        elysian_schdlr_state_set(server, elysian_state_http_request_body_receive);
-						return;
-                    }else{
-                        elysian_schdlr_state_set(server, elysian_state_http_request_authenticate);
-						return;
-                    }
                     break;
                 case ELYSIAN_ERR_POLL:
                     elysian_schdlr_state_poll_backoff(server);
@@ -403,11 +399,11 @@ void elysian_state_http_expect_reply(elysian_t* server, elysian_schdlr_ev_t ev){
 				case ELYSIAN_ERR_OK:
 					client->httpresp.buf_index += send_size_actual;
 					if(client->httpresp.buf_index == client->httpresp.buf_len){
-						if(client->httpreq.body_len){
+						if (client->httpreq.expect_status_code == ELYSIAN_HTTP_STATUS_CODE_100) {
 							elysian_schdlr_state_set(server, elysian_state_http_request_body_receive);
 							return;
-						}else{
-							elysian_schdlr_state_set(server, elysian_state_http_request_authenticate);
+						} else {
+							elysian_schdlr_state_set(server, elysian_state_http_disconnect);
 							return;
 						}
 					}
@@ -449,6 +445,13 @@ void elysian_state_http_request_body_receive(elysian_t* server, elysian_schdlr_e
             client->rcv_cbuf_list_offset0 = 0;
             client->rcv_cbuf_list_offset1 = client->httpreq.body_len;
             
+			/*
+			** If we don't expect any body, authenticate immediatelly
+			*/
+			if(!client->httpreq.body_len){
+				elysian_schdlr_state_set(server, elysian_state_http_request_authenticate);
+				return;
+			}
             //client->httpreq.cbuf_list_store_size = client->httpreq.body_len;
             /*
             ** Don't break and continue to the READ event, asking a POLL
