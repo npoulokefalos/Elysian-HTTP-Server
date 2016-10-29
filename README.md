@@ -24,7 +24,7 @@ Supported features include:
 - Single thread implementation
 - Extremely robust: all temporary failed operations (due to memory or network unavailability)
    are executed again with exponential backoff. Other clients are serviced normally in parallel.
-- Supports GET/HEAD/POST/PUT HTTP requests
+- Support for GET/HEAD/POST/PUT HTTP requests
 - Multiple client support
 - HTTP pipelining and keep-alive connections
 - Multi-partition scheme for file storage: Seperate partitions for files in ROM and external disk are used.
