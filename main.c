@@ -254,7 +254,7 @@ elysian_err_t controller_file_upload(elysian_t* server){
 	elysian_mvc_read_param(server, &param_file1, file1_data, sizeof(file1_data), &read_size);
 	file1_data[read_size] = '\0';
 
-	sprintf(data, "<b>The size of the uploaded file was %u bytes.</b> <br><br>", param_file1.len);
+	sprintf(data, "<b>The size of the uploaded file was %u bytes.</b> <br><br>", param_file1.data_len);
 	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_size", data);
     if(err != ELYSIAN_ERR_OK){ 
         return err;

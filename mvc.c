@@ -394,16 +394,8 @@ elysian_err_t elysian_mvc_set_reqserved_cb(elysian_t* server, elysian_reqserved_
 -------------------------------------------------------------------------------------------------------------------------------- */
 elysian_err_t elysian_mvc_get_param(elysian_t* server, char* param_name, elysian_req_param_t* req_param){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    char search_prefix[64];
-    //elysian_err_t err;
 	elysian_req_param_t* req_param_next;
-    //uint32_t index0_tmp, index1_tmp;
-    //uint32_t max_index, dummy_index;
-    
-    if(strlen(param_name) > sizeof(search_prefix) - 16){
-        goto handle_error;
-    }
-    
+
     req_param->client = client;
     
 	req_param_next = client->mvc.req_params;
@@ -413,16 +405,22 @@ elysian_err_t elysian_mvc_get_param(elysian_t* server, char* param_name, elysian
 			ELYSIAN_LOG("param '%s' found!", param_name);
 			return ELYSIAN_ERR_OK;
 		}
-
 		req_param_next = req_param_next->next;
 	};
 	
-handle_error:
+	/*
+	** Parameter not found
+	*/
 	req_param->client = NULL;
 	req_param->file = NULL;
-	req_param->index0 = ELYSIAN_INDEX_OOB32;
-	req_param->len = 0;
-	req_param->index = 0;
+	req_param->data_index = ELYSIAN_INDEX_OOB32;
+	req_param->data_len = 0;
+	req_param->data_index_cur = 0;
+	
+	/*
+	** Don't return an error here, let the app layer decide if 
+	** the missing param is an error or not.
+	*/
 	return ELYSIAN_ERR_OK;
 }
 
@@ -445,12 +443,13 @@ elysian_err_t elysian_mvc_read_param(elysian_t* server, elysian_req_param_t* req
 	** This could happen in POST request, where the last param index 
 	** could be equal to filesize, if for example the last param is empty.
 	** 'param1=test+data+%231%21&param2=test+data+%232%21&param3='
+	** We are not to seek to a file with size 0..
 	*/
-	if (req_param->len == 0) {
+	if (req_param->data_len == 0) {
 		return ELYSIAN_ERR_OK;
 	}
 	
-    buf_size = buf_size > req_param->len - (req_param->index - req_param->index0) ? req_param->len - (req_param->index - req_param->index0) : buf_size;
+    buf_size = buf_size > req_param->data_len - (req_param->data_index_cur - req_param->data_index) ? req_param->data_len - (req_param->data_index_cur - req_param->data_index) : buf_size;
     
     err = elysian_fs_ftell(server, req_param->file, &current_offset);
     if(err != ELYSIAN_ERR_OK){
@@ -458,11 +457,11 @@ elysian_err_t elysian_mvc_read_param(elysian_t* server, elysian_req_param_t* req
     }
 	
 	ELYSIAN_LOG("current_offset is %u", current_offset);
-	ELYSIAN_LOG("req_param->indexis %u", req_param->index);
+	ELYSIAN_LOG("req_param->indexis %u", req_param->data_index_cur);
 	
 	
-	if(current_offset != req_param->index){
-		err = elysian_fs_fseek(server, req_param->file, req_param->index);
+	if(current_offset != req_param->data_index_cur){
+		err = elysian_fs_fseek(server, req_param->file, req_param->data_index_cur);
         if(err != ELYSIAN_ERR_OK){
             return err;
         }
@@ -471,9 +470,54 @@ elysian_err_t elysian_mvc_read_param(elysian_t* server, elysian_req_param_t* req
 	if(err != ELYSIAN_ERR_OK){
         return err;
     }
-    req_param->index += *read_size;
+    req_param->data_index_cur += *read_size;
 	
     return err;
+}
+
+elysian_err_t elysian_mvc_get_param_bytes(elysian_t* server, char* param_name, uint8_t** param_value, uint8_t* param_found) {
+	//elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	uint32_t actual_read_size;
+	elysian_req_param_t param;
+	uint8_t* buf;
+	elysian_err_t err;
+	
+	*param_value = NULL;
+	*param_found = 0;
+	err = elysian_mvc_get_param(server, param_name, &param);
+	if(err != ELYSIAN_ERR_OK){
+		return err;
+	}
+	if(param.data_index == ELYSIAN_INDEX_OOB32){
+		return ELYSIAN_ERR_OK;
+	}else{
+		*param_found = 1;
+	}
+	
+	ELYSIAN_LOG("Parameters len is %u", param.data_len);
+	
+	buf = elysian_mem_malloc(server, param.data_len, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	if(buf == NULL){
+		return ELYSIAN_ERR_POLL;
+	}
+	
+	err = elysian_mvc_read_param(server, &param, buf, param.data_len, &actual_read_size);
+	if(err != ELYSIAN_ERR_OK){
+		elysian_mem_free(server, buf);
+		return err;
+	}
+	
+	ELYSIAN_ASSERT(param.data_len == actual_read_size , "");
+	
+	err = elysian_mvc_add_alloc(server, buf);
+	if(err != ELYSIAN_ERR_OK){
+		elysian_mem_free(server, buf);
+		return err;
+	}
+	
+	*param_value = buf;
+	
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_mvc_get_param_str(elysian_t* server, char* param_name, char** param_value, uint8_t* param_found){
@@ -490,26 +534,26 @@ elysian_err_t elysian_mvc_get_param_str(elysian_t* server, char* param_name, cha
 	if(err != ELYSIAN_ERR_OK){
 		return err;
 	}
-	if(param.index0 == ELYSIAN_INDEX_OOB32){
+	if(param.data_index == ELYSIAN_INDEX_OOB32){
 		return ELYSIAN_ERR_OK;
 	}else{
 		*param_found = 1;
 	}
 	
-	ELYSIAN_LOG("Parameters len is %u", param.len);
+	ELYSIAN_LOG("Parameters len is %u", param.data_len);
 	
-	buf = elysian_mem_malloc(server, param.len + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	buf = elysian_mem_malloc(server, param.data_len + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
 	if(buf == NULL){
 		return ELYSIAN_ERR_POLL;
 	}
 	
-	err = elysian_mvc_read_param(server, &param, buf, param.len, &actual_read_size);
+	err = elysian_mvc_read_param(server, &param, buf, param.data_len, &actual_read_size);
 	if(err != ELYSIAN_ERR_OK){
 		elysian_mem_free(server, buf);
 		return err;
 	}
 	
-	ELYSIAN_ASSERT(param.len == actual_read_size , "");
+	ELYSIAN_ASSERT(param.data_len == actual_read_size , "");
 	
 	buf[actual_read_size] = '\0';
 	
@@ -756,8 +800,8 @@ elysian_err_t elysian_mvc_read_req_params(elysian_t* server){
 			/*
 			** At least one param detected
 			*/
-			ELYSIAN_LOG("param_search_index = %u + %u + %u + %u = %u", (unsigned int) param_prev->body_index, (unsigned int) param_prev->body_len, (unsigned int) strlen(div2), (unsigned int)strlen(div3), (unsigned int)(param_prev->body_index + param_prev->body_len + strlen(div2) + strlen(div3)));
-			param_search_index = param_prev->body_index + param_prev->body_len + strlen(div2) + strlen(div3);
+			ELYSIAN_LOG("param_search_index = %u + %u + %u + %u = %u", (unsigned int) param_prev->data_index, (unsigned int) param_prev->data_len, (unsigned int) strlen(div2), (unsigned int)strlen(div3), (unsigned int)(param_prev->data_index + param_prev->data_len + strlen(div2) + strlen(div3)));
+			param_search_index = param_prev->data_index + param_prev->data_len + strlen(div2) + strlen(div3);
 		}
 		ELYSIAN_LOG("Searching '%s'->'%s' from index %u", div1, div3, param_search_index);
 		err = elysian_strstr_file(server, param_file, param_search_index, div1, div3, 0, &index0, &index1);
@@ -847,17 +891,17 @@ elysian_err_t elysian_mvc_read_req_params(elysian_t* server){
 		param->file = param_file;
 		param->name = NULL;
 		param->filename = NULL;
-		param->body_index = index0 + strlen(div1);
-		param->body_len = (index1 - strlen(div2)) - (param->body_index);
+		param->data_index = index0 + strlen(div1);
+		param->data_len = (index1 - strlen(div2)) - (param->data_index);
 		
-		param->index0 = param->body_index;
-		param->len = param->body_len;
-		param->index = param->index0;
+		//param->index0 = param->data_index;
+		//param->len = param->data_len;
+		param->data_index_cur = param->data_index;
 		
-		ELYSIAN_LOG("param->body_index = %u, param->body_len = %u", param->body_index, param->body_len);
+		ELYSIAN_LOG("param->body_index = %u, param->body_len = %u", param->data_index, param->data_len);
 		
 		if (param_prev) {
-			param_header_index = param_prev->body_index + param_prev->body_len + strlen(div2) + strlen(div3);
+			param_header_index = param_prev->data_index + param_prev->data_len + strlen(div2) + strlen(div3);
 		} else {
 			param_header_index = param_search_index;
 		}

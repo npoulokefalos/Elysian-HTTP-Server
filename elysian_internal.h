@@ -349,12 +349,21 @@ struct elysian_req_param_t{
 	elysian_file_t* file;
 	char* name;
 	char* filename;
-    uint32_t index0;
-    uint32_t len;
-    uint32_t index;
+    //uint32_t index0;
+    //uint32_t len;
+    
 	
-	uint32_t body_index;
-	uint32_t body_len;
+	uint32_t data_len;
+	
+	/*
+	** Initial data index
+	*/
+	uint32_t data_index;
+	
+	/*
+	** Current data index (next read index)
+	*/
+	uint32_t data_index_cur;
 };
 
 
