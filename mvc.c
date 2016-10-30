@@ -285,8 +285,6 @@ elysian_err_t elysian_mvc_controller_add(elysian_t* server, const char* url, ely
     
     controller->url = url;
     controller->cb = cb;
-    //controller->http_methods_mask = http_methods_mask;
-	ELYSIAN_LOG("Adding controller %s with flags %u", url, flags);
 	controller->flags = flags;
     controller->next = server->controllers;
     server->controllers = controller;
