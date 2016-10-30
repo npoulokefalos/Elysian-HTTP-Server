@@ -425,7 +425,7 @@ elysian_err_t elysian_http_response_build(elysian_t* server){
 
 	if(client->httpresp.status_code == ELYSIAN_HTTP_STATUS_CODE_401){
 		/* WWW-Authenticate: Basic realm="My Server" */
-		sprintf(header_value, "Basic realm=\"%s\"", ELYSIAN_SERVER_NAME);
+		elysian_sprintf(header_value, "Basic realm=\"%s\"", ELYSIAN_SERVER_NAME);
 		err = elysian_http_add_response_header_line(server, "WWW-Authenticate", header_value);
 		if(err != ELYSIAN_ERR_OK){
 			return err;
@@ -434,7 +434,7 @@ elysian_err_t elysian_http_response_build(elysian_t* server){
 	
 	if(client->httpresp.status_code == ELYSIAN_HTTP_STATUS_CODE_206){
 		/* Content-Range: bytes 0-64657026/64657027 */
-		sprintf(header_value, "bytes %u-%u/%u", client->httpreq.range_start, client->httpreq.range_end, client->httpresp.resource_size);
+		elysian_sprintf(header_value, "bytes %u-%u/%u", client->httpreq.range_start, client->httpreq.range_end, client->httpresp.resource_size);
 		err = elysian_http_add_response_header_line(server, "Content-Range", header_value);
 		if(err != ELYSIAN_ERR_OK){
 			return err;
@@ -448,7 +448,7 @@ elysian_err_t elysian_http_response_build(elysian_t* server){
 		}
 	}
 	
-	sprintf(header_value, "%u", client->httpresp.body_size);
+	elysian_sprintf(header_value, "%u", client->httpresp.body_size);
 	err = elysian_http_add_response_header_line(server, "Content-Length", header_value);
 	if(err != ELYSIAN_ERR_OK){
 		return err;
@@ -495,7 +495,7 @@ elysian_err_t elysian_http_add_response_status_line(elysian_t* server){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	uint16_t status_line_len = strlen("HTTP/1.1 ") + 3 /* Status code */ + 1 /* Space */ + strlen(elysian_http_get_status_code_msg(client->httpresp.status_code)) + 2 /* \r\n */;
 	if(client->httpresp.buf_len + status_line_len + 1 /* '\0' */ < client->httpresp.buf_size){
-		sprintf((char*)client->httpresp.buf, "HTTP/1.1 %u %s\r\n", elysian_http_get_status_code_num(client->httpresp.status_code), elysian_http_get_status_code_msg(client->httpresp.status_code));
+		elysian_sprintf((char*)client->httpresp.buf, "HTTP/1.1 %u %s\r\n", elysian_http_get_status_code_num(client->httpresp.status_code), elysian_http_get_status_code_msg(client->httpresp.status_code));
 		client->httpresp.buf_len = strlen((char*)client->httpresp.buf);
 		return ELYSIAN_ERR_OK;
 	}else{

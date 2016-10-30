@@ -333,13 +333,14 @@ elysian_err_t elysian_fs_fopen(elysian_t* server, char* vrt_path, elysian_file_m
 	abs_sub_path = &vrt_path[strlen(partition->vrt_root)];
 	if(strcmp(partition->vrt_root, "") == 0) {
 		abs_path = abs_sub_path;
+		abs_path_len = strlen(abs_sub_path);
 	} else {
 		abs_path_len = strlen(partition->abs_root) + strlen(&vrt_path[strlen(partition->vrt_root)]);
 		abs_path = elysian_mem_malloc(server, abs_path_len + 1,  ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
 		if (!abs_path) {
 			return ELYSIAN_ERR_POLL;
 		}
-		sprintf(abs_path, "%s%s", partition->abs_root, abs_sub_path);
+		elysian_sprintf(abs_path, "%s%s", partition->abs_root, abs_sub_path);
 	}
 	
 	ELYSIAN_LOG("Opening absolute file '%s'..", abs_path);
@@ -488,7 +489,7 @@ elysian_err_t elysian_fs_fremove(elysian_t* server, char* vrt_path){
 		if (!abs_path) {
 			return ELYSIAN_ERR_POLL;
 		}
-		sprintf(abs_path, "%s%s", partition->abs_root, abs_sub_path);
+		elysian_sprintf(abs_path, "%s%s", partition->abs_root, abs_sub_path);
 	}
 	
 	//abs_path = &vrt_path[strlen(partition->vrt_root)];

@@ -125,6 +125,9 @@ elysian_err_t elysian_fs_fwrite(elysian_t* server, elysian_file_t* file, uint8_t
 elysian_err_t elysian_fs_fclose(elysian_t* server, elysian_file_t* file);
 elysian_err_t elysian_fs_fremove(elysian_t* server, char* vrt_path);
 
-
+/*======================================================================================================================================
+ Strings                                                															
+ ======================================================================================================================================*/
+elysian_err_t elysian_sprintf(char * buf, const char* format, ... );
 
 #endif

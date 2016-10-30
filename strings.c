@@ -201,33 +201,35 @@ int elysian_snprintf(char* buf, uint32_t buf_size, const char* format, va_list v
     while(format[0] && (i < buf_size - 1)){
         if(format[0] != '%'){
             buf[i++] = format[0];
+			format += 1;
         }else if(format[1] == 's'){
             str_var = va_arg(valist, char *);
             while(*str_var && (i < buf_size - 1)){
                 buf[i++] = *str_var++;
             }
+			format += 2;
         }else if(format[1] == 'u'){
             uint_var = va_arg(valist, unsigned int);
             elysian_uint2str(uint_var, &buf[i], buf_size - 1 - i);
             i += strlen(&buf[i]);
+			format += 2;
         }else if((format[1] == 'd') || (format[1] == 'i')){
             int_var = va_arg(valist, int);
             elysian_int2str(int_var, &buf[i], buf_size - 1 - i);
             i += strlen(&buf[i]);
-        }else if(format[1] == '\0'){
-            break;
+			format += 2;
         }else{
             buf[i++] = format[0];
         }
     }
-    buf[i++] = '\0';
+    buf[i] = '\0';
     return i;
 }
 
-elysian_err_t elysian_sprintf(char * buf, uint32_t buf_size, const char* format, ... ){
+elysian_err_t elysian_sprintf(char * buf, const char* format, ... ){
     va_list valist;
     va_start(valist, format);
-    elysian_snprintf(buf, buf_size, format, valist);
+    elysian_snprintf(buf, -1, format, valist);
     va_end(valist);
     return ELYSIAN_ERR_OK;
 }

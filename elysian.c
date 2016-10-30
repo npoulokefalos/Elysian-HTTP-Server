@@ -197,7 +197,7 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server, uint32_t* store_size
         ** File has not been fully created.
         */
         if(!elysian_fs_fisopened(server, file)){
-            sprintf(filename, filename_template, client->id);
+            elysian_sprintf(filename, filename_template, client->id);
             ELYSIAN_ASSERT(strlen(filename) < sizeof(client->httpreq.headers_filename), "");
             err = elysian_fs_fopen(server, filename, ELYSIAN_FILE_MODE_WRITE, file);
             if(err != ELYSIAN_ERR_OK){
@@ -396,9 +396,9 @@ void elysian_state_http_expect_reply(elysian_t* server, elysian_schdlr_ev_t ev){
         }break;
         case elysian_schdlr_EV_POLL:
         {
-			sprintf(http_expect_response, "HTTP/1.1 %u %s\r\n\r\n", elysian_http_get_status_code_num(client->httpreq.expect_status_code), 
+			elysian_sprintf(http_expect_response, "HTTP/1.1 %u %s\r\n\r\n", elysian_http_get_status_code_num(client->httpreq.expect_status_code), 
 																	elysian_http_get_status_code_msg(client->httpreq.expect_status_code));
-																	
+
 			client->httpresp.buf = 	(uint8_t*) http_expect_response;
 			client->httpresp.buf_len = strlen(http_expect_response);		
 			err = elysian_socket_write(&client->socket, &client->httpresp.buf[client->httpresp.buf_index], client->httpresp.buf_len, &send_size_actual);
@@ -718,7 +718,7 @@ void elysian_state_configure_mvc(elysian_t* server, elysian_schdlr_ev_t ev){
 				** Status code is available, no need to query application layer
 				*/
 				ELYSIAN_LOG("Trying to open error page %u", elysian_http_get_status_code_num(client->httpresp.status_code));
-				sprintf(status_code_page_name, ELYSIAN_FS_WS_VRT_ROOT"/%u.html", elysian_http_get_status_code_num(client->httpresp.status_code));
+				elysian_sprintf(status_code_page_name, ELYSIAN_FS_WS_VRT_ROOT"/%u.html", elysian_http_get_status_code_num(client->httpresp.status_code));
 				err = elysian_mvc_set_view(server, status_code_page_name);
 			} else {
 				/*

@@ -46,25 +46,25 @@ elysian_err_t controller_dynamic_page_html(elysian_t* server){
 
     ELYSIAN_LOG("[[ %s ]]", __func__);
     
-	sprintf(attr_value, "%u", elysian_time_now());
+	elysian_sprintf(attr_value, "%u", elysian_time_now());
 	err = elysian_mvc_attribute_set(server, "attr_timestamp", attr_value);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
 	
-	sprintf(attr_value, "%u", ELYSIAN_MAX_CLIENTS_NUM);
+	elysian_sprintf(attr_value, "%u", ELYSIAN_MAX_CLIENTS_NUM);
 	err = elysian_mvc_attribute_set(server, "attr_ELYSIAN_MAX_CLIENTS_NUM", attr_value);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
 	
-	sprintf(attr_value, "%u", ELYSIAN_MAX_MEMORY_USAGE_KB);
+	elysian_sprintf(attr_value, "%u", ELYSIAN_MAX_MEMORY_USAGE_KB);
 	err = elysian_mvc_attribute_set(server, "attr_ELYSIAN_MAX_MEMORY_USAGE_KB", attr_value);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
 	
-	sprintf(attr_value, "%u", ELYSIAN_MAX_UPLOAD_SIZE_KB);
+	elysian_sprintf(attr_value, "%u", ELYSIAN_MAX_UPLOAD_SIZE_KB);
 	err = elysian_mvc_attribute_set(server, "attr_ELYSIAN_MAX_UPLOAD_SIZE_KB", attr_value);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
@@ -114,7 +114,7 @@ elysian_err_t controller_form_get(elysian_t* server){
     }
     ELYSIAN_LOG("param3 = %s", str3);
 	
-	sprintf(msg, "param1 value was '%s'<br>param2 value was '%s'<br>param3 value was '%s'<br>param4 value was '%s'<br>", str1, str2, str3, str4);
+	elysian_sprintf(msg, "param1 value was '%s'<br>param2 value was '%s'<br>param3 value was '%s'<br>param4 value was '%s'<br>", str1, str2, str3, str4);
 	ELYSIAN_LOG("MSG = %s", msg);
 	
 	err = elysian_mvc_attribute_set(server, "response_message", msg);
@@ -186,7 +186,7 @@ elysian_err_t controller_form_post(elysian_t* server){
     }
     ELYSIAN_LOG("param3 = %s", str3);
 	
-	sprintf(msg, "param1 value was '%s'<br>param2 value was '%s'<br>param3 value was '%s'<br>param4 value was '%s'<br>", str1, str2, str3, str4);
+	elysian_sprintf(msg, "param1 value was '%s'<br>param2 value was '%s'<br>param3 value was '%s'<br>param4 value was '%s'<br>", str1, str2, str3, str4);
 	ELYSIAN_LOG("MSG = %s", msg);
 	
 	err = elysian_mvc_attribute_set(server, "response_message", msg);
@@ -239,7 +239,7 @@ elysian_err_t controller_file_upload(elysian_t* server){
 	/*
 	** Set the value to the attr_max_upload_size attribute
 	*/
-	sprintf(max_upload_size, "%u", ELYSIAN_MAX_UPLOAD_SIZE_KB);
+	elysian_sprintf(max_upload_size, "%u", ELYSIAN_MAX_UPLOAD_SIZE_KB);
 	err = elysian_mvc_attribute_set(server, "attr_max_upload_size", max_upload_size);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
@@ -279,7 +279,7 @@ elysian_err_t controller_file_upload(elysian_t* server){
         return err;
     }
 	
-	sprintf(data, "<b>The size of the uploaded file was %u bytes.</b> <br><br>", param_file1_size);
+	elysian_sprintf(data, "<b>The size of the uploaded file was %u bytes.</b> <br><br>", param_file1_size);
 	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_size", data);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
@@ -288,7 +288,7 @@ elysian_err_t controller_file_upload(elysian_t* server){
 	/*
 	** Set the value to the attr_uploaded_file_data attribute
 	*/
-	sprintf(data, "<b>The first %u bytes of the uploaded file were:</b><br>'%s'", read_size, file1_data);
+	elysian_sprintf(data, "<b>The first %u bytes of the uploaded file were:</b><br>'%s'", read_size, file1_data);
 	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_data", (char*) data);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
@@ -320,7 +320,7 @@ elysian_err_t controller_file_upload_html(elysian_t* server){
 
     ELYSIAN_LOG("[[ %s ]]", __func__);
     
-	sprintf(max_upload_size, "%u", ELYSIAN_MAX_UPLOAD_SIZE_KB);
+	elysian_sprintf(max_upload_size, "%u", ELYSIAN_MAX_UPLOAD_SIZE_KB);
 	err = elysian_mvc_attribute_set(server, "attr_max_upload_size", max_upload_size);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
@@ -427,7 +427,7 @@ elysian_err_t controller_ajax(elysian_t* server){
 	}
 	
 	elysian_fs_finit(server, &ajax_file);
-	sprintf(ajax_file_name, "%s%u%s", ELYSIAN_FS_RAM_VRT_ROOT"/ajax_file_", ajax_file_id++, ".html");
+	elysian_sprintf(ajax_file_name, "%s%u%s", ELYSIAN_FS_RAM_VRT_ROOT"/ajax_file_", ajax_file_id++, ".html");
 	err = elysian_fs_fopen(server, ajax_file_name, ELYSIAN_FILE_MODE_WRITE, &ajax_file);
 	if(err != ELYSIAN_ERR_OK){ 
 		elysian_mem_free(server, ajax_file_name);
@@ -442,7 +442,7 @@ elysian_err_t controller_ajax(elysian_t* server){
     }
 	elysian_fs_fclose(server, &ajax_file);
 
-	sprintf(buffer, "[Timestamp %u] RAM usage is <b>%u</b> bytes.", elysian_time_now(), elysian_mem_usage());
+	elysian_sprintf(buffer, "[Timestamp %u] RAM usage is <b>%u</b> bytes.", elysian_time_now(), elysian_mem_usage());
 	err = elysian_mvc_attribute_set(server, "ajax_attr", buffer);
     if(err != ELYSIAN_ERR_OK){ 
 		elysian_fs_fremove(server, ajax_file_name);
@@ -469,7 +469,7 @@ elysian_err_t controller_file_download_html(elysian_t* server){
 
     ELYSIAN_LOG("[[ %s ]]", __func__);
     
-	sprintf(attr_value, "%u", elysian_time_now());
+	elysian_sprintf(attr_value, "%u", elysian_time_now());
 	err = elysian_mvc_attribute_set(server, "attr_huge_file_path", ELYSIAN_FS_HUGE_FILE_VRT_ROOT "" ELYSIAN_FS_HUGE_FILE_NAME);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
@@ -506,7 +506,7 @@ elysian_err_t controller_dynamic_page_disk_html(elysian_t* server){
 	
 	elysian_fs_fclose(server, &disk_file);
 	
-	sprintf(attr_value, "<b>%u</b>", file_size);
+	elysian_sprintf(attr_value, "<b>%u</b>", file_size);
 	err = elysian_mvc_attribute_set(server, "attr_file_size", attr_value);
     if(err != ELYSIAN_ERR_OK){
         return err;

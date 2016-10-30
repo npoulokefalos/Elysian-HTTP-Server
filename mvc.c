@@ -240,7 +240,7 @@ elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url){
 	
 	char status_code_page_name[32];
 
-	sprintf(status_code_page_name, ELYSIAN_FS_WS_VRT_ROOT"/%u.html", elysian_http_get_status_code_num(ELYSIAN_HTTP_STATUS_CODE_302));
+	elysian_sprintf(status_code_page_name, ELYSIAN_FS_WS_VRT_ROOT"/%u.html", elysian_http_get_status_code_num(ELYSIAN_HTTP_STATUS_CODE_302));
 	err = elysian_mvc_set_view(server, status_code_page_name);
 	if(err != ELYSIAN_ERR_OK){
 		return err;
@@ -259,7 +259,7 @@ elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url){
 		 return ELYSIAN_ERR_POLL;
 	}
 	
-	sprintf(client->httpresp.redirection_url, "http://%s:%u%s", hostname, server->listening_port, redirection_url);
+	elysian_sprintf(client->httpresp.redirection_url, "http://%s:%u%s", hostname, server->listening_port, redirection_url);
 
 	elysian_set_http_status_code(server, ELYSIAN_HTTP_STATUS_CODE_302);
 	
@@ -730,7 +730,7 @@ elysian_err_t elysian_mvc_read_req_params(elysian_t* server){
 			goto handle_error;
 		} else {
 			max_index--;
-			sprintf(param_search_pattern, "--%s\r\n", client->httpreq.multipart_boundary);
+			elysian_sprintf(param_search_pattern, "--%s\r\n", client->httpreq.multipart_boundary);
 			err = elysian_strstr_file(server, param_file, 0, param_search_pattern, "", 0, &index0, &index1);
 			if(err != ELYSIAN_ERR_OK){
 				ELYSIAN_LOG("ERROR_1");
@@ -861,7 +861,7 @@ elysian_err_t elysian_mvc_read_req_params(elysian_t* server){
 				*/
 				ELYSIAN_LOG("MAYBE_LAST_1");
 				if(client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA){
-					sprintf(param_search_pattern, "--%s--", client->httpreq.multipart_boundary);
+					elysian_sprintf(param_search_pattern, "--%s--", client->httpreq.multipart_boundary);
 					ELYSIAN_LOG("Searching '%s'->'%s' from index %u", div1, param_search_pattern, param_search_index);
 					err = elysian_strstr_file(server, param_file, param_search_index, div1, param_search_pattern, 0, &index0, &index1);
 				} else {
