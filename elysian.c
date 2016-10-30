@@ -175,7 +175,7 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server, uint32_t* store_size
     uint32_t actual_write_sz;
     elysian_err_t err;
 	elysian_mvc_controller_t* controller;
-	
+
     if(is_http_headers){
         file = &client->httpreq.headers_file;
         filename = client->httpreq.headers_filename;
@@ -183,7 +183,6 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server, uint32_t* store_size
     }else{
         file = &client->httpreq.body_file;
         filename = client->httpreq.body_filename;
-		
 		controller = elysian_mvc_controller_get(server, client->httpreq.url, client->httpreq.method);
 		if((controller) && (controller->flags & ELYSIAN_MVC_CONTROLLER_FLAG_SAVE_TO_DISK)) {
 			 ELYSIAN_LOG("))))))))))))))))))))))))))))))))))))))))))) Body file will be saved in disk!");
@@ -1275,7 +1274,6 @@ void elysian_client_cleanup(elysian_t* server){
 	}
     
     if(client->httpreq.body_filename[0] != '\0'){
-        ELYSIAN_LOG("Removing body file..");
 		if(elysian_fs_fisopened(server, &client->httpreq.body_file)){
             ELYSIAN_LOG("Closing body file..");
 			elysian_fs_fclose(server, &client->httpreq.body_file);

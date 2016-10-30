@@ -45,7 +45,7 @@ elysian_err_t elysian_http_request_headers_received(elysian_t* server){
 elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     char* header_value;
-	char* initial_header_value;
+	char* header_value_tmp;
     elysian_err_t err;
 	char* multipart_boundary;
 	elysian_http_method_e method;
@@ -115,12 +115,12 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 	/*
 	** Get Range
 	*/
-	err = elysian_http_request_get_header(server, "Range" , &initial_header_value);
-	header_value = initial_header_value;
+	err = elysian_http_request_get_header(server, "Range" , &header_value);
+	header_value_tmp = header_value;
 	if(err != ELYSIAN_ERR_OK){
         goto handle_error;
     }
-	if(!header_value){
+	if(!header_value_tmp){
 		client->httpreq.range_start = ELYSIAN_HTTP_RANGE_WF;
 		client->httpreq.range_end = ELYSIAN_HTTP_RANGE_WF;
     }else{
@@ -129,37 +129,37 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 		** bytes=0-1024
 		*/
 		char* barrier;
-		ELYSIAN_LOG("Partial request is '%s'", header_value);
-		barrier = strstr(header_value, "=");
+		ELYSIAN_LOG("Partial request is '%s'", header_value_tmp);
+		barrier = strstr(header_value_tmp, "=");
 		if(barrier){
-			header_value = barrier + 1;
-			barrier = strstr(header_value, "-");
+			header_value_tmp = barrier + 1;
+			barrier = strstr(header_value_tmp, "-");
 			if(barrier){
 				*barrier = '\0';
-                if(strlen(header_value)){
-                    client->httpreq.range_start = atoi(header_value);
+                if(strlen(header_value_tmp)){
+                    client->httpreq.range_start = atoi(header_value_tmp);
                 }else{
-                    elysian_mem_free(server, initial_header_value);
+                    elysian_mem_free(server, header_value);
                     err = ELYSIAN_ERR_FATAL;
                     goto handle_error;
                 }
 				ELYSIAN_LOG("Range start is '%u'", client->httpreq.range_start);
-				header_value = barrier + 1;
+				header_value_tmp = barrier + 1;
 				//ELYSIAN_LOG("Range header_value is '%s'", header_value);
-                if(strlen(header_value)){
-                    client->httpreq.range_end = atoi(header_value);
+                if(strlen(header_value_tmp)){
+                    client->httpreq.range_end = atoi(header_value_tmp);
                 }else{
                     client->httpreq.range_end = ELYSIAN_HTTP_RANGE_EOF;
                 }
 				ELYSIAN_LOG("Range end is '%u'", client->httpreq.range_end);
-				elysian_mem_free(server, initial_header_value);
+				elysian_mem_free(server, header_value);
 			}else{
-				elysian_mem_free(server, initial_header_value);
+				elysian_mem_free(server, header_value);
 				err = ELYSIAN_ERR_FATAL;
 				goto handle_error;
 			}
 		}else{
-			elysian_mem_free(server, initial_header_value);
+			elysian_mem_free(server, header_value);
 			err = ELYSIAN_ERR_FATAL;
 			goto handle_error;
 		}

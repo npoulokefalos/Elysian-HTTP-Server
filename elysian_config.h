@@ -61,7 +61,7 @@
 
 /*
 * Specify if the underlying TCP/IP enviroment suuports socket select() API.
-* If set to (0), the select() API will be internally emulated using polling with exponential backoff.
+* If set to (0), the select() API will be internally emulated using polling with exponential backoff. Not thoroughly tested!
 * If set to (1), then the native select() API will be used instead of polling, offering better power consumption and responsiveness.
 */
 #define ELYSIAN_SOCKET_SELECT_SUPPORTED				(1)
@@ -86,21 +86,21 @@
 #define ELYSIAN_SERVER_NAME							"Elysian Web Server"
 
 /*
-** Virtual and absolute paths for the RAM, ROM and DISK partitions. 
+** Virtual and absolute paths for the RAM, ROM, DISK and internal Web Server's partitions. 
 **
-** When an HTTP request arrives and the virtual path of the requested reource is {ELYSIAN_FSxxx_VRT_ROOT}resource, 
-** the web server is going to open the file from the absolute path {ELYSIAN_FSxxx_ABS_ROOT}resource as follows:
+** When an HTTP request arrives and the virtual path of the requested reource is {ELYSIAN_FS_xxx_VRT_ROOT}resource, 
+** the web server is going to open the file from the absolute path {ELYSIAN_FS_xxx_ABS_ROOT}resource as follows:
 **
-** - ELYSIAN_FSxxx_VROOT is ELYSIAN_FSRAM_VRT_VROOT:
-**	 The file is located into the RAM partition, and elysian_fsram_fopen will be called with path = {ELYSIAN_FSRAM_ABS_ROOT}resource
+** - ELYSIAN_FS_xxx_VROOT is ELYSIAN_FS_RAM_VRT_VROOT:
+**	 The file is located into the RAM partition, and elysian_fs_ram_fopen will be called with path = {ELYSIAN_FS_RAM_ABS_ROOT}resource
 **
-** - ELYSIAN_FSxxx_VROOT is ELYSIAN_FSROM_VRT_ROOT:
-**	 The file is located into the ROM partition, and elysian_port_fsrom_fopen() will be called with path = {ELYSIAN_FSROM_ABS_ROOT}resource
+** - ELYSIAN_FS_xxx_VROOT is ELYSIAN_FS_ROM_VRT_ROOT:
+**	 The file is located into the ROM partition, and elysian_port_fs_rom_fopen() will be called with path = {ELYSIAN_FS_ROM_ABS_ROOT}resource
 **
-** - ELYSIAN_FSxxx_VROOT is ELYSIAN_FSDISK_VRT_ROOT:
-**	 The file is located into the DISK partition, and elysian_port_fsdisk_fopen() will be called with path = {ELYSIAN_FSDISK_ABS_ROOT}resource
+** - ELYSIAN_FS_xxx_VROOT is ELYSIAN_FS_DISK_VRT_ROOT:
+**	 The file is located into the DISK partition, and elysian_port_fs_disk_fopen() will be called with path = {ELYSIAN_FS_DISK_ABS_ROOT}resource
 **
-** All web pages should refer to the virtual resource paths which provide a hint to the web server for the partition (RAM, ROM, DISK)
+** All web pages should refer to the virtual resource paths which provide a hint to the web server for the partition (RAM, ROM, DISK, WS)
 ** of the particular resource. The Web Server transforms the virtual path to an absolute path according to user preferences.
 */
 
@@ -109,23 +109,27 @@
 ** It is mostly used internally by the web server (for example to store small POST requests), but it can be used from user too.
 */
 #define ELYSIAN_FS_RAM_VRT_ROOT						"/fs_root/ram"
+#define ELYSIAN_FS_RAM_ABS_ROOT						""
 
 /* 
 ** ROM partition which refers to resources stored as "const" variables in the .text area of the program
 ** (For example microcontroller's internal FLASH memory)
 */
 #define ELYSIAN_FS_ROM_VRT_ROOT						"/fs_root/rom" 
+#define ELYSIAN_FS_ROM_ABS_ROOT						""
 
 /* 
 ** DISK partition which refers to resources stored into the hard disk or external SDCARD.
 */
 #define ELYSIAN_FS_DISK_VRT_ROOT					"/fs_root/disk"
+#define ELYSIAN_FS_DISK_ABS_ROOT					"/fs_root/disk"
 
 /* 
 ** Web Server's internal partition for sending default content, for example default error pages (404, 500, ..)
 ** when user-defined error pages are not provided in any other user partition.
 */
 #define ELYSIAN_FS_WS_VRT_ROOT						"/fs_root/ws"
+#define ELYSIAN_FS_WS_ABS_ROOT						""
 
 /*
 ** Specify the partition for the "index.html" web page. 
@@ -152,7 +156,7 @@
 
 /*
 ** Special file that may be used for testing. It is located to the ELYSIAN_FS_WS_VRT_ROOT partition.
-** CAUTION: Do not change the partition of this file, unless it is guaranteed that this file will always exist to
+** CAUTION: Do not change the partition of this file, unless it is guaranteed that it be always existing to
 **			the specified partition.
 */
 #define ELYSIAN_FS_HUGE_FILE_NAME 					"/huge.file"

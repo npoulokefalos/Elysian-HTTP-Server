@@ -443,11 +443,15 @@ elysian_err_t elysian_port_socket_select(elysian_socket_t* socket_readset[], uin
 */
 elysian_err_t elysian_port_fs_disk_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file){
 	ELYSIAN_LOG("[[ Opening disk file '%s']]", abs_path);
+#if (defined(ELYSIAN_FS_ENV_UNIX) || defined(ELYSIAN_FS_ENV_WINDOWS))
+	/*
+	** Make path relative to the "elysian" executable by removing leading '/'
+	*/
+	abs_path = &abs_path[1];
+#endif
 	
 #if defined(ELYSIAN_FS_ENV_UNIX)
-	char new_abs_path[256];
-	sprintf(new_abs_path, "%s%s", ELYSIAN_FS_DISK_VRT_ROOT, abs_path);
-    file->descriptor.disk.fd = fopen(&new_abs_path[1], (mode == ELYSIAN_FILE_MODE_READ)? "r":"w");
+    file->descriptor.disk.fd = fopen(abs_path, (mode == ELYSIAN_FILE_MODE_READ) ? "r" : "w");
     if(!file->descriptor.disk.fd){
         return ELYSIAN_ERR_NOTFOUND;
     }
@@ -460,8 +464,8 @@ elysian_err_t elysian_port_fs_disk_fopen(elysian_t* server, char* abs_path, elys
     if(!(file = elysian_mem_malloc(server, sizeof(FIL))){
 		return ELYSIAN_ERR_POLL;
 	}
-    fr = f_open(file, abs_path, FA_READ);
-    if((res = f_open(file, abs_path, FA_READ)) != FR_OK){
+    fr = f_open(file, abs_path, (mode == ELYSIAN_FILE_MODE_READ) ? (FA_READ | FA_OPEN_EXISTING) : (FA_WRITE | FA_CREATE_ALWAYS) ));
+    if((res != FR_OK){
         elysian_mem_free(server, file);
         return ELYSIAN_ERR_NOTFOUND;
     }
@@ -600,10 +604,15 @@ elysian_err_t elysian_port_fs_disk_fclose(elysian_t* server, elysian_file_t* fil
 
 elysian_err_t elysian_port_fs_disk_fremove(elysian_t* server, char* abs_path){
 	ELYSIAN_LOG("[[ Removing disk file '%s']]", abs_path);
+#if (defined(ELYSIAN_FS_ENV_UNIX) || defined(ELYSIAN_FS_ENV_WINDOWS))
+	/*
+	** Make path relative to the "elysian" executable by removing leading '/'
+	*/
+	abs_path = &abs_path[1];
+#endif
+	
 #if defined(ELYSIAN_FS_ENV_UNIX)
-	char new_abs_path[256];
-	sprintf(new_abs_path, "%s%s", ELYSIAN_FS_DISK_VRT_ROOT, abs_path);
-    remove(&new_abs_path[1]);
+    remove(abs_path);
     return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
 	return ELYSIAN_ERR_FATAL;

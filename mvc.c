@@ -286,6 +286,7 @@ elysian_err_t elysian_mvc_controller_add(elysian_t* server, const char* url, ely
     controller->url = url;
     controller->cb = cb;
     //controller->http_methods_mask = http_methods_mask;
+	ELYSIAN_LOG("Adding controller %s with flags %u", url, flags);
 	controller->flags = flags;
     controller->next = server->controllers;
     server->controllers = controller;
@@ -299,7 +300,9 @@ elysian_mvc_controller_t* elysian_mvc_controller_get(elysian_t* server, char* ur
     elysian_mvc_controller_t* controller = server->controllers;
     ELYSIAN_LOG("Searching user defined controller for url '%s' and method '%s'", url, elysian_http_get_method_name(method_id));
     while(controller){
+		ELYSIAN_LOG("Trying to match with controller %s", controller->url);
         if (strcmp(controller->url, url) == 0) {
+			ELYSIAN_LOG("flag = %u, method id = %u", controller->flags, method_id);
 			if ( (controller->flags & ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET) && ((method_id == ELYSIAN_HTTP_METHOD_GET) || (method_id == ELYSIAN_HTTP_METHOD_HEAD))) {
 				return controller;
 			} else if ((controller->flags & ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST) && (method_id == ELYSIAN_HTTP_METHOD_POST)) {
@@ -559,7 +562,6 @@ elysian_err_t elysian_mvc_get_param_str(elysian_t* server, char* param_name, cha
 	uint8_t* buf;
 	elysian_err_t err;
 	
-
 	*param_value = "";
 	*param_found = 0;
 	err = elysian_mvc_get_param(server, param_name, &param);

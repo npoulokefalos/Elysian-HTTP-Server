@@ -256,8 +256,8 @@ struct elysian_file_t{
 
 typedef struct elysian_fs_partition_t elysian_fs_partition_t;
 struct elysian_fs_partition_t{
-	char* vrt_root;
-	//char* abs_root;
+	const char* vrt_root;
+	const char* abs_root;
 	elysian_err_t (*fopen)(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file);
 	elysian_err_t (*fsize)(elysian_t* server, elysian_file_t* file, uint32_t* filesize);
 	elysian_err_t (*fseek)(elysian_t* server, elysian_file_t* file, uint32_t seekpos);
@@ -325,6 +325,7 @@ struct elysian_mvc_controller_t{
     elysian_mvc_controller_cb_t cb;
     //uint8_t http_methods_mask;
 	elysian_mvc_controller_flag_e flags;
+
     elysian_mvc_controller_t* next;
 };
 

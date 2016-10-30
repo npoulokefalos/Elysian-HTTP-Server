@@ -31,14 +31,16 @@
 
 <div id="page_el_description">
 	<div id="page_el_description_header">
-	File download
+	Web page with dynamic content, stored in "Disk" partition
 	</div>
-	Download a virtual huge file. Can be used on stress and Quality-of-Service tests.
+	
+	This is a dynamic web page stored in the "Disk" partition. It references files that are also stored in the "Disk" partition.
+	The Dynamic content here is the file size.
 </div>
 
 <div id="page_el_main">
 	<div id="page_el_main_results">
-		<a href="<%=attr_huge_file_path%>">Virtual huge file</a>
+		<a href="../../../fs_root/disk/img1.jpg">Sample HD image stored in "Disk" partition (<%=attr_file_size%> bytes)</a>
 	</div>
 </div>
 

@@ -413,7 +413,7 @@ elysian_err_t elysian_fs_ws_fopen(elysian_t* server, char* abs_path, elysian_fil
 	** If this is a status code page, send the default user-friendly message
 	*/
 	for(i = 0; i < ELYSIAN_HTTP_STATUS_CODE_MAX; i++){
-		sprintf(status_code_page, "/%u.html", elysian_http_get_status_code_num(i));
+		sprintf(status_code_page, ELYSIAN_FS_WS_ABS_ROOT"/%u.html", elysian_http_get_status_code_num(i));
 		if(strcmp(abs_path, status_code_page) == 0){
 			(file)->descriptor.rom.ptr = (uint8_t*) elysian_http_get_status_code_body(i);
 			(file)->descriptor.rom.size = strlen((char*) (file)->descriptor.rom.ptr);

@@ -235,7 +235,7 @@ elysian_err_t elysian_socket_select(elysian_socket_t* socket_readset[], uint32_t
 const elysian_fs_partition_t fs_partitions[] = {
 	{
 		.vrt_root = ELYSIAN_FS_RAM_VRT_ROOT,
-		//.abs_root = ELYSIAN_FS_RAM_ABS_ROOT,
+		.abs_root = ELYSIAN_FS_RAM_ABS_ROOT,
 		.fopen = elysian_fs_ram_fopen, 
 		.fsize = elysian_fs_ram_fsize,
 		.fseek = elysian_fs_ram_fseek,
@@ -247,7 +247,7 @@ const elysian_fs_partition_t fs_partitions[] = {
 	},
 	{
 		.vrt_root = ELYSIAN_FS_ROM_VRT_ROOT,
-		//.abs_root = ELYSIAN_FS_ROM_ABS_ROOT,
+		.abs_root = ELYSIAN_FS_ROM_ABS_ROOT,
 		.fopen = elysian_fs_rom_fopen, 
 		.fsize = elysian_fs_rom_fsize,
 		.fseek = elysian_fs_rom_fseek,
@@ -259,7 +259,7 @@ const elysian_fs_partition_t fs_partitions[] = {
 	},
 	{
 		.vrt_root = ELYSIAN_FS_DISK_VRT_ROOT,
-		//.abs_root = ELYSIAN_FS_DISK_ABS_ROOT,
+		.abs_root = ELYSIAN_FS_DISK_ABS_ROOT,
 		.fopen = elysian_port_fs_disk_fopen, 
 		.fsize = elysian_port_fs_disk_fsize,
 		.fseek = elysian_port_fs_disk_fseek,
@@ -271,7 +271,7 @@ const elysian_fs_partition_t fs_partitions[] = {
 	},
 	{
 		.vrt_root = ELYSIAN_FS_WS_VRT_ROOT,
-		//.abs_root = ELYSIAN_FS_WS_ABS_ROOT,
+		.abs_root = ELYSIAN_FS_WS_ABS_ROOT,
 		.fopen = elysian_fs_ws_fopen, 
 		.fsize = elysian_fs_ws_fsize,
 		.fseek = elysian_fs_ws_fseek,
@@ -317,20 +317,38 @@ elysian_err_t elysian_fs_fopen(elysian_t* server, char* vrt_path, elysian_file_m
 	elysian_fs_partition_t* partition;
 	elysian_err_t err;
 	char* abs_path;
+	char* abs_sub_path;
+	uint32_t abs_path_len;
 	
-	ELYSIAN_LOG("Opening file '%s'..", vrt_path);
+	ELYSIAN_LOG("Opening virtual file '%s'..", vrt_path);
 	
 	ELYSIAN_ASSERT(mode == ELYSIAN_FILE_MODE_READ || mode == ELYSIAN_FILE_MODE_WRITE, "");
 	
-    
 	partition = elysian_fs_get_partition(vrt_path);
 	if(!partition){
-		ELYSIAN_LOG("Doen not belong to any partition..");
+		ELYSIAN_LOG("File does not exist, no matching partition found");
 		return ELYSIAN_ERR_NOTFOUND;
 	}
 	
-	abs_path = &vrt_path[strlen(partition->vrt_root)];
+	abs_sub_path = &vrt_path[strlen(partition->vrt_root)];
+	if(strcmp(partition->vrt_root, "") == 0) {
+		abs_path = abs_sub_path;
+	} else {
+		abs_path_len = strlen(partition->abs_root) + strlen(&vrt_path[strlen(partition->vrt_root)]);
+		abs_path = elysian_mem_malloc(server, abs_path_len + 1,  ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+		if (!abs_path) {
+			return ELYSIAN_ERR_POLL;
+		}
+		sprintf(abs_path, "%s%s", partition->abs_root, abs_sub_path);
+	}
+	
+	ELYSIAN_LOG("Opening absolute file '%s'..", abs_path);
+	
 	err = partition->fopen(server, abs_path, mode, file);
+	if(abs_path != abs_sub_path) {
+		elysian_mem_free(server, abs_path);
+	}
+	
 	if(err == ELYSIAN_ERR_OK){
 		file->partition = partition;
 		file->mode = mode;
@@ -453,13 +471,27 @@ elysian_err_t elysian_fs_fremove(elysian_t* server, char* vrt_path){
 	elysian_fs_partition_t* partition;
     elysian_err_t err;
 	char* abs_path;
+	char* abs_sub_path;
+	uint32_t abs_path_len;
 	
 	partition = elysian_fs_get_partition(vrt_path);
 	if(!partition){
 		return ELYSIAN_ERR_FATAL;
 	}
     
-	abs_path = &vrt_path[strlen(partition->vrt_root)];
+	abs_sub_path = &vrt_path[strlen(partition->vrt_root)];
+	if(strcmp(partition->vrt_root, "") == 0) {
+		abs_path = abs_sub_path;
+	} else {
+		abs_path_len = strlen(partition->abs_root) + strlen(&vrt_path[strlen(partition->vrt_root)]);
+		abs_path = elysian_mem_malloc(server, abs_path_len + 1,  ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+		if (!abs_path) {
+			return ELYSIAN_ERR_POLL;
+		}
+		sprintf(abs_path, "%s%s", partition->abs_root, abs_sub_path);
+	}
+	
+	//abs_path = &vrt_path[strlen(partition->vrt_root)];
 	err = partition->fremove(server, abs_path);
     return err;
 }

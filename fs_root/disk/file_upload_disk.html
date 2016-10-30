@@ -31,16 +31,36 @@
 
 <div id="page_el_description">
 	<div id="page_el_description_header">
-	File download
+	File upload
 	</div>
-	Download a virtual huge file. Can be used on stress and Quality-of-Service tests.
+	
+	Due to configuration, the maximum upload size is <%=attr_max_upload_size%> Kbytes. <br/>
+	If you wish to upload files of bigger size, update ELYSIAN_MAX_UPLOAD_SIZE_KB and ELYSIAN_MAX_MEMORY_USAGE_KB options. <br/>
 </div>
 
 <div id="page_el_main">
-	<div id="page_el_main_results">
-		<a href="<%=attr_huge_file_path%>">Virtual huge file</a>
+	<div class="page_el_form">
+		<form action="file_upload_disk_controller" method="post" enctype="multipart/form-data">
+			<div class="page_el_form_label">Sample parameter #1:</div>
+			<div class="page_el_form_input">
+				<input type="text" name="param1" value="Sample data #1">
+			</div>
+			
+			<div class="page_el_form_label">Sample file #1:</div>
+			<input type="file" name="file1">
+			
+			<div class="page_el_form_label">&nbsp;</div>
+			<input type="submit" value="Submit!">
+		</form>
 	</div>
+	
+	<div id="page_el_main_results">
+		<%=attr_uploaded_file_size%>
+		<%=attr_uploaded_file_data%>
+	</div>
+
 </div>
+
 
 <div id="page_el_footer">
 &copy;2016 Elysian Web Server | All right reserved
