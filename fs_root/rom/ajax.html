@@ -3,6 +3,42 @@
 <head>
 <title>Elysian HTTP Server</title>
 <link rel="stylesheet" type="text/css" href="../../fs_root/rom/css.css">
+
+	<script>
+		var mem_data = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+		function graph_func(data_y) {
+			var c = document.getElementById("myCanvas");
+			var ctx = c.getContext("2d");
+
+			// Make it visually fill the positioned parent
+			c.style.width ='100%';
+			c.style.height='100%';
+			// ...then set the internal size to match
+			c.width  = c.offsetWidth;
+			c.height = c.offsetHeight;
+  
+			var max_y = 10000;
+			//var data_y = [0,50,20,90,100,50,70,10,30,50,88,34,24,34,45,12,13,15,67,78,45,34,12,12,43,34,45,56,34,34,45,34,12,34,45,12,19,56,67,89];
+			var dx = (c.width / (data_y.length - 1));
+
+			ctx.setLineDash([5,2]);
+			
+			ctx .beginPath();
+			ctx .lineWidth = "1";
+			ctx .moveTo(dx * 0, c.height - (c.height * data_y[0]/ max_y));
+			
+			for (i = 1; i < data_y.length; i++) { 
+				ctx .lineTo(dx * i, c.height - (c.height * data_y[i]/ max_y));
+			}
+			
+			ctx .stroke();
+			
+			ctx.font="20px"
+			ctx.fillText("100%",0, c.height - (c.height * 100/ max_y) + 20);
+			ctx.fillText("0%",0, c.height - (c.height * 0 / max_y));
+		};
+	</script>
+	
 </head>
 <body>
 
@@ -31,7 +67,7 @@
 
 <div id="page_el_description">
 	<div id="page_el_description_header">
-	AJAX web technologies
+	AJAX web technology
 	</div>
 	Below is the RAM usage of Elysian Web Server, updated every 500ms.<br>
 	To see it changing, open a seperate Web Browser and browse Elysian.
@@ -40,6 +76,10 @@
 <div id="page_el_main">
 	<div id="page_el_main_results">
 		<div id="ajax_result"></div>
+	</div>
+	
+	<div id="page_el_main_graph">
+		<canvas id="myCanvas" width="600" height="100"></canvas>
 	</div>
 </div>
 
@@ -59,7 +99,14 @@ function ajax_send_http_request() {
   }
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-      document.getElementById("ajax_result").innerHTML = this.responseText;
+      document.getElementById("ajax_result").innerHTML = "Instant RAM usage is <b>" + this.responseText + "</b> bytes." //this.responseText;
+	  
+		for (i = mem_data.length - 1; i > 0; i--) { 
+			mem_data[i] = mem_data[i-1];
+		}
+	  //var data = [parseInt(this.responseText),500,200,900,1000];
+	  mem_data[0] = parseInt(this.responseText);
+	  graph_func(mem_data);
     }
   };
   xhttp.open("GET", "http://localhost:9000/../../fs_root/rom/ajax_controller", true);

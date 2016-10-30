@@ -126,6 +126,17 @@ div#page_el_main_results  {
 	text-align:center;
 }
 
+div#page_el_main_graph  {
+	width:60%;
+	margin-top:30px;
+	margin-left:auto;
+	margin-right:auto;
+	border-style:dotted;
+	border-width:1px;
+	border-color: gray;
+	text-align:center;
+}
+
 div#page_el_footer  {
 	font-size:90%;
 	position: absolute;

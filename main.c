@@ -443,7 +443,8 @@ elysian_err_t controller_ajax(elysian_t* server){
     }
 	elysian_fs_fclose(server, &ajax_file);
 
-	elysian_sprintf(buffer, "[Timestamp %u] RAM usage is <b>%u</b> bytes.", elysian_time_now(), elysian_mem_usage());
+	//elysian_sprintf(buffer, "[Timestamp %u] RAM usage is <b>%u</b> bytes.", elysian_time_now(), elysian_mem_usage());
+	elysian_sprintf(buffer, "%u", elysian_mem_usage());
 	err = elysian_mvc_attribute_set(server, "ajax_attr", buffer);
     if(err != ELYSIAN_ERR_OK){ 
 		elysian_fs_fremove(server, ajax_file_name);

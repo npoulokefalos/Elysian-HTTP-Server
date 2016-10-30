@@ -69,7 +69,7 @@
 /*
 ** Specify the maximum amount of memory that the Web Server is going to work with.
 */
-#define ELYSIAN_MAX_MEMORY_USAGE_KB	    			(8)
+#define ELYSIAN_MAX_MEMORY_USAGE_KB	    			(10)
 
 /*
 ** Specify the maximum file size (in Kbytes) that can be uploaded from the HTTP client
