@@ -1186,9 +1186,8 @@ void elysian_state_http_keepalive(elysian_t* server, elysian_schdlr_ev_t ev){
         }break;
         case elysian_schdlr_EV_ABORT:
         {
-			/*
-			** Ignore any abort signals, we should cleanup before exiting
-			*/
+			elysian_schdlr_state_set(server, elysian_state_http_disconnect);
+			return;
         }break;
         default:
         {

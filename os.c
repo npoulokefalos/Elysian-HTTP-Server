@@ -493,6 +493,10 @@ elysian_err_t elysian_fs_fremove(elysian_t* server, char* vrt_path){
 	
 	//abs_path = &vrt_path[strlen(partition->vrt_root)];
 	err = partition->fremove(server, abs_path);
+	if(abs_path != abs_sub_path) {
+		elysian_mem_free(server, abs_path);
+	}
+	
     return err;
 }
 

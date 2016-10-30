@@ -24,13 +24,13 @@
 ** Specify how often the Web Server thread is going to suspend itself to ensure that other threads with same priority 
 ** are not starving. This is to protect from wrong priority assignments..
 */
-#define ELYSIAN_YIELD_INTERVAL_MS  (33)
+#define ELYSIAN_YIELD_INTERVAL_MS  	(33)
 
 /*
 ** The maximum interval that is not so big to be perceived 
 ** as sluggish by humans and not unnecessairy small either.
 */
-#define ELYSIAN_MAGIC_INTERVAL_MS	(333)
+#define ELYSIAN_333_INTERVAL_MS		(333)
 
 #define ELYSIAN_STARVATION_ENABLED	(1)
 
@@ -80,11 +80,7 @@ void elysian_schdlr_throw_event(elysian_t* server, elysian_schdlr_task_t* task, 
 			schdlr->current_task = NULL;
         }
     }
-	
-	if(ev == elysian_schdlr_EV_ABORT){
-		ELYSIAN_ASSERT(task->state == NULL, "");
-	}
-    
+
     /* Not an error but its a good practice to set a timeout.. */
     ELYSIAN_ASSERT(task->timeout_delta != ELYSIAN_TIME_INFINITE, "");
 }
@@ -404,7 +400,7 @@ void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 					** There is memory to process socket events, but no event received yet. 
 					** Backoff and retry.
 					*/
-					uint32_t ELYSIAN_POLLING_INTERVAL_MS = ELYSIAN_MAGIC_INTERVAL_MS;
+					uint32_t ELYSIAN_POLLING_INTERVAL_MS = ELYSIAN_333_INTERVAL_MS;
 					backoff_ms = (backoff_ms == 0) ? 1 : backoff_ms * 2;
 					backoff_ms = (backoff_ms >  (interval_ms - elapsed_ms)) ? (interval_ms - elapsed_ms) : backoff_ms;
 					backoff_ms = (backoff_ms > ELYSIAN_POLLING_INTERVAL_MS) ? ELYSIAN_POLLING_INTERVAL_MS : backoff_ms;
@@ -503,7 +499,10 @@ void elysian_schdlr_exec_immediate_events(elysian_t* server, uint32_t* max_sleep
 		starvation_detected = 0;
 		if (server->starvation_detection_t0 == ELYSIAN_TIME_INFINITE) {
 			server->starvation_detection_t0 = elysian_time_now();
-		} else if(elysian_schdlr_elapsed_time(server->starvation_detection_t0) > ELYSIAN_MAGIC_INTERVAL_MS) {
+		} else if(elysian_schdlr_elapsed_time(server->starvation_detection_t0) > ELYSIAN_333_INTERVAL_MS) {
+			/*
+			** Srarvation detected, try to recover and initialize starvation detection procedure from the beginning
+			*/
 			server->starvation_detection_t0 = ELYSIAN_TIME_INFINITE;
 			starvation_detected = 1;
 		}
@@ -516,25 +515,29 @@ void elysian_schdlr_exec_immediate_events(elysian_t* server, uint32_t* max_sleep
 		task = elysian_schdlr_get_lowest_priority_task(server);
 		ELYSIAN_ASSERT(task != NULL, "");
 		elysian_schdlr_throw_event(server, task, elysian_schdlr_EV_ABORT);
-		ELYSIAN_ASSERT(task->state == NULL, "");
-
-		// Before task->prev -> task -> task->next
-		// After task->prev -> task->next
-		task->prev->next = task->next;
-		task->next->prev = task->prev;
-		
-		elysian_mem_free(server, task);
-		
-		/*
-		** Brake this condition
-		*/
-		task = schdlr->tasks.next;
-		while(task != &schdlr->tasks){
-			if((task->poll_delta != ELYSIAN_TIME_INFINITE) && (task->poll_delta != 0)){
-				task->poll_delta = 0;
-			}
-			task = task->next;;
-        } 
+		if (task->state == NULL) {
+			/*
+			** Client aborted, remove the task
+			*/
+			
+			// Before task->prev -> task -> task->next
+			// After task->prev -> task->next
+			task->prev->next = task->next;
+			task->next->prev = task->prev;
+			
+			elysian_mem_free(server, task);
+			
+			/*
+			** Enable fast polling for all polling tasks
+			*/
+			task = schdlr->tasks.next;
+			while(task != &schdlr->tasks){
+				if(task->poll_delta != ELYSIAN_TIME_INFINITE){
+					task->poll_delta = 0;
+				}
+				task = task->next;;
+			} 
+		}
 	}
 #endif
 	
@@ -679,7 +682,7 @@ void elysian_schdlr_state_poll_backoff(elysian_t* server){
 	ELYSIAN_ASSERT(task != NULL, "");
 	ELYSIAN_ASSERT(task->poll_delta_init != ELYSIAN_TIME_INFINITE, "");
 	
-#define MAX_POLL_BACKOFF (ELYSIAN_MAGIC_INTERVAL_MS)
+#define MAX_POLL_BACKOFF (ELYSIAN_333_INTERVAL_MS)
 	new_delta = ((task->poll_delta_init == 0) ? 1 : (((task->poll_delta_init) < (MAX_POLL_BACKOFF / 2)) ? (task->poll_delta_init * 2) : (MAX_POLL_BACKOFF)));
 	
 	ELYSIAN_LOG("POLL DELTA %u -> %u", schdlr->current_task->poll_delta_init, new_delta);
@@ -784,10 +787,9 @@ void elysian_schdlr_stop(elysian_t* server){
 			** Throw an ABORT event
 			*/
 			elysian_schdlr_throw_event(server, task, elysian_schdlr_EV_ABORT);
-			ELYSIAN_ASSERT(task->state == NULL, "");
 			
 			if(!task->state){
-			 continue;
+				continue;
 			}
         }
         task = next_task;
