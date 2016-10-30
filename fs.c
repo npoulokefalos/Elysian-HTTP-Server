@@ -47,7 +47,7 @@ elysian_err_t elysian_fs_ram_fopen(elysian_t* server, char* abs_path, elysian_fi
 	elysian_err_t err;
     elysian_fs_ram_file_t* fs_ram_file;
 
-	ELYSIAN_LOG("Opening RAM file with name %s", abs_path);
+	ELYSIAN_LOG("Opening RAM file with name %s, mode is %u", abs_path, mode);
     
 	/*
 	* Findout if file exists
@@ -63,6 +63,7 @@ elysian_err_t elysian_fs_ram_fopen(elysian_t* server, char* abs_path, elysian_fi
 	if(mode == ELYSIAN_FILE_MODE_READ){
 		
 		if(fs_ram_file == &fs_ram_files){
+			ELYSIAN_LOG("Not found!\r\n");
 			return ELYSIAN_ERR_NOTFOUND;
 		}
 		

@@ -55,7 +55,7 @@ void elysian_state_http_keepalive(elysian_t* server, elysian_schdlr_ev_t ev);
 void elysian_state_http_disconnect(elysian_t* server, elysian_schdlr_ev_t ev);
 
 
-void elysian_client_cleanup(elysian_t* server);
+elysian_err_t elysian_client_cleanup(elysian_t* server);
 
 
 
@@ -303,6 +303,7 @@ void elysian_state_http_request_headers_store(elysian_t* server, elysian_schdlr_
 					return;
                     break;
                 default:
+					ELYSIAN_LOG("err was %u",err);
                     ELYSIAN_ASSERT(0, "");
                     break;
             };
@@ -1144,12 +1145,32 @@ void elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev)
 
 void elysian_state_http_keepalive(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_err_t err;
+	
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
     switch(ev){
         case elysian_schdlr_EV_ENTRY:
         {           
-            elysian_client_cleanup(server);
+            elysian_schdlr_state_timeout_set(server, 10000);
+            elysian_schdlr_state_poll_enable(server);
+            elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_HIGH);
+        }break;
+        case elysian_schdlr_EV_READ:
+        {
+        }break;
+        case elysian_schdlr_EV_POLL:
+        {
+			/*
+			** Never exit unless we free up all the resources ?
+			*/
+			elysian_schdlr_state_timeout_reset(server);
+			
+			err = elysian_client_cleanup(server);
+			if (err != ELYSIAN_ERR_OK) {
+				ELYSIAN_LOG("Cleanup failed!");
+				return;
+			}
 			
             /*
             ** This cb should be called after client_cleanup() to make sure
@@ -1162,16 +1183,12 @@ void elysian_state_http_keepalive(elysian_t* server, elysian_schdlr_ev_t ev){
 
             elysian_schdlr_state_set(server, elysian_state_http_request_headers_receive);
 			return;
-            
-        }break;
-        case elysian_schdlr_EV_READ:
-        {
-        }break;
-        case elysian_schdlr_EV_POLL:
-        {
         }break;
         case elysian_schdlr_EV_ABORT:
         {
+			/*
+			** Ignore any abort signals, we should cleanup before exiting
+			*/
         }break;
         default:
         {
@@ -1182,12 +1199,31 @@ void elysian_state_http_keepalive(elysian_t* server, elysian_schdlr_ev_t ev){
 
 void elysian_state_http_disconnect(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_err_t err;
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
     switch(ev){
         case elysian_schdlr_EV_ENTRY:
         {
-            elysian_client_cleanup(server);
+            elysian_schdlr_state_timeout_set(server, 10000);
+            elysian_schdlr_state_poll_enable(server);
+            elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_HIGH);
+        }break;
+        case elysian_schdlr_EV_READ:
+        {
+        }break;
+        case elysian_schdlr_EV_POLL:
+        {
+			/*
+			** Never exit unless we free up all the resources ?
+			*/
+			elysian_schdlr_state_timeout_reset(server);
+			
+			err = elysian_client_cleanup(server);
+			if (err != ELYSIAN_ERR_OK) {
+				ELYSIAN_LOG("Cleanup failed!");
+				return;
+			}
 			
             /*
             ** This cb should be called after client_cleanup() to make sure
@@ -1202,18 +1238,15 @@ void elysian_state_http_disconnect(elysian_t* server, elysian_schdlr_ev_t ev){
 				elysian_cbuf_list_free(server, client->rcv_cbuf_list );
 				client->rcv_cbuf_list  = NULL;
 			}
- 
+			
             elysian_schdlr_state_set(server, NULL);
             return;
         }break;
-        case elysian_schdlr_EV_READ:
-        {
-        }break;
-        case elysian_schdlr_EV_POLL:
-        {
-        }break;
         case elysian_schdlr_EV_ABORT:
         {
+			/*
+			** Ignore any abort signals, we should cleanup before exiting
+			*/
         }break;
         default:
         {
@@ -1222,8 +1255,9 @@ void elysian_state_http_disconnect(elysian_t* server, elysian_schdlr_ev_t ev){
     };
 }
 
-void elysian_client_cleanup(elysian_t* server){
+elysian_err_t elysian_client_cleanup(elysian_t* server){
     elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_err_t err = ELYSIAN_ERR_OK;
 	
     /*
     ** Clear mvc
@@ -1269,7 +1303,10 @@ void elysian_client_cleanup(elysian_t* server){
             ELYSIAN_LOG("Closing headers file..");
 			elysian_fs_fclose(server, &client->httpreq.headers_file);
 		}
-		elysian_fs_fremove(server, client->httpreq.headers_filename);
+		err = elysian_fs_fremove(server, client->httpreq.headers_filename);
+		if(err != ELYSIAN_ERR_OK) {
+			return err;
+		}
 		strcpy(client->httpreq.headers_filename, "");
 	}
     
@@ -1279,8 +1316,13 @@ void elysian_client_cleanup(elysian_t* server){
 			elysian_fs_fclose(server, &client->httpreq.body_file);
 		}
 		elysian_fs_fremove(server, client->httpreq.body_filename);
+		if(err != ELYSIAN_ERR_OK) {
+			return err;
+		}
 		strcpy(client->httpreq.body_filename, "");
 	}
+	
+	return ELYSIAN_ERR_OK;
 }
 
 /* ---------------------------------------------------------------------------------------------------- */
