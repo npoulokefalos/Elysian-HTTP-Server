@@ -3,6 +3,7 @@
 	padding: 0px;
 	font-family: Arial, serif;
 	font-size:15px;
+	background-color:rgb(250,250,250);
 }
 
 div#page_el_header {
@@ -17,31 +18,39 @@ div#page_el_header {
 
 div#page_el_header h1{
 	color: white;
+	background-color:black;
 	font-size:200%;
 }
 
 div#page_el_header h3{
 	color: white;
+	background-color:black;
 	font-size:90%;
 	font-weight: normal;
 }
 
 div#page_el_menu {
-	background-color:gray;
+	border-top-style:solid;
+	border-top-width:1px;
+	border-top-color:white;
+	background-color:rgb(85,85,85);
 	padding-top:5px;
 	padding-bottom:5px;
 }
 
 div.page_el_menu_item {
+	background-color:rgb(85,85,85);
 	padding-right:10px;
 	float:left;
 	border-right-style:solid;
 	border-right-width:1px;
+	border-right-color:rgb(25,25,25);
 	padding-left:10px;
 	padding-right:10px;
 }
 
 div.page_el_menu_item a{
+	background-color:rgb(85,85,85);
 	color: white;
 	text-decoration:none;
 }
