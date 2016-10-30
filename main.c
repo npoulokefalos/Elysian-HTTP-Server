@@ -303,9 +303,10 @@ elysian_err_t controller_file_upload(elysian_t* server){
         return err;
     }
 	
-	if (strcmp(requested_url, ELYSIAN_FS_ROM_VRT_ROOT"/file_upload.html") == 0) {
+	if (strcmp(requested_url, ELYSIAN_FS_ROM_VRT_ROOT"/file_upload_controller") == 0) {
 		err = elysian_mvc_set_view(server, ELYSIAN_FS_ROM_VRT_ROOT"/file_upload.html");
 	} else {
+		// requested URL was "file_upload_disk_controller"
 		err = elysian_mvc_set_view(server, ELYSIAN_FS_DISK_VRT_ROOT"/file_upload_disk.html");
 	}
 

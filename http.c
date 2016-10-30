@@ -130,10 +130,10 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 		*/
 		char* barrier;
 		ELYSIAN_LOG("Partial request is '%s'", header_value_tmp);
-		barrier = strstr(header_value_tmp, "=");
+		barrier = elysian_strstr(header_value_tmp, "=");
 		if(barrier){
 			header_value_tmp = barrier + 1;
-			barrier = strstr(header_value_tmp, "-");
+			barrier = elysian_strstr(header_value_tmp, "-");
 			if(barrier){
 				*barrier = '\0';
                 if(strlen(header_value_tmp)){
@@ -213,7 +213,7 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 			*/
             ELYSIAN_LOG("MULTIPART!");
             client->httpreq.content_type = ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA;
-			multipart_boundary = strstr(header_value, "boundary=");
+			multipart_boundary = elysian_strcasestr(header_value, "boundary=");
 			if(!multipart_boundary) {
 				err = ELYSIAN_ERR_FATAL;
 				goto handle_error;
@@ -941,7 +941,7 @@ elysian_err_t elysian_http_authenticate(elysian_t* server){
     }
 	ELYSIAN_LOG("recved decoded auth value = '%s'", user_pass_decoded);
 	username = user_pass_decoded;
-	password = strstr(user_pass_decoded, ":");
+	password = elysian_strstr(user_pass_decoded, ":");
 	if(!password){
 		elysian_mem_free(server, header_value);
 		elysian_mem_free(server, user_pass_decoded);

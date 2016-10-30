@@ -251,7 +251,7 @@ elysian_err_t elysian_resource_read_dynamic(elysian_t* server, uint8_t* read_buf
 			if(priv->sbuf[priv->sbuf_index0] == prefix[0]){
 				if(memcmp(&priv->sbuf[priv->sbuf_index0], prefix, prefix_len) == 0){
 					shift_and_fill_sbuf(server, file, priv);
-					suffix_ptr = strstr((char*) &priv->sbuf[priv->sbuf_index0 + prefix_len], suffix);
+					suffix_ptr = elysian_strstr((char*) &priv->sbuf[priv->sbuf_index0 + prefix_len], suffix);
 					if(suffix_ptr){
 						/*
 						** {prefix}{attribute_name}{suffix} detected

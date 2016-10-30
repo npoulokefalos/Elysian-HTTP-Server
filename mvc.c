@@ -960,7 +960,7 @@ elysian_err_t elysian_mvc_read_req_params(elysian_t* server){
 		/* get the name */
 		if(client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA){
 			int i = 0;
-			char* name = strstr(param_header, "name=\"");
+			char* name = elysian_strcasestr(param_header, "name=\"");
 			if(name){
 				name += strlen("name=\"");
 				while(name[i] !='"'){

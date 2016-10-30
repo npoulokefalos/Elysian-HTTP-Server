@@ -190,6 +190,33 @@ elysian_err_t elysian_int2str(int32_t int_var, char* buf, uint32_t buf_size){
 	return err;
 }
 
+int elysian_strcasecmp(char *a, char *b) {
+    char c = -1;
+    while(*a) {
+        c = toupper(*a) - toupper(*b);
+        if( c != 0 ) {
+            return(c);
+		}
+        a++;
+        b++;
+    }
+    return(c);
+}
+
+char* elysian_strcasestr(char *haystack, char *needle) {
+    while (*haystack) {
+        if (elysian_strcasecmp(needle, haystack) == 0) {
+			return haystack;
+		}
+        haystack++;
+    }
+    return NULL;
+}
+
+char* elysian_strstr(char *haystack, char *needle) {
+    return strstr(haystack, needle);
+}
+
 int elysian_snprintf(char* buf, uint32_t buf_size, const char* format, va_list valist){
     char* str_var;
     int int_var;
