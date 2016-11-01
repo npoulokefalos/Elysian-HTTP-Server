@@ -5,7 +5,7 @@
 <link rel="stylesheet" type="text/css" href="../../fs_root/rom/css.css">
 
 	<script>
-		var mem_data = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+		var mem_data = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
 		function graph_func(data_y) {
 			var c = document.getElementById("myCanvas");
 			var ctx = c.getContext("2d");
@@ -90,15 +90,17 @@ setInterval(ajax_send_http_request, interval);
 
 function ajax_send_http_request() {
   var xhttp;
-  if (window.XMLHttpRequest) {
+ // if (window.XMLHttpRequest) {
     // code for modern browsers
-    xhttp = new XMLHttpRequest();
-    } else {
+ //   xhttp = new XMLHttpRequest();
+  //  } else {
     // code for IE6, IE5
-    xhttp = new ActiveXObject("Microsoft.XMLHTTP");
-  }
+  //  xhttp = new ActiveXObject("Microsoft.XMLHTTP");
+ // }
+  xhttp = new(this.XMLHttpRequest || ActiveXObject)('MSXML2.XMLHTTP.3.0');
   xhttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
+	//alert('status ' + this.status)
+    if (this.readyState > 3) {
       document.getElementById("ajax_result").innerHTML = "Instant RAM usage is <b>" + this.responseText + "</b> bytes." //this.responseText;
 	  
 		for (i = mem_data.length - 1; i > 0; i--) { 

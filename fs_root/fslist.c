@@ -9,7 +9,6 @@ const elysian_file_rom_t rom_fs[] = {
 	{.name = (char*) "/form_get.html", .ptr = (uint8_t*) data_form_get_html, .size = sizeof(data_form_get_html)},
 	{.name = (char*) "/form_post.html", .ptr = (uint8_t*) data_form_post_html, .size = sizeof(data_form_post_html)},
 	{.name = (char*) "/gallery.html", .ptr = (uint8_t*) data_gallery_html, .size = sizeof(data_gallery_html)},
-	{.name = (char*) "/graphs.html", .ptr = (uint8_t*) data_graphs_html, .size = sizeof(data_graphs_html)},
 	{.name = (char*) "/images/img1.jpg", .ptr = (uint8_t*) data_images_img1_jpg, .size = sizeof(data_images_img1_jpg)},
 	{.name = (char*) "/images/img2.jpg", .ptr = (uint8_t*) data_images_img2_jpg, .size = sizeof(data_images_img2_jpg)},
 	{.name = (char*) "/images/img3.jpg", .ptr = (uint8_t*) data_images_img3_jpg, .size = sizeof(data_images_img3_jpg)},
