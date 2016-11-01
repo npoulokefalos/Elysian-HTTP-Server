@@ -11,7 +11,8 @@ SOURCE_C = \
 	fs.c \
 	stats.c \
 	strings_file.c \
-	strings.c
+	strings.c \
+	isp.c
 
 UNAME := $(shell uname)
 FLAGS=
