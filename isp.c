@@ -90,7 +90,7 @@ elysian_err_t elysian_isp_multipart(elysian_t* server, elysian_cbuf_t** cbuf_lis
 						} else {
 							param->next = args->params;
 							args->params = param;
-							///////////args->params->header_index = args->index + 2;
+							//args->params->header_index = args->index + 2;
 							
 							cbuf = client->rcv_cbuf_list;
 							*cbuf_list_in = cbuf->next;
@@ -107,29 +107,43 @@ elysian_err_t elysian_isp_multipart(elysian_t* server, elysian_cbuf_t** cbuf_lis
 				if (cbuf_len < 4) {
 					return ELYSIAN_ERR_READ;
 				}
+				uint32_t header_index = args->index;
 				index = elysian_cbuf_strstr(*cbuf_list_in, 0, "\r\n\r\n", 1);
 				if (index == ELYSIAN_INDEX_OOB32) {
 					return ELYSIAN_ERR_READ;
 				} else {
-					param = elysian_mem_malloc(server, sizeof(elysian_req_param_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
-					if (!param) {
-						return ELYSIAN_ERR_POLL;
+					rechain_size = 4;
+					err = elysian_cbuf_rechain(server, cbuf_list_in, rechain_size);
+					if (err != ELYSIAN_ERR_OK) {
+						elysian_mem_free(server, param);
+						return err;
 					} else {
-						rechain_size = 4;
-						err = elysian_cbuf_rechain(server, cbuf_list_in, rechain_size);
-						if (err != ELYSIAN_ERR_OK) {
-							elysian_mem_free(server, param);
-							return err;
+						args->params->data_index = args->index + 4;
+						
+						index = elysian_cbuf_strstr(*cbuf_list_in, 0, "name=\"", 0);
+						if (index == ELYSIAN_INDEX_OOB32) {
+							return ELYSIAN_ERR_FATAL;
 						} else {
-							args->params->data_index = args->index + 4;
-							
-							cbuf = client->rcv_cbuf_list;
-							*cbuf_list_in = cbuf->next;
-							cbuf->next = NULL;
-							elysian_cbuf_list_append(cbuf_list_out, cbuf);
-							args->index += (index + rechain_size);
-							args->state = 1;
+							index = elysian_cbuf_strstr(*cbuf_list_in, 6, "\"", 0);
+							if (index == ELYSIAN_INDEX_OOB32) {
+								return ELYSIAN_ERR_FATAL;
+							} else {
+								args->params->name = elysian_mem_malloc(server, index, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+								if(!param->name){
+									return ELYSIAN_ERR_POLL;
+								} else {
+									elysian_cbuf_strget(*cbuf_list_in, 6, args->params->name, index);
+									args->params->name[index] = '\0';
+									ELYSIAN_LOG("This is part NAME: %s", args->params->name);
+								}
+							}
 						}
+						cbuf = client->rcv_cbuf_list;
+						*cbuf_list_in = cbuf->next;
+						cbuf->next = NULL;
+						elysian_cbuf_list_append(cbuf_list_out, cbuf);
+						args->index += (index + rechain_size);
+						args->state = 1;
 					}
 				}
 			} break;	

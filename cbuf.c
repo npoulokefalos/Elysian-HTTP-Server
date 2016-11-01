@@ -198,7 +198,6 @@ elysian_err_t elysian_cbuf_rechain(elysian_t* server, elysian_cbuf_t** cbuf_list
 	return ELYSIAN_ERR_OK;
 }
 
-#if 0
 void elysian_cbuf_strget(elysian_cbuf_t* cbuf, uint32_t cbuf_index, char* buf, uint32_t buf_len){
     uint32_t copy_size;
     uint32_t buf_index;
@@ -225,6 +224,7 @@ void elysian_cbuf_strget(elysian_cbuf_t* cbuf, uint32_t cbuf_index, char* buf, u
     }
 }
 
+#if 0
 uint8_t elysian_cbuf_strcmp(elysian_cbuf_t* cbuf, uint32_t index, char* str, uint8_t matchCase){
 	unsigned char c1;
 	unsigned char c2;
