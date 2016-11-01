@@ -428,7 +428,7 @@ elysian_err_t controller_ajax(elysian_t* server){
 	}
 	
 	elysian_fs_finit(server, &ajax_file);
-	elysian_sprintf(ajax_file_name, "%s%u%s", ELYSIAN_FS_RAM_VRT_ROOT"/ajax_file_", ajax_file_id++, ".html");
+	elysian_sprintf(ajax_file_name, "%s%u%s", ELYSIAN_FS_RAM_VRT_ROOT"/ajax_file_", ajax_file_id++, ".text");
 	err = elysian_fs_fopen(server, ajax_file_name, ELYSIAN_FILE_MODE_WRITE, &ajax_file);
 	if(err != ELYSIAN_ERR_OK){ 
 		elysian_mem_free(server, ajax_file_name);

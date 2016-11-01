@@ -37,10 +37,43 @@
 			ctx.fillText("100%",0, c.height - (c.height * 100/ max_y) + 20);
 			ctx.fillText("0%",0, c.height - (c.height * 0 / max_y));
 		};
+		
+		var interval = 500; // msec
+		setInterval(ajax_send_http_request, interval);
+
+		function ajax_send_http_request() {
+		  var xhttp;
+		 // if (window.XMLHttpRequest) {
+			// code for modern browsers
+		 //   xhttp = new XMLHttpRequest();
+		  //  } else {
+			// code for IE6, IE5
+		  //  xhttp = new ActiveXObject("Microsoft.XMLHTTP");
+		 // }
+		  xhttp = new(this.XMLHttpRequest || ActiveXObject)('MSXML2.XMLHTTP.3.0');
+		
+		  xhttp.onreadystatechange = function() {
+			//alert('status ' + this.status)
+			if (this.readyState > 3) {
+				var response = this.responseText;
+				
+			  document.getElementById("ajax_result").innerHTML = "Instant RAM usage is <b>" + response + "</b> bytes." //this.responseText;
+			  
+				for (i = mem_data.length - 1; i > 0; i--) { 
+					mem_data[i] = mem_data[i-1];
+				}
+			  //var data = [parseInt(this.responseText),500,200,900,1000];
+			  mem_data[0] = parseInt(response);
+			  graph_func(mem_data);
+			}
+		  };
+		  xhttp.open("GET", "http://localhost:9000/../../fs_root/rom/ajax_controller", true);
+		  xhttp.send();
+		}
 	</script>
 	
 </head>
-<body>
+<body onload="ajax_send_http_request()">
 
 <div id="page_el_header">
 	<h1>Elysian Web Server</h1>
@@ -85,35 +118,12 @@
 
 
 <script>
-var interval = 500; // msec
-setInterval(ajax_send_http_request, interval);
 
-function ajax_send_http_request() {
-  var xhttp;
- // if (window.XMLHttpRequest) {
-    // code for modern browsers
- //   xhttp = new XMLHttpRequest();
-  //  } else {
-    // code for IE6, IE5
-  //  xhttp = new ActiveXObject("Microsoft.XMLHTTP");
- // }
-  xhttp = new(this.XMLHttpRequest || ActiveXObject)('MSXML2.XMLHTTP.3.0');
-  xhttp.onreadystatechange = function() {
-	//alert('status ' + this.status)
-    if (this.readyState > 3) {
-      document.getElementById("ajax_result").innerHTML = "Instant RAM usage is <b>" + this.responseText + "</b> bytes." //this.responseText;
-	  
-		for (i = mem_data.length - 1; i > 0; i--) { 
-			mem_data[i] = mem_data[i-1];
-		}
-	  //var data = [parseInt(this.responseText),500,200,900,1000];
-	  mem_data[0] = parseInt(this.responseText);
-	  graph_func(mem_data);
-    }
-  };
-  xhttp.open("GET", "http://localhost:9000/../../fs_root/rom/ajax_controller", true);
-  xhttp.send();
-}
+
+
+
+
+
 </script>
 
 
