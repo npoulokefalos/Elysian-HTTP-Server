@@ -1,12 +1,26 @@
 #include "elysian.h"
 
-
 typedef struct elysian_isp_multipart_t elysian_isp_multipart_t;
 struct elysian_isp_multipart_t{
 	uint8_t state;
 	uint32_t index;
 	elysian_req_param_t* params;
 };
+
+typedef struct elysian_isp_raw_t elysian_isp_raw_t;
+struct elysian_isp_raw_t{
+	uint8_t state;
+	uint32_t index;
+};
+
+typedef struct elysian_isp_raw_multipart_t elysian_isp_raw_multipart_t;
+struct elysian_isp_raw_multipart_t{
+	elysian_isp_raw_t raw;
+	elysian_isp_multipart_t multipart;
+};
+
+
+
 
 elysian_err_t elysian_isp_multipart(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, void* vargs, uint8_t end_of_stream) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
@@ -157,4 +171,65 @@ elysian_err_t elysian_isp_multipart(elysian_t* server, elysian_cbuf_t** cbuf_lis
 			} break;	
 		}
 	}
+}
+
+elysian_err_t elysian_isp_raw(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, void* vargs, uint8_t end_of_stream) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_isp_raw_t * args = (elysian_isp_raw_t*) vargs;
+	elysian_cbuf_t* cbuf_list_out_tmp;
+	uint32_t split_size;
+	uint32_t cbuf_len;
+	elysian_err_t err;
+	while(1) {
+		cbuf_len = elysian_cbuf_list_len(*cbuf_list_in);
+		switch(args->state){
+			case 1: /* Receiving HTTP body */
+			{
+				split_size = client->httpreq.body_len - args->index;
+				if (split_size > cbuf_len) {
+					split_size = cbuf_len;
+				}
+				err = elysian_cbuf_list_split(server, cbuf_list_in, split_size, &cbuf_list_out_tmp);
+				if (err != ELYSIAN_ERR_OK) {
+					return err;
+				} else {
+					elysian_cbuf_list_append(cbuf_list_out, cbuf_list_out_tmp);
+					args->index += split_size;
+					if (args->index == client->httpreq.body_len) {
+						args->state = 2;
+					} else {
+						return ELYSIAN_ERR_READ;
+					}
+				}
+			} break;
+			case 2: /* HTTP body received */
+			{
+				return ELYSIAN_ERR_OK;
+			} break;	
+		}
+	}
+}
+
+
+elysian_err_t elysian_isp_raw_multipart(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, void* vargs, uint8_t end_of_stream) {
+	elysian_isp_raw_multipart_t * args = (elysian_isp_raw_multipart_t*) vargs;
+	elysian_err_t err;
+	
+	err = elysian_isp_raw(server, cbuf_list_in, cbuf_list_out, &args->raw, 0);
+	switch(err){
+		case ELYSIAN_ERR_READ:
+		{
+			// Stream not exchausted
+			err = elysian_isp_multipart(server, cbuf_list_in, cbuf_list_out, &args->multipart, 0);
+		}break;
+		case ELYSIAN_ERR_OK:
+		{
+			// End-of-stream detected
+			err = elysian_isp_multipart(server, cbuf_list_in, cbuf_list_out, &args->multipart, 1);
+		}break;
+		default:
+		{
+		}break;
+	}
+	return err;
 }
