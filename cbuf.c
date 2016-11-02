@@ -74,15 +74,14 @@ uint32_t elysian_cbuf_list_len(elysian_cbuf_t* cbuf_list){
 	return len;
 }
 
-#if 0
-elysian_err_t elysian_cbuf_list_split(elysian_cbuf_t** cbuf_list0, uint32_t size, elysian_cbuf_t** cbuf_list1){
+elysian_err_t elysian_cbuf_list_split(elysian_t* server, elysian_cbuf_t** cbuf_list0, uint32_t size, elysian_cbuf_t** cbuf_list1){
 	elysian_cbuf_t* cbuf;
 	elysian_cbuf_t* cbuf_next;
 	elysian_err_t err;
 	
 	ELYSIAN_ASSERT(*cbuf_list1 == NULL, "");
 	
-	err = elysian_cbuf_rechain(cbuf_list0, size);
+	err = elysian_cbuf_rechain(server, cbuf_list0, size);
 	if(err != ELYSIAN_ERR_OK){
 		return err;
 	}
@@ -108,7 +107,6 @@ elysian_err_t elysian_cbuf_list_split(elysian_cbuf_t** cbuf_list0, uint32_t size
 
 	ELYSIAN_ASSERT(0, "");
 }
-#endif
 
 #if 0
 elysian_cbuf_t* elysian_cbuf_chain(elysian_cbuf_t* cbuf0, elysian_cbuf_t* cbuf1){

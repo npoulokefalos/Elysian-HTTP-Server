@@ -67,7 +67,7 @@ void elysian_cbuf_free(elysian_t* server, elysian_cbuf_t* cbuf);
 void elysian_cbuf_list_append(elysian_cbuf_t** cbuf_list, elysian_cbuf_t* cbuf_new);
 void elysian_cbuf_list_free(elysian_t* server, elysian_cbuf_t* cbuf_list);
 uint32_t elysian_cbuf_list_len(elysian_cbuf_t* cbuf_list);
-elysian_err_t elysian_cbuf_list_split(elysian_cbuf_t** cbuf_list0, uint32_t size, elysian_cbuf_t** cbuf_list1);
+elysian_err_t elysian_cbuf_list_split(elysian_t* server, elysian_cbuf_t** cbuf_list0, uint32_t size, elysian_cbuf_t** cbuf_list1);
 elysian_err_t elysian_cbuf_rechain(elysian_t* server, elysian_cbuf_t** cbuf_list, uint32_t size);
 void elysian_cbuf_strget(elysian_cbuf_t* cbuf, uint32_t cbuf_index, char* buf, uint32_t buf_len);
 uint8_t elysian_cbuf_strcmp(elysian_cbuf_t* cbuf, uint32_t index, char* str, uint8_t matchCase);
