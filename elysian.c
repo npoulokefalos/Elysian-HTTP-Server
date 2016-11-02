@@ -166,7 +166,12 @@ void elysian_state_http_request_headers_receive(elysian_t* server, elysian_schdl
     };
 }
 
-elysian_err_t elysian_store_cbuf_to_file(elysian_t* server, uint32_t* store_size, uint8_t is_http_headers){
+/*
+** Return ELYSIAN_ERR_OK only when the whole client->store_cbuf_list has been stored to the
+** file (client->store_cbuf_list_size becomes 0), and the file has been closed and reopened
+** in READ mode.
+*/
+elysian_err_t elysian_store_cbuf_to_file(elysian_t* server, uint8_t is_http_headers){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_cbuf_t* cbuf;
     elysian_file_t* file;
@@ -185,77 +190,65 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server, uint32_t* store_size
         filename = client->httpreq.body_filename;
 		controller = elysian_mvc_controller_get(server, client->httpreq.url, client->httpreq.method);
 		if((controller) && (controller->flags & ELYSIAN_MVC_CONTROLLER_FLAG_SAVE_TO_DISK)) {
-			 ELYSIAN_LOG("))))))))))))))))))))))))))))))))))))))))))) Body file will be saved in disk!");
 			filename_template = ELYSIAN_FS_DISK_VRT_ROOT"/b_%u";
 		} else {
 			filename_template = ELYSIAN_FS_RAM_VRT_ROOT"/b_%u";
 		}
     }
-    
-    if(elysian_fs_fisopened(server, file) || strlen(filename) == 0){
-        /*
-        ** File has not been fully created.
-        */
-        if(!elysian_fs_fisopened(server, file)){
-            elysian_sprintf(filename, filename_template, client->id);
-            ELYSIAN_ASSERT(strlen(filename) < sizeof(client->httpreq.headers_filename), "");
-            err = elysian_fs_fopen(server, filename, ELYSIAN_FILE_MODE_WRITE, file);
-            if(err != ELYSIAN_ERR_OK){
-                strcpy(filename, "");
-                return err;
-            }
-        }
-                    
-        ELYSIAN_LOG("writting cbuf chain..");
-        while(client->rcv_cbuf_list){
-            ELYSIAN_LOG("writting cbuf..");
-            if(client->rcv_cbuf_list->len > *store_size){
-                err = elysian_cbuf_rechain(server, &client->rcv_cbuf_list, *store_size);
-                if(err != ELYSIAN_ERR_OK){
-                    return err;
-                }
-            }
-            
-            cbuf = client->rcv_cbuf_list;
 
-            ELYSIAN_ASSERT(cbuf->len <= *store_size, "");
-            
-            err = elysian_fs_fwrite(server, file, &cbuf->data[client->rcv_cbuf_list_offset0],  cbuf->len - client->rcv_cbuf_list_offset0, &actual_write_sz);
-            if(err != ELYSIAN_ERR_OK){
-                return err;
-            }
-            if(!actual_write_sz){
-                return ELYSIAN_ERR_POLL;
-            }
-            client->rcv_cbuf_list_offset0 += actual_write_sz;
-            if(client->rcv_cbuf_list_offset0 == cbuf->len){  
-                client->rcv_cbuf_list = cbuf->next;
-                elysian_cbuf_free(server, cbuf);
-                client->rcv_cbuf_list_offset0 = 0;
-            }
-            *store_size -= actual_write_sz;
-            if(*store_size == 0){
-                elysian_fs_fclose(server, file);
-                goto reopen_file;
-            }
-        }
-        
-        return ELYSIAN_ERR_READ;
-    }
-    
-    reopen_file:
-        
-        /*
-        ** File has been created and closed, we need to reopen it in read mode.
-        ** [ (!elysian_fs_fisopened(file) && strlen(filename) ]
-        */
-        err = elysian_fs_fopen(server, filename, ELYSIAN_FILE_MODE_READ, file);
-        if(err != ELYSIAN_ERR_OK){
-            return err;
-        }
-        
-        ELYSIAN_LOG("File reopened for read!");
-        return ELYSIAN_ERR_OK;
+	while (1) {
+		if (!elysian_fs_fisopened(server, file)) {
+			if (strlen(filename) == 0) {
+				/*
+				** File not yet created
+				*/
+				elysian_sprintf(filename, filename_template, client->id);
+				ELYSIAN_ASSERT(strlen(filename) < sizeof(client->httpreq.headers_filename), "");
+				err = elysian_fs_fopen(server, filename, ELYSIAN_FILE_MODE_WRITE, file);
+				if(err != ELYSIAN_ERR_OK){
+					strcpy(filename, "");
+					return err;
+				}
+			} else {
+				/*
+				** File created, completely written and closed.
+				** We need to open it in read mode.
+				*/
+				err = elysian_fs_fopen(server, filename, ELYSIAN_FILE_MODE_READ, file);
+				return err;
+			}
+		} else {
+			/*
+			** File is opened, continue writting
+			*/
+			ELYSIAN_LOG("writting cbuf chain..");
+			while(client->store_cbuf_list){
+				ELYSIAN_LOG("writting cbuf..");
+				cbuf = client->store_cbuf_list;
+
+				err = elysian_fs_fwrite(server, file, &cbuf->data[client->store_cbuf_list_offset],  cbuf->len - client->store_cbuf_list_offset, &actual_write_sz);
+				if(err != ELYSIAN_ERR_OK){
+					return err;
+				}
+				
+				client->store_cbuf_list_offset += actual_write_sz;
+				if(client->store_cbuf_list_offset == cbuf->len){  
+					client->store_cbuf_list = cbuf->next;
+					elysian_cbuf_free(server, cbuf);
+					client->store_cbuf_list_offset = 0;
+				}
+				client->store_cbuf_list_size -= actual_write_sz;
+			}
+			if (client->store_cbuf_list_size == 0) {
+				/*
+				** The whore range was stored, close the file
+				*/
+				ELYSIAN_ASSERT(client->store_cbuf_list == NULL, "");
+				ELYSIAN_ASSERT(client->store_cbuf_list_offset == 0, "");
+				elysian_fs_fclose(server, file);
+			}
+		}
+	}
 }
 
 void elysian_state_http_request_headers_store(elysian_t* server, elysian_schdlr_ev_t ev){
@@ -270,8 +263,8 @@ void elysian_state_http_request_headers_store(elysian_t* server, elysian_schdlr_
         {
             elysian_schdlr_state_timeout_set(server, 4000);
             elysian_schdlr_state_poll_enable(server);
-            client->rcv_cbuf_list_offset0 = 0;
-            client->rcv_cbuf_list_offset1 = client->httpreq.headers_len;
+            client->store_cbuf_list_offset = 0;
+            client->store_cbuf_list_size = client->httpreq.headers_len;
         }break;
         case elysian_schdlr_EV_READ:
         {
@@ -282,31 +275,55 @@ void elysian_state_http_request_headers_store(elysian_t* server, elysian_schdlr_
         }break;
         case elysian_schdlr_EV_POLL:
         {
-            err = elysian_store_cbuf_to_file(server, &client->rcv_cbuf_list_offset1, 1);
-            switch(err){
-                case ELYSIAN_ERR_OK:
-                    elysian_schdlr_state_set(server, elysian_state_http_request_headers_parse);
-					return;
-                    break;
-                case ELYSIAN_ERR_POLL:
-                    elysian_schdlr_state_poll_backoff(server);
-					return;
-                    break;
-                case ELYSIAN_ERR_READ:
-                    /*
-                    ** Disable POLL, wait READ
-                    */
-                    elysian_schdlr_state_poll_disable(server);
-                    break;
-                case ELYSIAN_ERR_FATAL:
-                    elysian_schdlr_state_set(server, elysian_state_fatal_error_entry);
-					return;
-                    break;
-                default:
-					ELYSIAN_LOG("err was %u",err);
-                    ELYSIAN_ASSERT(0, "");
-                    break;
-            };
+			if (client->store_cbuf_list == NULL) {
+				err = elysian_cbuf_list_split(&client->rcv_cbuf_list, client->httpreq.headers_len, &client->store_cbuf_list);
+				switch(err){
+					case ELYSIAN_ERR_OK:
+						client->store_cbuf_list_offset = 0;
+						client->store_cbuf_list_size = client->httpreq.headers_len;
+						elysian_schdlr_state_poll_enable(server);
+						return;
+						break;
+					case ELYSIAN_ERR_POLL:
+						elysian_schdlr_state_poll_backoff(server);
+						return;
+						break;
+					case ELYSIAN_ERR_FATAL:
+						elysian_schdlr_state_set(server, elysian_state_fatal_error_entry);
+						return;
+						break;
+					default:
+						ELYSIAN_LOG("err was %u",err);
+						ELYSIAN_ASSERT(0, "");
+						break;
+				};
+			} else {
+				err = elysian_store_cbuf_to_file(server, 1);
+				switch(err){
+					case ELYSIAN_ERR_OK:
+						elysian_schdlr_state_set(server, elysian_state_http_request_headers_parse);
+						return;
+						break;
+					case ELYSIAN_ERR_POLL:
+						elysian_schdlr_state_poll_backoff(server);
+						return;
+						break;
+					case ELYSIAN_ERR_READ:
+						/*
+						** Disable POLL, wait READ
+						*/
+						elysian_schdlr_state_poll_disable(server);
+						break;
+					case ELYSIAN_ERR_FATAL:
+						elysian_schdlr_state_set(server, elysian_state_fatal_error_entry);
+						return;
+						break;
+					default:
+						ELYSIAN_LOG("err was %u",err);
+						ELYSIAN_ASSERT(0, "");
+						break;
+				};
+			}
         }break;
         case elysian_schdlr_EV_ABORT:
         {
@@ -449,18 +466,15 @@ void elysian_state_http_request_body_receive(elysian_t* server, elysian_schdlr_e
         {
             elysian_schdlr_state_timeout_set(server, 4000);
 			elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_LOW);
-  
-            client->rcv_cbuf_list_offset0 = 0;
-            client->rcv_cbuf_list_offset1 = client->httpreq.body_len;
-            
+#if 1
 			/*
-			** If we don't expect any body, authenticate immediatelly
+			** Suppose we expect infinity bytes, until the input stream 
+			** processor identifies the exact number
 			*/
-			if(!client->httpreq.body_len){
-				elysian_schdlr_state_set(server, elysian_state_http_request_authenticate);
-				return;
-			}
-            //client->httpreq.cbuf_list_store_size = client->httpreq.body_len;
+			client->store_cbuf_list = NULL;
+			client->store_cbuf_list_offset = 0;
+            client->store_cbuf_list_size = -1;
+			
             /*
             ** Don't break and continue to the READ event, asking a POLL
 			** to open the file and store the already received data.
@@ -478,7 +492,37 @@ void elysian_state_http_request_body_receive(elysian_t* server, elysian_schdlr_e
         }break;
         case elysian_schdlr_EV_POLL:
         {
-            err = elysian_store_cbuf_to_file(server, &client->rcv_cbuf_list_offset1, 0);
+			err = client->isp(server, &client->rcv_cbuf_list, &client->store_cbuf_list);
+			switch(err){
+                case ELYSIAN_ERR_OK:
+					/*
+					** We have received the whole body, set the correct remaining store size
+					*/
+					client->store_cbuf_list_size = elysian_cbuf_list_len(&client->store_cbuf_list);
+					break;
+				case ELYSIAN_ERR_READ:
+					if(client->rcv_body_cbuf_list == NULL) {
+						/*
+						** Input stream processor needs more data, disable POLL, wait READ
+						*/
+						elysian_schdlr_state_poll_disable(server);
+					}
+                    break;
+                case ELYSIAN_ERR_POLL:
+                    elysian_schdlr_state_poll_backoff(server);
+					return;
+                    break;
+                case ELYSIAN_ERR_FATAL:
+                    elysian_schdlr_state_set(server, elysian_state_fatal_error_entry);
+					return;
+                    break;
+                default:
+                    ELYSIAN_ASSERT(0, "");
+                    break;
+            };
+			
+			
+			err = elysian_store_cbuf_to_file(server, 1);
             switch(err){
                 case ELYSIAN_ERR_OK:
                     elysian_schdlr_state_set(server, elysian_state_http_request_authenticate);
@@ -488,17 +532,12 @@ void elysian_state_http_request_body_receive(elysian_t* server, elysian_schdlr_e
                     elysian_schdlr_state_poll_backoff(server);
 					return;
                     break;
-                case ELYSIAN_ERR_READ:
-                    /*
-                    ** Disable POLL, wait READ
-                    */
-                    elysian_schdlr_state_poll_disable(server);
-                    break;
                 case ELYSIAN_ERR_FATAL:
                     elysian_schdlr_state_set(server, elysian_state_fatal_error_entry);
 					return;
                     break;
                 default:
+					ELYSIAN_LOG("err was %u",err);
                     ELYSIAN_ASSERT(0, "");
                     break;
             };
