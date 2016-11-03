@@ -101,13 +101,16 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
         goto handle_error;
     }
 	if(!header_value){
-
+		client->httpreq.transfer_encoding = ELYSIAN_HTTP_TRANSFER_ENCODING_RAW;
     }else{
 		if(strcmp(header_value, "chunked") == 0){
-			/* We don not support chunked HTTP requests */
 			ELYSIAN_LOG("Chunked Request!");
-			elysian_mem_free(server, header_value);
-			goto handle_error;
+			client->httpreq.transfer_encoding = ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED;
+		} else {
+			/*
+			** Unknown encoding
+			*/
+			client->httpreq.transfer_encoding = ELYSIAN_HTTP_TRANSFER_ENCODING_NA;
 		}
 		elysian_mem_free(server, header_value);
 	}

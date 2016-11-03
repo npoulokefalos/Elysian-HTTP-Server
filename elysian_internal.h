@@ -534,6 +534,12 @@ typedef enum{
     ELYSIAN_HTTP_CONTENT_TYPE_NA,
 }elysian_http_content_type_t;
 
+typedef enum{
+	ELYSIAN_HTTP_TRANSFER_ENCODING_RAW,
+    ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED,
+    ELYSIAN_HTTP_TRANSFER_ENCODING_NA
+}elysian_http_transfer_encoding_t;
+
 #if 0
 typedef struct elysian_httpreq_param_t elysian_httpreq_param_t;
 struct elysian_httpreq_param_t{
@@ -553,8 +559,8 @@ struct elysian_httpreq_t{
 	char* multipart_boundary;
 	elysian_http_method_e method;
     elysian_http_content_type_t content_type;
+	elysian_http_transfer_encoding_t transfer_encoding;
     uint8_t expect_status_code;
-	
     uint16_t headers_len;
     uint32_t body_len;
     
@@ -649,6 +655,10 @@ struct elysian_isp_chunked_t{
 	uint32_t chunkSz;
 	uint32_t chunkSzProcessed;
 };
+
+elysian_err_t elysian_isp_http_headers(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
+elysian_err_t elysian_isp_http_body_raw_multipart(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
+elysian_err_t elysian_isp_http_body_raw(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
 
 #if 0
 typedef struct elysian_isp_raw_multipart_t elysian_isp_raw_multipart_t;
