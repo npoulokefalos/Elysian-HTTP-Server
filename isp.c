@@ -28,6 +28,7 @@ elysian_err_t elysian_isp_http_headers(elysian_t* server, elysian_cbuf_t** cbuf_
 							return ELYSIAN_ERR_READ;
 						}
 					} else {
+						cbuf_list_out_tmp = NULL;
 						err = elysian_cbuf_list_split(server, cbuf_list_in, index + 4, &cbuf_list_out_tmp);
 						if (err != ELYSIAN_ERR_OK) {
 							return err;
@@ -367,15 +368,18 @@ elysian_err_t elysian_isp_http_body_raw(elysian_t* server, elysian_cbuf_t** cbuf
 	uint32_t split_size;
 	uint32_t cbuf_list_in_len;
 	elysian_err_t err;
+	
 	while(1) {
 		cbuf_list_in_len = elysian_cbuf_list_len(*cbuf_list_in);
+		ELYSIAN_LOG("[RAW BODY ISP, len = %u]", cbuf_list_in_len);
 		switch(args->state){
-			case 1: /* Receiving HTTP body */
+			case 0: /* Receiving HTTP body */
 			{
 				split_size = client->httpreq.body_len - args->index;
 				if (split_size > cbuf_list_in_len) {
 					split_size = cbuf_list_in_len;
 				}
+				cbuf_list_out_tmp = NULL;
 				err = elysian_cbuf_list_split(server, cbuf_list_in, split_size, &cbuf_list_out_tmp);
 				if (err != ELYSIAN_ERR_OK) {
 					return err;
@@ -383,14 +387,17 @@ elysian_err_t elysian_isp_http_body_raw(elysian_t* server, elysian_cbuf_t** cbuf
 					elysian_cbuf_list_append(cbuf_list_out, cbuf_list_out_tmp);
 					args->index += split_size;
 					if (args->index == client->httpreq.body_len) {
-						args->state = 2;
+						ELYSIAN_LOG("[ISP_FINISHED]");
+						args->state = 1;
 					} else {
 						return ELYSIAN_ERR_READ;
 					}
 				}
+
 			} break;
-			case 2: /* HTTP body received  */
+			case 1: /* HTTP body received  */
 			{
+				ELYSIAN_LOG("[ISP ELYSIAN_ERR_OK]");
 				return ELYSIAN_ERR_OK;
 			} break;	
 		}

@@ -147,6 +147,7 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server){
 				** File created, completely written and closed.
 				** We need to open it in read mode.
 				*/
+				ELYSIAN_LOG("Openning file in read mode..");
 				err = elysian_fs_fopen(server, filename, ELYSIAN_FILE_MODE_READ, file);
 				return err;
 			}
@@ -178,8 +179,9 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server){
 				*/
 				ELYSIAN_ASSERT(client->store_cbuf_list == NULL, "");
 				ELYSIAN_ASSERT(client->store_cbuf_list_offset == 0, "");
+				ELYSIAN_LOG("File write completed, closing..");
 				elysian_fs_fclose(server, file);
-				return ELYSIAN_ERR_OK;
+				//continue and reopen file
 			} else {
 				return ELYSIAN_ERR_READ;
 			}
@@ -374,7 +376,8 @@ void elysian_state_http_request_body_receive(elysian_t* server, elysian_schdlr_e
 			
 			if (client->httpreq.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_RAW) {
 				if (client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA) {
-					client->isp.func = elysian_isp_http_body_raw_multipart;
+					//client->isp.func = elysian_isp_http_body_raw_multipart;
+					client->isp.func = elysian_isp_http_body_raw;
 				} else {
 					client->isp.func = elysian_isp_http_body_raw;
 				}
@@ -431,8 +434,8 @@ void elysian_state_http_request_headers_parse(elysian_t* server, elysian_schdlr_
             err = elysian_http_request_headers_parse(server);
             switch(err){
                 case ELYSIAN_ERR_OK:
-					ELYSIAN_LOG("Expect status code is %u\r\n", client->httpreq.expect_status_code);
 					if(client->httpreq.expect_status_code != ELYSIAN_HTTP_STATUS_CODE_NA){
+						ELYSIAN_LOG("Expect status code is %u\r\n", client->httpreq.expect_status_code);
 						elysian_schdlr_state_set(server, elysian_state_http_expect_reply);
 						return;
 					} else {

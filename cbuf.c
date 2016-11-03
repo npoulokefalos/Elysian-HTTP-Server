@@ -79,6 +79,10 @@ elysian_err_t elysian_cbuf_list_split(elysian_t* server, elysian_cbuf_t** cbuf_l
 	elysian_cbuf_t* cbuf_next;
 	elysian_err_t err;
 	
+	if(size == 0){
+        return ELYSIAN_ERR_OK;
+    }
+	
 	ELYSIAN_ASSERT(*cbuf_list1 == NULL, "");
 	
 	err = elysian_cbuf_rechain(server, cbuf_list0, size);
@@ -131,12 +135,12 @@ elysian_err_t elysian_cbuf_rechain(elysian_t* server, elysian_cbuf_t** cbuf_list
     elysian_cbuf_t* cbuf;
 	uint16_t alloc_sz1, alloc_sz2;
 	
-	ELYSIAN_ASSERT((*cbuf_list) != NULL, "");
-	
     if(size == 0){
         return ELYSIAN_ERR_OK;
     }
     
+	ELYSIAN_ASSERT((*cbuf_list) != NULL, "");
+	
     cbuf_prev = NULL;
     cbuf = *cbuf_list;
 	while(cbuf){
@@ -222,7 +226,7 @@ void elysian_cbuf_strget(elysian_cbuf_t* cbuf, uint32_t cbuf_index, char* buf, u
     }
 }
 
-#if 0
+#if 1
 uint8_t elysian_cbuf_strcmp(elysian_cbuf_t* cbuf, uint32_t index, char* str, uint8_t matchCase){
 	unsigned char c1;
 	unsigned char c2;
