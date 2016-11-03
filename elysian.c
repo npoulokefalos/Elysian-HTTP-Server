@@ -179,6 +179,9 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server){
 				ELYSIAN_ASSERT(client->store_cbuf_list == NULL, "");
 				ELYSIAN_ASSERT(client->store_cbuf_list_offset == 0, "");
 				elysian_fs_fclose(server, file);
+				return ELYSIAN_ERR_OK;
+			} else {
+				return ELYSIAN_ERR_READ;
 			}
 		}
 	}
@@ -278,6 +281,13 @@ void elysian_state_http_request_store(elysian_t* server, elysian_schdlr_ev_t ev)
                     break;
                 case ELYSIAN_ERR_POLL:
                     elysian_schdlr_state_poll_backoff(server);
+					return;
+                    break;
+				case ELYSIAN_ERR_READ:
+					/*
+					** Disable POLL, wait READ
+					*/
+                    elysian_schdlr_state_poll_disable(server);
 					return;
                     break;
                 case ELYSIAN_ERR_FATAL:
