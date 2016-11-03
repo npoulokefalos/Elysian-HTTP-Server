@@ -642,17 +642,37 @@ struct elysian_isp_raw_t{
 	uint32_t index;
 };
 
+typedef struct elysian_isp_chunked_t elysian_isp_chunked_t;
+struct elysian_isp_chunked_t{
+	uint8_t state;
+	uint32_t index;
+};
+
+#if 0
 typedef struct elysian_isp_raw_multipart_t elysian_isp_raw_multipart_t;
 struct elysian_isp_raw_multipart_t{
 	elysian_isp_raw_t raw;
 	elysian_isp_multipart_t multipart;
 };
 
+typedef struct elysian_isp_chunked_multipart_t elysian_isp_chunked_multipart_t;
+struct elysian_isp_chunked_multipart_t{
+	elysian_isp_raw_t raw;
+	elysian_isp_multipart_t multipart;
+};
+#endif
+
 /* 
 ** Client
 */
 
-
+typedef struct elysian_isp_t elysian_isp_t;
+struct elysian_isp_t{
+	elysian_isp_raw_t raw;
+	elysian_isp_chunked_t chunked;
+	elysian_isp_multipart_t multipart;
+	elysian_err_t (*func)(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
+};
 
 //typedef struct elysian_client_t elysian_client_t;
 struct elysian_client_t{
@@ -664,12 +684,7 @@ struct elysian_client_t{
 	*/
 	elysian_cbuf_t* rcv_cbuf_list;
 	
-	union {
-		elysian_isp_raw_t raw;
-		elysian_isp_raw_multipart_t raw_multipart;
-	}isp_args;
-  
-	elysian_err_t (*isp)(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, void* vargs, uint8_t end_of_stream);
+	elysian_isp_t isp;
   
 	/*
 	** Stream to be save into header/body file

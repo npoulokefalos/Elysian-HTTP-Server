@@ -495,7 +495,7 @@ void elysian_state_http_request_body_receive(elysian_t* server, elysian_schdlr_e
         }break;
         case elysian_schdlr_EV_POLL:
         {
-			err = client->isp(server, &client->rcv_cbuf_list, &client->store_cbuf_list, client->isp_args, 0);
+			err = client->isp.func(server, &client->rcv_cbuf_list, &client->store_cbuf_list, 0);
 			switch(err){
                 case ELYSIAN_ERR_OK:
 					/*
