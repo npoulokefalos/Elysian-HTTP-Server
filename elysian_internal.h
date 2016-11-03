@@ -646,6 +646,8 @@ typedef struct elysian_isp_chunked_t elysian_isp_chunked_t;
 struct elysian_isp_chunked_t{
 	uint8_t state;
 	uint32_t index;
+	uint32_t chunkSz;
+	uint32_t chunkSzProcessed;
 };
 
 #if 0

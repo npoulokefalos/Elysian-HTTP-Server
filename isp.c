@@ -1,9 +1,199 @@
 #include "elysian.h"
 
+elysian_err_t elysian_isp_raw(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_isp_raw_t * args = &client->isp.raw;
+	elysian_cbuf_t* cbuf_list_out_tmp;
+	uint32_t split_size;
+	uint32_t cbuf_list_in_len;
+	elysian_err_t err;
+	while(1) {
+		cbuf_list_in_len = elysian_cbuf_list_len(*cbuf_list_in);
+		switch(args->state){
+			case 1: /* Receiving HTTP body */
+			{
+				split_size = client->httpreq.body_len - args->index;
+				if (split_size > cbuf_list_in_len) {
+					split_size = cbuf_list_in_len;
+				}
+				err = elysian_cbuf_list_split(server, cbuf_list_in, split_size, &cbuf_list_out_tmp);
+				if (err != ELYSIAN_ERR_OK) {
+					return err;
+				} else {
+					elysian_cbuf_list_append(cbuf_list_out, cbuf_list_out_tmp);
+					args->index += split_size;
+					if (args->index == client->httpreq.body_len) {
+						args->state = 2;
+					} else {
+						return ELYSIAN_ERR_READ;
+					}
+				}
+			} break;
+			case 2: /* HTTP body received  */
+			{
+				return ELYSIAN_ERR_OK;
+			} break;	
+		}
+	}
+}
 
-
-
-
+#if 0
+elysian_err_t elysian_isp_chunked(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, void* isp_args) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_isp_chunked_t* args = &client->isp.chunked;
+	elysian_cbuf_t* cbuf_list_out_tmp;
+	elysian_err_t err;
+	uint32_t cbuf_list_in_len;
+	uint32_t max_rechain_sz;
+	
+	while (1) {
+		if (*cbuf_list_in == NULL) {
+			/*
+			** No data to process
+			*/
+			return ELYSIAN_ERR_READ;
+		} else {
+			cbuf_list_in_len = elysian_cbuf_list_len(*cbuf_list_in);
+		}
+		switch (args->state) {
+			case 1: /* [hex chunk size]\r\n */
+			{
+				if (cbuf_list_in_len < 3) {
+					return ELYSIAN_ERR_READ;
+				}
+				index = elysian_cbuf_strstr(*cbuf_list_in, 0, "\r\n", 0);
+				if (index = ELYSIAN_INDEX_OOB32) {
+					if(elysian_cbuf_list_len(*cbuf_list_in) > 8 /* 0xffffffff */ + 2) {
+						return ELYSIAN_ERR_FATAL;
+					} else {
+						return ELYSIAN_ERR_READ;
+					}
+				} else {
+					if (index > 8) {
+						/*
+						** Invalid hex size
+						*/
+						return ELYSIAN_ERR_FATAL;
+					} else {
+						args->chunkSz = 0;//;...;
+						args->chunkSzProcessed = 0;
+						err = elysian_cbuf_split(server, cbuf_list_in, index + 2, cbuf_list_out);
+						if(err != ELYSIAN_ERR_OK) {
+							return err;
+						} else {
+							elysian_cbuf_list_free(server, *cbuf_list_in);
+							*cbuf_list_in = *cbuf_list_out;
+							if (args->chunkSz == 0) {
+								args->state = 4;
+							} else {
+								args->state = 2;
+							}
+						}
+					}
+				}
+			} break;
+			case 2: /* [chunk data] */
+			{
+				if (cbuf_list_in_len < 1) {
+					return ELYSIAN_ERR_READ;
+				}
+				max_rechain_sz = cbuf_list_in_len;
+				if (max_rechain_sz > args->chunkSz - args->chunkSzProcessed) {
+					max_rechain_sz = args->chunkSz - args->chunkSzProcessed;
+				}
+				err = elysian_cbuf_rechain(server, cbuf_list_in, max_rechain_sz, &cbuf_list_out_tmp);
+				if(err != ELYSIAN_ERR_OK) {
+					return err;
+				} else {
+					elysian_cbuf_list_append(cbuf_list_out, *cbuf_list_in); // extend valid data
+					*cbuf_list_in = cbuf_list_out_tmp; // still unprocessed
+					args->chunkSzProcessed -= max_rechain_sz;
+					if(args->chunkSzProcessed == args->chunkSz) {
+						args->state = 3;
+						break;
+					} else {
+						return ELYSIAN_ERR_READ; // still not finished
+					}
+				}
+			} break;
+			case 3: /* "\r\n" after [chunk data] */
+			{
+				if (cbuf_list_in_len < 2) {
+					return ELYSIAN_ERR_READ;
+				}
+				index = elysian_cbuf_strstr(*cbuf_list_in, 0, "\r\n", 0);
+				if (index != 0) {
+						return ELYSIAN_ERR_FATAL;
+				} else {
+					err = elysian_cbuf_rechain(server, cbuf_list_in, 2, &cbuf_list_out_tmp);
+					if(err != ELYSIAN_ERR_OK) {
+						return err;
+					} else {
+						elysian_cbuf_list_free(server, *cbuf_list_in);
+						*cbuf_list_in = cbuf_list_out_tmp; // still unprocessed
+						args->state = 1;
+					}
+				}
+			} break;
+			case 4: /* [\r\n] or [header0][\r\n]...[headerN][\r\n][\r\n]  */
+			{
+				if (cbuf_list_in_len < 2) {
+					return ELYSIAN_ERR_READ;
+				}
+				index = elysian_cbuf_strstr(*cbuf_list_in, 0, "\r\n", 0);
+				if (index = ELYSIAN_INDEX_OOB32) {
+					if(elysian_cbuf_list_len(*cbuf_list_in) > 200) {
+						/*
+						** "\r\n" was not found in the first 200 bytes of the trailing
+						** HTTP headers. Since it is highly unlikely for  a header to be
+						** that long, abort.
+						*/
+						return ELYSIAN_ERR_FATAL;
+					} else {
+						return ELYSIAN_ERR_READ;
+					}
+				} else {
+					if (index == 0) {
+						/*
+						** We are done
+						*/
+						err = elysian_cbuf_rechain(server, cbuf_list_in, 2, &cbuf_list_out_tmp);
+						if(err != ELYSIAN_ERR_OK) {
+							return err;
+						} else {
+							elysian_cbuf_list_free(server, *cbuf_list_in);
+							*cbuf_list_in = cbuf_list_out_tmp; // still unprocessed
+							args->state = 5;
+							return ELYSIAN_ERR_OK;
+						}
+					} else {
+						/*
+						** Get next header
+						*/
+						err = elysian_cbuf_rechain(server, cbuf_list_in, index + 2, cbuf_list_out_tmp);
+						if(err != ELYSIAN_ERR_OK) {
+							return err;
+						} else {
+							elysian_cbuf_list_free(server, *cbuf_list_in); // just ommit the header
+							*cbuf_list_in = *cbuf_list_out_tmp; // still unprocessed
+							break;
+						}
+					}
+				}
+			} break;
+			case 5: /* We have finished  */
+			{
+				return ELYSIAN_ERR_OK;
+			} break;
+		} // switch (args->state) {
+	} // while(1)
+		
+	/*
+	** Never reach here
+	*/
+	return ELYSIAN_ERR_FATAL;
+}
+#endif
 
 elysian_err_t elysian_isp_multipart(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
@@ -156,42 +346,7 @@ elysian_err_t elysian_isp_multipart(elysian_t* server, elysian_cbuf_t** cbuf_lis
 	}
 }
 
-elysian_err_t elysian_isp_raw(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream) {
-	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-	elysian_isp_raw_t * args = &client->isp.raw;
-	elysian_cbuf_t* cbuf_list_out_tmp;
-	uint32_t split_size;
-	uint32_t cbuf_len;
-	elysian_err_t err;
-	while(1) {
-		cbuf_len = elysian_cbuf_list_len(*cbuf_list_in);
-		switch(args->state){
-			case 1: /* Receiving HTTP body */
-			{
-				split_size = client->httpreq.body_len - args->index;
-				if (split_size > cbuf_len) {
-					split_size = cbuf_len;
-				}
-				err = elysian_cbuf_list_split(server, cbuf_list_in, split_size, &cbuf_list_out_tmp);
-				if (err != ELYSIAN_ERR_OK) {
-					return err;
-				} else {
-					elysian_cbuf_list_append(cbuf_list_out, cbuf_list_out_tmp);
-					args->index += split_size;
-					if (args->index == client->httpreq.body_len) {
-						args->state = 2;
-					} else {
-						return ELYSIAN_ERR_READ;
-					}
-				}
-			} break;
-			case 2: /* HTTP body received  */
-			{
-				return ELYSIAN_ERR_OK;
-			} break;	
-		}
-	}
-}
+
 
 
 elysian_err_t elysian_isp_raw_multipart(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream) {
