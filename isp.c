@@ -1,23 +1,6 @@
 #include "elysian.h"
 
-typedef struct elysian_isp_multipart_t elysian_isp_multipart_t;
-struct elysian_isp_multipart_t{
-	uint8_t state;
-	uint32_t index;
-	elysian_req_param_t* params;
-};
 
-typedef struct elysian_isp_raw_t elysian_isp_raw_t;
-struct elysian_isp_raw_t{
-	uint8_t state;
-	uint32_t index;
-};
-
-typedef struct elysian_isp_raw_multipart_t elysian_isp_raw_multipart_t;
-struct elysian_isp_raw_multipart_t{
-	elysian_isp_raw_t raw;
-	elysian_isp_multipart_t multipart;
-};
 
 
 

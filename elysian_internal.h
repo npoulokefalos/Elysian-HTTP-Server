@@ -626,6 +626,28 @@ struct elysian_httpresp_t{
 void elysian_set_fatal_http_status_code(elysian_t* server, elysian_http_status_code_e status_code);
 void elysian_set_http_status_code(elysian_t* server, elysian_http_status_code_e status_code);
 
+/*
+** ISP
+*/
+typedef struct elysian_isp_multipart_t elysian_isp_multipart_t;
+struct elysian_isp_multipart_t{
+	uint8_t state;
+	uint32_t index;
+	elysian_req_param_t* params;
+};
+
+typedef struct elysian_isp_raw_t elysian_isp_raw_t;
+struct elysian_isp_raw_t{
+	uint8_t state;
+	uint32_t index;
+};
+
+typedef struct elysian_isp_raw_multipart_t elysian_isp_raw_multipart_t;
+struct elysian_isp_raw_multipart_t{
+	elysian_isp_raw_t raw;
+	elysian_isp_multipart_t multipart;
+};
+
 /* 
 ** Client
 */
@@ -642,6 +664,13 @@ struct elysian_client_t{
 	*/
 	elysian_cbuf_t* rcv_cbuf_list;
 	
+	union {
+		elysian_isp_raw_t raw;
+		elysian_isp_raw_multipart_t raw_multipart;
+	}isp_args;
+  
+	elysian_err_t (*isp)(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, void* vargs, uint8_t end_of_stream);
+  
 	/*
 	** Stream to be save into header/body file
 	*/

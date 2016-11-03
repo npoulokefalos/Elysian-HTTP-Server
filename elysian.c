@@ -73,6 +73,7 @@ void elysian_state_http_connection_accepted(elysian_t* server, elysian_schdlr_ev
             client->id = ++client_unique_id;
             
 			client->rcv_cbuf_list = NULL;
+			client->store_cbuf_list = NULL;
 
             client->httpreq.url = NULL;
             client->httpreq.multipart_boundary = NULL;
@@ -113,6 +114,8 @@ void elysian_state_http_request_headers_receive(elysian_t* server, elysian_schdl
         {
             elysian_schdlr_state_timeout_set(server, 4000);
 			elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_LOW);
+			
+			ELYSIAN_ASSERT(client->store_cbuf_list == NULL, "");
 			
 			client->http_pipelining_enabled = 0;
 			client->httpresp.status_code = ELYSIAN_HTTP_STATUS_CODE_NA;
@@ -276,7 +279,7 @@ void elysian_state_http_request_headers_store(elysian_t* server, elysian_schdlr_
         case elysian_schdlr_EV_POLL:
         {
 			if (client->store_cbuf_list == NULL) {
-				err = elysian_cbuf_list_split(&client->rcv_cbuf_list, client->httpreq.headers_len, &client->store_cbuf_list);
+				err = elysian_cbuf_list_split(server, &client->rcv_cbuf_list, client->httpreq.headers_len, &client->store_cbuf_list);
 				switch(err){
 					case ELYSIAN_ERR_OK:
 						client->store_cbuf_list_offset = 0;
@@ -466,7 +469,7 @@ void elysian_state_http_request_body_receive(elysian_t* server, elysian_schdlr_e
         {
             elysian_schdlr_state_timeout_set(server, 4000);
 			elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_LOW);
-#if 1
+
 			/*
 			** Suppose we expect infinity bytes, until the input stream 
 			** processor identifies the exact number
@@ -492,16 +495,16 @@ void elysian_state_http_request_body_receive(elysian_t* server, elysian_schdlr_e
         }break;
         case elysian_schdlr_EV_POLL:
         {
-			err = client->isp(server, &client->rcv_cbuf_list, &client->store_cbuf_list);
+			err = client->isp(server, &client->rcv_cbuf_list, &client->store_cbuf_list, client->isp_args, 0);
 			switch(err){
                 case ELYSIAN_ERR_OK:
 					/*
 					** We have received the whole body, set the correct remaining store size
 					*/
-					client->store_cbuf_list_size = elysian_cbuf_list_len(&client->store_cbuf_list);
+					client->store_cbuf_list_size = elysian_cbuf_list_len(client->store_cbuf_list);
 					break;
 				case ELYSIAN_ERR_READ:
-					if(client->rcv_body_cbuf_list == NULL) {
+					if(client->store_cbuf_list == NULL) {
 						/*
 						** Input stream processor needs more data, disable POLL, wait READ
 						*/
@@ -1274,6 +1277,11 @@ void elysian_state_http_disconnect(elysian_t* server, elysian_schdlr_ev_t ev){
             
             if(client->rcv_cbuf_list){
 				elysian_cbuf_list_free(server, client->rcv_cbuf_list );
+				client->rcv_cbuf_list  = NULL;
+			}
+			
+			if(client->store_cbuf_list){
+				elysian_cbuf_list_free(server, client->store_cbuf_list );
 				client->rcv_cbuf_list  = NULL;
 			}
 			
