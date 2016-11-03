@@ -83,7 +83,8 @@ elysian_err_t elysian_cbuf_list_split(elysian_t* server, elysian_cbuf_t** cbuf_l
         return ELYSIAN_ERR_OK;
     }
 	
-	ELYSIAN_ASSERT(*cbuf_list1 == NULL, "");
+	ELYSIAN_ASSERT(*cbuf_list0 != NULL, "");
+	//ELYSIAN_ASSERT(*cbuf_list1 == NULL, "");
 	
 	err = elysian_cbuf_rechain(server, cbuf_list0, size);
 	if(err != ELYSIAN_ERR_OK){

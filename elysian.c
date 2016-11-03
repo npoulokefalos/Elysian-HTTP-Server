@@ -159,7 +159,7 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server){
 			while(client->store_cbuf_list){
 				ELYSIAN_LOG("writting cbuf..");
 				cbuf = client->store_cbuf_list;
-
+				ELYSIAN_LOG("Storring '%s'", &cbuf->data[client->store_cbuf_list_offset]);
 				err = elysian_fs_fwrite(server, file, &cbuf->data[client->store_cbuf_list_offset],  cbuf->len - client->store_cbuf_list_offset, &actual_write_sz);
 				if(err != ELYSIAN_ERR_OK){
 					return err;
@@ -173,6 +173,7 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server){
 				}
 				client->store_cbuf_list_size -= actual_write_sz;
 			}
+			ELYSIAN_LOG("store_cbuf_list_size is %u",client->store_cbuf_list_size);
 			if (client->store_cbuf_list_size == 0) {
 				/*
 				** The whore range was stored, close the file
@@ -238,6 +239,7 @@ void elysian_state_http_request_store(elysian_t* server, elysian_schdlr_ev_t ev)
 					** For HTTP body it is going to be happenning multiple times until we receive the body.
 					*/
 					client->store_cbuf_list_size = elysian_cbuf_list_len(client->store_cbuf_list);
+					ELYSIAN_LOG("ISP finished, remaining store size is %u", client->store_cbuf_list_size);
 					break;
 				case ELYSIAN_ERR_READ:
 					if(client->store_cbuf_list == NULL) {
@@ -264,6 +266,7 @@ void elysian_state_http_request_store(elysian_t* server, elysian_schdlr_ev_t ev)
                     break;
             };
 			
+			ELYSIAN_LOG("Trying to store..");
 			err = elysian_store_cbuf_to_file(server);
             switch(err){
                 case ELYSIAN_ERR_OK:
@@ -384,8 +387,9 @@ void elysian_state_http_request_body_receive(elysian_t* server, elysian_schdlr_e
 			} else if (client->httpreq.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED) {
 				if (client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA) {
 					//client->isp.func = elysian_isp_chunked_multipart;
+					client->isp.func = elysian_isp_http_body_chunked;
 				} else {
-					//client->isp.func = elysian_isp_chunked;
+					client->isp.func = elysian_isp_http_body_chunked;
 				}
 			} else {
 				elysian_schdlr_state_set(server, elysian_state_http_disconnect);

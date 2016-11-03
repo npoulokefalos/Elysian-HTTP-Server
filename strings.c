@@ -127,6 +127,53 @@ int elysian_strncmp(const char *str1, const char *str2, uint32_t n, uint8_t matc
 	return 0;
 }
 
+/**
+ * @brief   Converts a DEC integer to HEX string
+ * @return  0 on success, <0 on error
+ */
+int elysian_strhex2uint(char* hexstr, uint32_t* dec) {
+	uint8_t i;
+
+	*dec = 0;
+	
+	if((hexstr[0] == '0') && ((hexstr[1] == 'x') || (hexstr[1] == 'X'))){ hexstr += 2;}
+	
+	i = 0;
+	while(*hexstr){
+		if(*hexstr > 47 && *hexstr < 58){ 
+			/* 0 -> 9 */
+			*dec += (*hexstr - 48);
+		}else if(*hexstr > 64 && *hexstr < 71){ 
+			/* A -> F */
+			*dec += (*hexstr - 65 + 10);
+		}else if(*hexstr > 96 && *hexstr < 103){
+			/* a -> f */
+			*dec += (*hexstr - 97 + 10);
+		}else{
+			break;
+		}
+		
+		hexstr++;
+		if((*hexstr > 47 && *hexstr < 58) || (*hexstr > 64 && *hexstr < 71) || (*hexstr > 96 && *hexstr < 103)){
+			*dec <<= 4;
+		}
+		
+		if(++i == 9) {
+			/* Not a 32-bit integer */
+			*dec = 0;
+			return -1;
+		}
+	}
+	
+	if(!i) {
+		/* No digits found */
+		*dec = 0;
+		return -1;
+	}
+	
+	return 0;
+}
+
 elysian_err_t elysian_str2uint(char* buf, uint32_t* uint_var){
 	uint32_t uint_len = 0;
 	*uint_var = 0;

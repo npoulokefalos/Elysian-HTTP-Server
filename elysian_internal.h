@@ -659,7 +659,7 @@ struct elysian_isp_chunked_t{
 elysian_err_t elysian_isp_http_headers(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
 elysian_err_t elysian_isp_http_body_raw_multipart(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
 elysian_err_t elysian_isp_http_body_raw(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
-
+elysian_err_t elysian_isp_http_body_chunked(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
 #if 0
 typedef struct elysian_isp_raw_multipart_t elysian_isp_raw_multipart_t;
 struct elysian_isp_raw_multipart_t{
@@ -722,6 +722,6 @@ struct elysian_client_t{
 };
 
 
-
+int elysian_strhex2uint(char* hexstr, uint32_t* dec);
 
 #endif
