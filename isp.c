@@ -301,7 +301,7 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 				if (cbuf_len < 4) {
 					return ELYSIAN_ERR_READ;
 				}
-				uint32_t header_index = args->index;
+				//uint32_t header_index = args->index;
 				index = elysian_cbuf_strstr(*cbuf_list_in, 0, "\r\n\r\n", 1);
 				if (index == ELYSIAN_INDEX_OOB32) {
 					return ELYSIAN_ERR_READ;
@@ -401,17 +401,17 @@ elysian_err_t elysian_isp_raw_http_body_multipart(elysian_t* server, elysian_cbu
 	//elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	elysian_err_t err;
 	
-	err = elysian_isp_raw(server, cbuf_list_in, cbuf_list_out, 0);
+	err = elysian_isp_http_body_raw(server, cbuf_list_in, cbuf_list_out, 0);
 	switch(err){
 		case ELYSIAN_ERR_READ:
 		{
 			// Stream not exchausted
-			err = elysian_isp_multipart(server, cbuf_list_in, cbuf_list_out, 0);
+			err = elysian_isp_http_body_multipart(server, cbuf_list_in, cbuf_list_out, 0);
 		}break;
 		case ELYSIAN_ERR_OK:
 		{
 			// End-of-stream detected
-			err = elysian_isp_multipart(server, cbuf_list_in, cbuf_list_out, 1);
+			err = elysian_isp_http_body_multipart(server, cbuf_list_in, cbuf_list_out, 1);
 		}break;
 		default:
 		{

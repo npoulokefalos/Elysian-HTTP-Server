@@ -304,8 +304,6 @@ void elysian_state_http_request_store(elysian_t* server, elysian_schdlr_ev_t ev)
 
 void elysian_state_http_request_headers_receive(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    elysian_cbuf_t* cbuf;
-    elysian_err_t err;
     
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
@@ -351,8 +349,6 @@ void elysian_state_http_request_headers_receive(elysian_t* server, elysian_schdl
 
 void elysian_state_http_request_body_receive(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    elysian_cbuf_t* cbuf;
-    elysian_err_t err;
     
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
