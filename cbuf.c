@@ -74,6 +74,7 @@ uint32_t elysian_cbuf_list_len(elysian_cbuf_t* cbuf_list){
 	return len;
 }
 
+#if 1
 elysian_err_t elysian_cbuf_list_split(elysian_t* server, elysian_cbuf_t** cbuf_list0, uint32_t size, elysian_cbuf_t** cbuf_list1){
 	elysian_cbuf_t* cbuf;
 	elysian_cbuf_t* cbuf_next;

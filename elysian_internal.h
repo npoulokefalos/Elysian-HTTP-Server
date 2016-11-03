@@ -637,9 +637,17 @@ struct elysian_client_t{
     uint32_t id;
     elysian_socket_t socket;
     
+	/*
+	** Raw received stream
+	*/
 	elysian_cbuf_t* rcv_cbuf_list;
-    uint32_t rcv_cbuf_list_offset0;
-    uint32_t rcv_cbuf_list_offset1;
+	
+	/*
+	** Stream to be save into header/body file
+	*/
+	elysian_cbuf_t* store_cbuf_list;
+    uint32_t store_cbuf_list_offset;
+    uint32_t store_cbuf_list_size;
     
     elysian_httpreq_t httpreq;
     elysian_httpresp_t httpresp;

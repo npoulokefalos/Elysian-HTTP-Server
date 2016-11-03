@@ -202,7 +202,7 @@ elysian_err_t elysian_isp_raw(elysian_t* server, elysian_cbuf_t** cbuf_list_in, 
 					}
 				}
 			} break;
-			case 2: /* HTTP body received */
+			case 2: /* HTTP body received  */
 			{
 				return ELYSIAN_ERR_OK;
 			} break;	
