@@ -5,8 +5,9 @@
 <link rel="stylesheet" type="text/css" href="../../fs_root/rom/css.css">
 
 	<script>
-		var mem_data = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
-		function graph_func(data_y, max_y) {
+		var ram_usage_history = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+		function graph_func(data_y_history, data_y_max) {
+			
 			var c = document.getElementById("myCanvas");
 			var ctx = c.getContext("2d");
 
@@ -17,25 +18,22 @@
 			c.width  = c.offsetWidth;
 			c.height = c.offsetHeight;
   
-			//var max_y = 10000;
-			//var data_y = [0,50,20,90,100,50,70,10,30,50,88,34,24,34,45,12,13,15,67,78,45,34,12,12,43,34,45,56,34,34,45,34,12,34,45,12,19,56,67,89];
-			var dx = (c.width / (data_y.length - 1));
+			var dx = (c.width / (data_y_history.length - 1));
 
 			ctx.setLineDash([5,2]);
+			ctx.beginPath();
+			ctx.lineWidth = "1";
+			ctx.moveTo(dx * 0, c.height - (c.height * data_y_history[0]/ data_y_max));
 			
-			ctx .beginPath();
-			ctx .lineWidth = "1";
-			ctx .moveTo(dx * 0, c.height - (c.height * data_y[0]/ max_y));
-			
-			for (i = 1; i < data_y.length; i++) { 
-				ctx .lineTo(dx * i, c.height - (c.height * data_y[i]/ max_y));
+			for (i = 1; i < data_y_history.length; i++) { 
+				ctx.lineTo(dx * i, c.height - (c.height * data_y_history[i] / data_y_max));
 			}
 			
-			ctx .stroke();
+			ctx.stroke();
 			
 			ctx.font="20px"
-			ctx.fillText("100%",0, c.height - (c.height * 100/ max_y) + 20);
-			ctx.fillText("0%",0, c.height - (c.height * 0 / max_y));
+			ctx.fillText("100%",0, c.height - (c.height * 100/ data_y_max) + 20);
+			ctx.fillText("0%",0, c.height - (c.height * 0 / data_y_max));
 		};
 		
 		var interval = 500; // msec
@@ -43,31 +41,25 @@
 
 		function ajax_send_http_request() {
 		  var xhttp;
-		 // if (window.XMLHttpRequest) {
-			// code for modern browsers
-		 //   xhttp = new XMLHttpRequest();
-		  //  } else {
-			// code for IE6, IE5
-		  //  xhttp = new ActiveXObject("Microsoft.XMLHTTP");
-		 // }
 		  xhttp = new(this.XMLHttpRequest || ActiveXObject)('MSXML2.XMLHTTP.3.0');
-		
 		  xhttp.onreadystatechange = function() {
 			//alert('status ' + this.status)
 			if (this.readyState > 3) {
-				var response = this.responseText;
+				//var response = this.responseText;
+				var ajax_response_args = this.responseText.split(",");
+				ram_usage_instant = parseInt(ajax_response_args[0]);
+				total_ram = parseInt(ajax_response_args[1]);
+				//alert('status ' + ajax_response_args[0] + "-" + ajax_response_args[1]);
 				
-			 
-			  
-				for (i = mem_data.length - 1; i > 0; i--) { 
-					mem_data[i] = mem_data[i-1];
+				document.getElementById("ajax_result").innerHTML = "Instant RAM usage is <b>" + ram_usage_instant +"</b> bytes (" + Math.round((ram_usage_instant * 100) / total_ram) + "%).";
+				
+				for (i = ram_usage_history.length - 1; i > 0; i--) { 
+					ram_usage_history[i] = ram_usage_history[i-1];
 				}
-			  //var data = [parseInt(this.responseText),500,200,900,1000];
-			  
-			  var ajax_response_args = response.split(",");
-			  mem_data[0] = parseInt(ajax_response_args[0]);
-			  document.getElementById("ajax_result").innerHTML = "Instant RAM usage is <b>" + parseInt(ajax_response_args[0]) + "</b> bytes (" + Math.round((parseInt(ajax_response_args[0]) * 100) / parseInt(ajax_response_args[1])) + "%).";
-			  graph_func(mem_data, parseInt(ajax_response_args[1]));
+				
+				ram_usage_history[0] = ram_usage_instant;
+			
+				graph_func(ram_usage_history, total_ram);
 			}
 		  };
 		  xhttp.open("GET", "/fs_root/rom/ajax_controller", true);
