@@ -242,16 +242,7 @@ void elysian_state_http_request_store(elysian_t* server, elysian_schdlr_ev_t ev)
 					ELYSIAN_LOG("ISP finished, remaining store size is %u", client->store_cbuf_list_size);
 					break;
 				case ELYSIAN_ERR_READ:
-					if(client->store_cbuf_list == NULL) {
-						/*
-						** Input stream processor needs more data, disable POLL, wait READ
-						*/
-						elysian_schdlr_state_poll_disable(server);
-					} else {
-						/*
-						** We need poll to store the cbuf list
-						*/
-					}
+
                     break;
                 case ELYSIAN_ERR_POLL:
                     elysian_schdlr_state_poll_backoff(server);
