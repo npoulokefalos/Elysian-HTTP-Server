@@ -486,15 +486,16 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 	param->next = client->httpreq.params;
 	client->httpreq.params = param;
 	param->client = client;
+	param->filename = NULL; // initialize before trying malloc param->name else we may free unallocated memory..
+	param->data_index = 0;
 	param->file = &client->httpreq.headers_file;
 	param->name = elysian_mem_malloc(server, strlen(ELYSIAN_MVC_PARAM_HTTP_HEADERS) + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
-	if (!param) {
+	if (!param->name) {
 		err = ELYSIAN_ERR_POLL;
 		goto handle_error;
 	}
 	strcpy(param->name, ELYSIAN_MVC_PARAM_HTTP_HEADERS);
-	param->filename = NULL;
-	param->data_index = 0;
+
 	err = elysian_fs_fsize(server, param->file, &param->data_size);
 	if(err != ELYSIAN_ERR_OK){
 		ELYSIAN_LOG("ERROR_0");
@@ -512,15 +513,16 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 	param->next = client->httpreq.params;
 	client->httpreq.params = param;
 	param->client = client;
+	param->filename = NULL;
+	param->data_index = 0;
 	param->file = &client->httpreq.body_file;
 	param->name = elysian_mem_malloc(server, strlen(ELYSIAN_MVC_PARAM_HTTP_BODY) + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
-	if (!param) {
+	if (!param->name) {
 		err = ELYSIAN_ERR_POLL;
 		goto handle_error;
 	}
 	strcpy(param->name, ELYSIAN_MVC_PARAM_HTTP_BODY);
-	param->filename = NULL;
-	param->data_index = 0;
+
 	err = elysian_fs_fsize(server, param->file, &param->data_size);
 	if(err != ELYSIAN_ERR_OK){
 		ELYSIAN_LOG("ERROR_0");
@@ -530,9 +532,11 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 	
 #if 1
 	if (client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA) {
-		client->isp.multipart.params->next = client->httpreq.params;
-		client->httpreq.params = client->isp.multipart.params;
-		client->isp.multipart.params = NULL;
+		if (client->isp.multipart.params) {
+			client->isp.multipart.params->next = client->httpreq.params;
+			client->httpreq.params = client->isp.multipart.params;
+			client->isp.multipart.params = NULL;
+		}
 		return ELYSIAN_ERR_OK;
 	}
 #endif
@@ -838,11 +842,14 @@ handle_error:
 			elysian_mem_free(server, param_header);
 		}
 		while(client->httpreq.params){
+			ELYSIAN_LOG("Releasing param..");
 			req_param_next = client->httpreq.params->next;
 			if(client->httpreq.params->name){
+				ELYSIAN_LOG("Releasing param name");
 				elysian_mem_free(server, client->httpreq.params->name);
 			}
 			if(client->httpreq.params->filename){
+				ELYSIAN_LOG("Releasing param filename..");
 				elysian_mem_free(server, client->httpreq.params->filename);
 			}
 			elysian_mem_free(server, client->httpreq.params);
