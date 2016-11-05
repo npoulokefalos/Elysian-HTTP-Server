@@ -29,7 +29,7 @@ div#page_el_header h3{
 	font-weight: normal;
 }
 
-div#page_el_menu {
+div.page_el_menu {
 	border-top-style:solid;
 	border-top-width:1px;
 	border-top-color:white;
