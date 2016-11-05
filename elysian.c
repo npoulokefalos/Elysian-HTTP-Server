@@ -44,6 +44,7 @@ void elysian_state_http_request_headers_parse(elysian_t* server, elysian_schdlr_
 void elysian_state_http_expect_reply(elysian_t* server, elysian_schdlr_ev_t ev);
 void elysian_state_http_request_body_receive(elysian_t* server, elysian_schdlr_ev_t ev);
 void elysian_state_http_request_authenticate(elysian_t* server, elysian_schdlr_ev_t ev);
+void elysian_state_http_request_params_get(elysian_t* server, elysian_schdlr_ev_t ev);
 void elysian_state_fatal_error_entry(elysian_t* server, elysian_schdlr_ev_t ev);
 void elysian_state_http_response_entry(elysian_t* server, elysian_schdlr_ev_t ev);
 void elysian_state_configure_mvc(elysian_t* server, elysian_schdlr_ev_t ev);
@@ -75,6 +76,7 @@ void elysian_state_http_connection_accepted(elysian_t* server, elysian_schdlr_ev
 
             client->httpreq.url = NULL;
             client->httpreq.multipart_boundary = NULL;
+			client->httpreq.params = NULL;
 			
             elysian_fs_finit(server, &client->httpreq.headers_file);
 			strcpy(client->httpreq.headers_filename, "");
@@ -554,7 +556,7 @@ void elysian_state_http_request_authenticate(elysian_t* server, elysian_schdlr_e
 			switch(err){
 				case ELYSIAN_ERR_OK:
 					ELYSIAN_LOG("Authentication success!");
-					elysian_schdlr_state_set(server, elysian_state_http_response_entry);
+					elysian_schdlr_state_set(server, elysian_state_http_request_params_get);
 					return;
 					break;
 				case ELYSIAN_ERR_AUTH:
@@ -588,6 +590,53 @@ void elysian_state_http_request_authenticate(elysian_t* server, elysian_schdlr_e
     };
 }
 
+void elysian_state_http_request_params_get(elysian_t* server, elysian_schdlr_ev_t ev) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+    elysian_err_t err;
+    
+	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
+	
+    switch(ev){
+        case elysian_schdlr_EV_ENTRY:
+        {
+            elysian_schdlr_state_timeout_set(server, 4000);
+			elysian_schdlr_state_poll_enable(server);
+        }break;
+        case elysian_schdlr_EV_READ:
+        {
+        }break;
+        case elysian_schdlr_EV_POLL:
+        {
+			err = elysian_http_request_get_params(server);
+			switch(err){
+				case ELYSIAN_ERR_OK:
+					elysian_schdlr_state_set(server, elysian_state_http_response_entry);
+					return;
+					break;
+				case ELYSIAN_ERR_POLL:
+					elysian_schdlr_state_poll_backoff(server);
+					return;
+					break;
+				case ELYSIAN_ERR_FATAL:
+					elysian_schdlr_state_set(server, elysian_state_fatal_error_entry);
+					return;
+					break;
+				default:
+					ELYSIAN_ASSERT(0, "");
+					break;
+			};
+        }break;
+        case elysian_schdlr_EV_ABORT:
+        {
+			elysian_schdlr_state_set(server, elysian_state_http_disconnect);
+			return;
+        }break;
+        default:
+        {
+            ELYSIAN_ASSERT(0, "");
+        }break;
+    };
+}
 
 void elysian_set_http_status_code(elysian_t* server, elysian_http_status_code_e status_code) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
@@ -1274,6 +1323,7 @@ void elysian_state_http_disconnect(elysian_t* server, elysian_schdlr_ev_t ev){
 elysian_err_t elysian_client_cleanup(elysian_t* server){
     elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	elysian_err_t err = ELYSIAN_ERR_OK;
+	elysian_req_param_t* param_next;
 	
     /*
     ** Clear mvc
@@ -1317,6 +1367,21 @@ elysian_err_t elysian_client_cleanup(elysian_t* server){
 		elysian_mem_free(server, client->httpreq.multipart_boundary);
 		client->httpreq.multipart_boundary = NULL;
 	}
+	
+	/*
+	** Release HTTP request parameters
+	*/
+	while(client->httpreq.params){
+		param_next = client->httpreq.params->next;
+		if(client->httpreq.params->name){
+			elysian_mem_free(server, client->httpreq.params->name);
+		}
+		if(client->httpreq.params->filename){
+			elysian_mem_free(server, client->httpreq.params->filename);
+		}
+		elysian_mem_free(server, client->httpreq.params);
+		client->httpreq.params = param_next;
+	};
 	
 	if(client->httpreq.headers_filename[0] != '\0'){
         ELYSIAN_LOG("Removing header file..");

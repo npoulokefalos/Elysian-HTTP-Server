@@ -112,6 +112,7 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server);
 elysian_err_t elysian_http_request_get_uri(elysian_t* server, char** uri);
 elysian_err_t elysian_http_request_get_method(elysian_t* server, elysian_http_method_e* method_id);
 elysian_err_t elysian_http_request_get_header(elysian_t* server, char* header_name, char** header_value);
+elysian_err_t elysian_http_request_get_params(elysian_t* server);
 
 elysian_err_t elysian_http_response_build(elysian_t* server);
 elysian_err_t elysian_http_add_response_status_line(elysian_t* server);
@@ -343,7 +344,6 @@ struct elysian_mvc_t{
 	char* view;
     elysian_mvc_attribute_t* attributes;
 	elysian_mvc_alloc_t* allocs;
-	elysian_req_param_t* req_params;
 };
 
 typedef void (*elysian_reqserved_cb_t)(elysian_t* server, void* ptr);
@@ -572,6 +572,8 @@ struct elysian_httpreq_t{
 	
     uint32_t range_start;
     uint32_t range_end;
+	
+	elysian_req_param_t* params;
 };
 
 

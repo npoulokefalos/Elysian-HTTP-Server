@@ -391,7 +391,7 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 					*/
 					args->params->data_index = args->index + index + 4;
 					char* search_strs[2] = {"name=\"", "filename=\""};
-					uint8_t search_strs_mandatory[2] = {1, 1};
+					uint8_t search_strs_mandatory[2] = {1, 0};
 					uint32_t search_strs_index[2] = {ELYSIAN_INDEX_OOB32, ELYSIAN_INDEX_OOB32};
 					int i, k;
 					uint32_t search_index;
@@ -480,24 +480,24 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 									strcpy(search_value, "");
 								} else {
 									ELYSIAN_LOG("Copying str index [%u, %u]", index0, index1);
-									elysian_cbuf_strcpy(*cbuf_list_in, index0 + strlen(search_strs[i]) , index1, search_value);
+									elysian_cbuf_strcpy(*cbuf_list_in, index0 + strlen(search_strs[i]) , index1 - 1, search_value);
 								}
 								ELYSIAN_LOG("!!!!!!!!!!!!!!!!!!!!!!This is part %s\" =  '%s'", search_strs[i], search_value);
-								switch(i) {
-									case 0:
-									{
-										/*
-										** Filename
-										*/
-										args->params->filename = search_value;
-									} break;
-									case 1:
+									switch(i) {									case 0:
 									{
 										/*
 										** Name
 										*/
 										args->params->name = search_value;
 									} break;
+									case 1:
+									{
+										/*
+										** Filename
+										*/
+										args->params->filename = search_value;
+									} break;
+
 									default:
 									{
 										ELYSIAN_ASSERT(0, "");
@@ -540,8 +540,9 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 				elysian_cbuf_list_append(cbuf_list_out, *cbuf_list_in);
 				*cbuf_list_in = NULL;
 				if (end_of_stream) {
-					err = ELYSIAN_ERR_OK; /* We have finished */
-					goto handle_error;
+					args->state = 4;
+					//err = ELYSIAN_ERR_OK; /* We have finished */
+					//goto handle_error;
 				} else {
 					err = ELYSIAN_ERR_READ;
 					goto handle_error;
@@ -658,6 +659,8 @@ elysian_err_t elysian_isp_http_body_raw_multipart(elysian_t* server, elysian_cbu
 		}break;
 	}
 
+	//ELYSIAN_ASSERT(index0 <= index1, "");
+	
 	ELYSIAN_LOG("[1] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 	cbuf_list_print(client->isp.cbuf_list);
 	ELYSIAN_LOG("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");

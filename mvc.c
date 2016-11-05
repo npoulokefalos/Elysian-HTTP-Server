@@ -27,7 +27,6 @@ void elysian_mvc_init(elysian_t* server){
     client->mvc.view = NULL;
     client->mvc.attributes = NULL;
 	client->mvc.allocs = NULL;
-	client->mvc.req_params = NULL;
 }
 
 uint8_t elysian_mvc_isconfigured(elysian_t* server){
@@ -43,7 +42,6 @@ elysian_err_t elysian_mvc_clear(elysian_t* server){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_mvc_attribute_t* attribute_next;
     elysian_mvc_alloc_t* alloc_next;
-	elysian_req_param_t* req_param_next;
 	
     if(client->mvc.view){
         elysian_mem_free(server, client->mvc.view);
@@ -69,18 +67,6 @@ elysian_err_t elysian_mvc_clear(elysian_t* server){
         client->mvc.allocs = alloc_next;
     };
 	
-	while(client->mvc.req_params){
-		req_param_next = client->mvc.req_params->next;
-		if(client->mvc.req_params->name){
-			elysian_mem_free(server, client->mvc.req_params->name);
-		}
-		if(client->mvc.req_params->filename){
-			elysian_mem_free(server, client->mvc.req_params->filename);
-		}
-		elysian_mem_free(server, client->mvc.req_params);
-		client->mvc.req_params = req_param_next;
-	};
-	
     return ELYSIAN_ERR_OK;
 }
 
@@ -89,7 +75,7 @@ elysian_err_t elysian_mvc_configure(elysian_t* server){
     elysian_err_t err;
 	elysian_mvc_alloc_t* alloc_next;
     elysian_mvc_controller_t* controller;
-    elysian_req_param_t* req_param_next;
+	elysian_req_param_t* param_next;
 	
 	ELYSIAN_ASSERT(client->mvc.view == NULL, "");
 	ELYSIAN_ASSERT(client->mvc.attributes == NULL, "");
@@ -98,15 +84,6 @@ elysian_err_t elysian_mvc_configure(elysian_t* server){
 	if(controller){
 		ELYSIAN_LOG("Calling user defined controller..");
 
-		/*
-		** Try to get request params
-		*/
-		err = elysian_mvc_read_req_params(server);
-		if(err != ELYSIAN_ERR_OK){
-			elysian_mvc_clear(server);
-			return err;
-		}
-		
 		err = controller->cb(server);
 		//ELYSIAN_ASSERT(err == ELYSIAN_ERR_OK || err == ELYSIAN_ERR_POLL || err == ELYSIAN_ERR_FATAL, "");
 		if((err != ELYSIAN_ERR_OK) && (err != ELYSIAN_ERR_POLL) && (err != ELYSIAN_ERR_FATAL)) {
@@ -122,18 +99,18 @@ elysian_err_t elysian_mvc_configure(elysian_t* server){
 		}
 		
 		/*
-		** Remove request params
+		** Release HTTP request parameters
 		*/
-		while(client->mvc.req_params){
-			req_param_next = client->mvc.req_params->next;
-			if(client->mvc.req_params->name){
-				elysian_mem_free(server, client->mvc.req_params->name);
+		while(client->httpreq.params){
+			param_next = client->httpreq.params->next;
+			if(client->httpreq.params->name){
+				elysian_mem_free(server, client->httpreq.params->name);
 			}
-			if(client->mvc.req_params->filename){
-				elysian_mem_free(server, client->mvc.req_params->filename);
+			if(client->httpreq.params->filename){
+				elysian_mem_free(server, client->httpreq.params->filename);
 			}
-			elysian_mem_free(server, client->mvc.req_params);
-			client->mvc.req_params = req_param_next;
+			elysian_mem_free(server, client->httpreq.params);
+			client->httpreq.params = param_next;
 		};
 		
 		/*
@@ -413,18 +390,31 @@ elysian_err_t elysian_mvc_set_reqserved_cb(elysian_t* server, elysian_reqserved_
 -------------------------------------------------------------------------------------------------------------------------------- */
 elysian_err_t elysian_mvc_get_param(elysian_t* server, char* param_name, elysian_req_param_t* req_param){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-	elysian_req_param_t* req_param_next;
+	elysian_req_param_t* param_next;
 
-    req_param->client = client;
+	ELYSIAN_LOG("elysian_mvc_get_param(%s)", param_name);
+	
+#if 0
+	param_next = client->httpreq.params;
+	while(param_next){
+		ELYSIAN_LOG("Comparing with '%s'", param_next->name);
+
+		param_next = param_next->next;
+	};
+#endif
+	
+    //req_param->client = client;
     
-	req_param_next = client->mvc.req_params;
-	while(req_param_next){
-		if (strcmp(param_name, req_param_next->name) == 0) {
-			*req_param = *req_param_next;
+	param_next = client->httpreq.params;
+	while(param_next){
+		ELYSIAN_LOG("Comparing with '%s'", param_next->name);
+		if (strcmp(param_name, param_next->name) == 0) {
+			*req_param = *param_next;
+			req_param->data_index_cur = req_param->data_index;
 			ELYSIAN_LOG("param '%s' found!", param_name);
 			return ELYSIAN_ERR_OK;
 		}
-		req_param_next = req_param_next->next;
+		param_next = param_next->next;
 	};
 	
 	/*
@@ -633,383 +623,5 @@ elysian_err_t elysian_mvc_get_param_int(elysian_t* server, char* param_name, int
 }
 
 
-/*
-  http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2
- 
-		 FORMAT:
-		  '--[BOUNDARY]\r\n
-		  [HEADER]\r\n
-		  [HEADER]\r\n\r\n
-			
-		  [DATA]\r\n
-		  --[BOUNDARY]\r\n
-		  [HEADER]\r\n
-		  [HEADER]\r\n\r\n
 
-		  [DATA]\r\n
-		  --[BOUNDARY]--\r\n  (\r\n after -- is optional)
-		  '
-		  
-		 SAMPLE:
-		  '-----------------------------548189129986
-		  Content-Disposition: form-data; name="text1"
-
-
-		  -----------------------------548189129986
-		  Content-Disposition: form-data; name="file1"; filename=""
-		  Content-Type: application/octet-stream
-
-
-		  -----------------------------548189129986--'
-		   
-		 EMPTY SAMPLE:
-		  '-----------------------------25857811622488--'
-*/
-elysian_err_t elysian_mvc_read_req_params(elysian_t* server){
-	elysian_err_t err;
-	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-	elysian_req_param_t* param;
-	elysian_req_param_t* param_prev;
-	elysian_req_param_t* req_param_next;
-	char* param_header;
-	char param_search_pattern[2 /* dashes */ + 70 /* rfc boundary len */ + 2 /* \r\n */ + 1];
-	uint32_t param_search_index;
-	
-	//uint32_t boundary_len;
-	uint32_t index0;
-	uint32_t index1;
-
-	elysian_file_t* param_file;
-	uint32_t param_header_index;
-	uint32_t param_header_len;
-	//uint32_t param_prev_body_index;
-	
-	uint32_t max_index;
-	
-	ELYSIAN_LOG("***************************************************************************************");
-	
-	char* div1;
-	char* div2;
-	char* div3;
-	uint8_t stop;
-		
-	param_header = NULL;
-	param_prev = NULL;
-	
-	/*
-	** MULTIPART: 
-	** START: 		index0=indexof("--BOUNDARY\r\n") + strlen("--BOUNDARY\r\n"), on body file
-	** CONTINUE:	[HEADER][divider1="\r\n\r\n"][DATA][divider2="\r\n"][divider3="--BOUNDARY\r\n"]
-	** STOP: 		index1=indexof(divider3), divider3="--BOUNDARY--"
-	**
-	** GET: 
-	** START: 		index0 = indexof('?') + strlen('?'), on header file
-	** CONTINUE:	[HEADER][divider1="="][DATA][divider2=""][divider3="&" or max_index]
-	** STOP: 		index1=indexof(divider3), divider3=" "
-	**
-	** POST: 
-	** START: 		index0 = 0, on body file
-	** CONTINUE:	[HEADER][divider1="="][DATA][divider2=""][divider3="&" or max_index]
-	** STOP: 		index1=filesize
-	**
-	*/
-	if(client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA){
-		ELYSIAN_LOG("Parameters located in HTTP body");
-		param_file = &client->httpreq.body_file;
-		err = elysian_fs_fsize(server, param_file, &max_index);
-		if(err != ELYSIAN_ERR_OK){
-			ELYSIAN_LOG("ERROR_0");
-			goto handle_error;
-		}
-		if(max_index == 0) {
-			/*
-			** no parts exist
-			*/
-			ELYSIAN_LOG("NO_PARTS");
-			err = ELYSIAN_ERR_OK;
-			goto handle_error;
-		} else {
-			max_index--;
-			elysian_sprintf(param_search_pattern, "--%s\r\n", client->httpreq.multipart_boundary);
-			err = elysian_strstr_file(server, param_file, 0, param_search_pattern, "", 0, &index0, &index1);
-			if(err != ELYSIAN_ERR_OK){
-				ELYSIAN_LOG("ERROR_1");
-				goto handle_error;
-			}
-			if (index0 == ELYSIAN_INDEX_OOB32) {
-				/*
-				** Not found, no parts exist
-				*/
-				ELYSIAN_LOG("NO_PARTS");
-				err = ELYSIAN_ERR_OK;
-				goto handle_error;
-			} else {
-				div1 = "\r\n\r\n";
-				div2 = "\r\n";
-				div3 = param_search_pattern;
-				param_search_index = index0 + strlen(param_search_pattern);
-			}
-		}
-	}else {
-		if(client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_APPLICATION__X_WWW_FORM_URLENCODED){
-			ELYSIAN_LOG("Parameters located in HTTP body");
-			param_file = &client->httpreq.body_file;
-			err = elysian_fs_fsize(server, param_file, &max_index);
-			err = elysian_fs_fsize(server, param_file, &max_index);
-			if(err != ELYSIAN_ERR_OK){
-				ELYSIAN_LOG("ERROR_0");
-				goto handle_error;
-			}
-			
-			if(max_index == 0) {
-				/*
-				** no parts exist
-				*/
-				ELYSIAN_LOG("NO_PARTS");
-				err = ELYSIAN_ERR_OK;
-                goto handle_error;
-			} else {
-				max_index--;
-				div1 = "=";
-				div2 = "";
-				div3 = "&";
-				param_search_index = 0;
-			}
-		} else {
-			ELYSIAN_LOG("Parameters located in HTTP header");
-			param_file = &client->httpreq.headers_file;
-            err = elysian_strstr_file(server, param_file, 0, " HTTP/", "", 0, &index0, &index1);
-            if(err != ELYSIAN_ERR_OK){
-				ELYSIAN_LOG("ERROR_0");
-                goto handle_error;
-            }
-            if(index0 == ELYSIAN_INDEX_OOB32){
-				ELYSIAN_LOG("ERROR_1");
-				err = ELYSIAN_ERR_FATAL;
-                goto handle_error;
-            } else {
-				max_index = index0;
-				if(max_index == 0) {
-					/*
-					** no parts exist
-					*/
-					ELYSIAN_LOG("NO_PARTS");
-					err = ELYSIAN_ERR_OK;
-					goto handle_error;
-				} else {
-					max_index--;
-					err = elysian_strstr_file(server, param_file, 0, "?", "", 0, &index0, &index1);
-					if(err != ELYSIAN_ERR_OK){
-						ELYSIAN_LOG("ERROR_2");
-						goto handle_error;
-					}
-					if((index0 == ELYSIAN_INDEX_OOB32) || (index0 > max_index)){
-						/*
-						** Not found, no parts exist
-						*/
-						ELYSIAN_LOG("NO_PARTS");
-						err = ELYSIAN_ERR_OK;
-						goto handle_error;
-					} else {
-						div1 = "=";
-						div2 = "";
-						div3 = "&";
-						param_search_index = index0 + 1;
-					}
-				}
-			}
-		}
-	}
-	
-	ELYSIAN_LOG("Searching params from index [%u]..", param_search_index);
-	stop = 0;
-	while (!stop) {
-		if (!param_prev) {
-			/*
-			** No params yet detected
-			*/
-		} else {
-			/*
-			** At least one param detected
-			*/
-			ELYSIAN_LOG("param_search_index = %u + %u + %u + %u = %u", (unsigned int) param_prev->data_index, (unsigned int) param_prev->data_size, (unsigned int) strlen(div2), (unsigned int)strlen(div3), (unsigned int)(param_prev->data_index + param_prev->data_size + strlen(div2) + strlen(div3)));
-			param_search_index = param_prev->data_index + param_prev->data_size + strlen(div2) + strlen(div3);
-		}
-		ELYSIAN_LOG("Searching '%s'->'%s' from index %u", div1, div3, param_search_index);
-		err = elysian_strstr_file(server, param_file, param_search_index, div1, div3, 0, &index0, &index1);
-		if(err != ELYSIAN_ERR_OK){
-			ELYSIAN_LOG("ERROR_0");
-			goto handle_error;
-		}
-		if(index0 > max_index) {
-			index0 = ELYSIAN_INDEX_OOB32;
-		}
-		if(index1 > max_index) {
-			index1 = ELYSIAN_INDEX_OOB32;
-		}
-		if(index0 == ELYSIAN_INDEX_OOB32){
-			/*
-			** no more params
-			*/
-			ELYSIAN_LOG("ERROR_1");
-			err = ELYSIAN_ERR_OK;
-			goto handle_error;
-		}else{
-			if(index1 == ELYSIAN_INDEX_OOB32){
-				/*
-				** This is the last param
-				*/
-				ELYSIAN_LOG("MAYBE_LAST_1");
-				if(client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA){
-					elysian_sprintf(param_search_pattern, "--%s--", client->httpreq.multipart_boundary);
-					ELYSIAN_LOG("Searching '%s'->'%s' from index %u", div1, param_search_pattern, param_search_index);
-					err = elysian_strstr_file(server, param_file, param_search_index, div1, param_search_pattern, 0, &index0, &index1);
-				} else {
-					if(client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_APPLICATION__X_WWW_FORM_URLENCODED){
-						err = elysian_fs_fsize(server, param_file, &index1);
-					} else {
-						err = elysian_strstr_file(server, param_file, param_search_index, div1, " ", 0, &index0, &index1);
-					}
-				}
-				if(err != ELYSIAN_ERR_OK){
-					ELYSIAN_LOG("ERROR_2");
-					goto handle_error;
-				}
-				ELYSIAN_LOG("index0 = %u, index1 = %u, max_index = %u", index0, index1, max_index);
-				if(index0 > max_index + 1) {
-					index0 = ELYSIAN_INDEX_OOB32;
-				}
-				if(index1 > max_index + 1) {
-					index1 = ELYSIAN_INDEX_OOB32;
-				}
-				if ((index0 == ELYSIAN_INDEX_OOB32) || (index1 == ELYSIAN_INDEX_OOB32)){
-					err = ELYSIAN_ERR_FATAL;
-					ELYSIAN_LOG("ERROR_3");
-					goto handle_error;
-				} else {
-					/*
-					** [DATA][divider2][divider3]:[HEADER][divider1][DATA][divider2][terminal]
-					** param_name=param_value
-					** index0 pointes to divider1
-					** index1 pointes to terminal
-					*/
-					stop = 1;
-				}
-			} else {
-				/*
-				** New param found
-				** [DATA][divider2][divider3]:[HEADER][divider1][DATA][divider2][divider3]
-				** param_name=param_value&
-				** param_search_index points to header
-				** index0 pointes to divider1
-				** index1 pointes to divider3
-				** param_search_index points to HEADER
-				*/
-			}
-		}
-		
-		ELYSIAN_LOG("index0 = %u, index1 = %u", index0, index1);
-		/*
-		** Proces new param
-		*/
-		param = elysian_mem_malloc(server, sizeof(elysian_req_param_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
-		if (!param) {
-			err = ELYSIAN_ERR_POLL;
-			goto handle_error;
-		}
-		param->next = client->mvc.req_params;
-		client->mvc.req_params = param;
-		param->client = client;
-		param->file = param_file;
-		param->name = NULL;
-		param->filename = NULL;
-		param->data_index = index0 + strlen(div1);
-		param->data_size = (index1 - strlen(div2)) - (param->data_index);
-		
-		//param->index0 = param->data_index;
-		//param->len = param->data_len;
-		param->data_index_cur = param->data_index;
-		
-		ELYSIAN_LOG("param->body_index = %u, param->body_len = %u", param->data_index, param->data_size);
-		
-		if (param_prev) {
-			param_header_index = param_prev->data_index + param_prev->data_size + strlen(div2) + strlen(div3);
-		} else {
-			param_header_index = param_search_index;
-		}
-		param_header_len = (index0) - (param_header_index);
-		
-		/*
-		** Read the header block 
-		*/
-		param_header = elysian_mem_malloc(server, param_header_len + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
-		if(!param_header){
-			err = ELYSIAN_ERR_POLL;
-			goto handle_error;
-		}
-		err = elysian_strncpy_file(server, param_file, param_header_index, param_header, param_header_len);
-		if(err != ELYSIAN_ERR_OK){
-			goto handle_error;
-		}
-
-		/*
-		** Retrieve any usefull info
-		*/
-		ELYSIAN_LOG("This is part header: %s", param_header);
-		
-		/* get the name */
-		if(client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA){
-			int i = 0;
-			char* name = elysian_strcasestr(param_header, "name=\"");
-			if(name){
-				name += strlen("name=\"");
-				while(name[i] !='"'){
-					i++;
-				}
-				param->name = elysian_mem_malloc(server, i + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
-				if(!param->name){
-					err = ELYSIAN_ERR_POLL;
-					goto handle_error;
-				}
-				memcpy(param->name, name, i);
-				param->name[i] = '\0';
-				ELYSIAN_LOG("This is part NAME: %s", param->name);
-			}
-		} else {
-			param->name = elysian_mem_malloc(server, strlen(param_header) + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
-			if(!param->name){
-				err = ELYSIAN_ERR_POLL;
-				goto handle_error;
-			}
-			strcpy(param->name, param_header);
-			ELYSIAN_LOG("This is part NAME: %s", param->name);
-		}
-		
-		elysian_mem_free(server, param_header);
-		param_header = NULL;
-
-		param_prev = param;
-	}; // while(1)
-
-handle_error:
-	
-	if(err != ELYSIAN_ERR_OK){
-		if(param_header) {
-			elysian_mem_free(server, param_header);
-		}
-		while(client->mvc.req_params){
-			req_param_next = client->mvc.req_params->next;
-			if(client->mvc.req_params->name){
-				elysian_mem_free(server, client->mvc.req_params->name);
-			}
-			if(client->mvc.req_params->filename){
-				elysian_mem_free(server, client->mvc.req_params->filename);
-			}
-			elysian_mem_free(server, client->mvc.req_params);
-			client->mvc.req_params = req_param_next;
-		};
-	}
-	
-	return err;
-}
 
