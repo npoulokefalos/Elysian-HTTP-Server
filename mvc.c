@@ -544,7 +544,7 @@ elysian_err_t elysian_mvc_get_param_bytes(elysian_t* server, char* param_name, u
 }
 
 elysian_err_t elysian_mvc_get_param_str(elysian_t* server, char* param_name, char** param_value, uint8_t* param_found){
-	//elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	uint32_t actual_read_size;
 	elysian_req_param_t param;
 	uint8_t* buf;
@@ -585,7 +585,9 @@ elysian_err_t elysian_mvc_get_param_str(elysian_t* server, char* param_name, cha
 		return err;
 	}
 	
-	elysian_http_decode((char*) buf);
+	if (client->httpreq.content_type != ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA) {
+		elysian_http_decode((char*) buf);
+	}
 	
 	*param_value = (char*) buf;
 	

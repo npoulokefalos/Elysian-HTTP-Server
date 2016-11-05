@@ -64,8 +64,14 @@ elysian_err_t controller_dynamic_page_html(elysian_t* server){
         return err;
     }
 	
-	elysian_sprintf(attr_value, "%u", ELYSIAN_MAX_UPLOAD_SIZE_KB);
-	err = elysian_mvc_attribute_set(server, "attr_ELYSIAN_MAX_UPLOAD_SIZE_KB", attr_value);
+	elysian_sprintf(attr_value, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM);
+	err = elysian_mvc_attribute_set(server, "attr_ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM", attr_value);
+    if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+	
+	elysian_sprintf(attr_value, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK);
+	err = elysian_mvc_attribute_set(server, "attr_ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK", attr_value);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
@@ -237,9 +243,23 @@ elysian_err_t controller_file_upload(elysian_t* server){
     ELYSIAN_LOG("[[ %s ]]", __func__);
     
 	/*
+	** Set the MVC view to be sent to the client
+	** Check if this was called from a ROM or DISK page
+	*/
+	err = elysian_mvc_get_requested_url(server, &requested_url);
+	if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+	
+	/*
 	** Set the value to the attr_max_upload_size attribute
 	*/
-	elysian_sprintf(max_upload_size, "%u", ELYSIAN_MAX_UPLOAD_SIZE_KB);
+	if (strcmp(requested_url, ELYSIAN_FS_ROM_VRT_ROOT"/file_upload_controller") == 0) {
+		elysian_sprintf(max_upload_size, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM);
+	} else {
+		// requested URL was "file_upload_disk_controller"
+		elysian_sprintf(max_upload_size, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK);
+	}
 	err = elysian_mvc_attribute_set(server, "attr_max_upload_size", max_upload_size);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
@@ -279,7 +299,7 @@ elysian_err_t controller_file_upload(elysian_t* server){
         return err;
     }
 	
-	elysian_sprintf(data, "<b>The size of the uploaded file was %u bytes.</b> <br><br>", param_file1_size);
+	elysian_sprintf(data, "<b>The size of the uploaded file was %u bytes.</b><br>param1 value was '%s'. <br><br>", param_file1_size, param1_data);
 	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_size", data);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
@@ -291,15 +311,6 @@ elysian_err_t controller_file_upload(elysian_t* server){
 	elysian_sprintf(data, "<b>The first %u bytes of the uploaded file were:</b><br>'%s'", read_size, file1_data);
 	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_data", (char*) data);
     if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
-	
-	/*
-	** Set the MVC view to be sent to the client
-	** Check if this was called from a ROM or DISK page
-	*/
-	elysian_mvc_get_requested_url(server, &requested_url);
-	if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
 	
@@ -321,7 +332,24 @@ elysian_err_t controller_file_upload_html(elysian_t* server){
 
     ELYSIAN_LOG("[[ %s ]]", __func__);
     
-	elysian_sprintf(max_upload_size, "%u", ELYSIAN_MAX_UPLOAD_SIZE_KB);
+	/*
+	** Set the MVC view to be sent to the client
+	** Check if this was called from a ROM or DISK page
+	*/
+	err = elysian_mvc_get_requested_url(server, &requested_url);
+	if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+	
+	/*
+	** Set the value to the attr_max_upload_size attribute
+	*/
+	if (strcmp(requested_url, ELYSIAN_FS_ROM_VRT_ROOT"/file_upload_controller") == 0) {
+		elysian_sprintf(max_upload_size, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM);
+	} else {
+		// requested URL was "file_upload_disk_controller"
+		elysian_sprintf(max_upload_size, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK);
+	}
 	err = elysian_mvc_attribute_set(server, "attr_max_upload_size", max_upload_size);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
@@ -334,14 +362,6 @@ elysian_err_t controller_file_upload_html(elysian_t* server){
 	
 	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_data", "");
     if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
-	
-	/*
-	** Check if this was called from a ROM or DISK page
-	*/
-	elysian_mvc_get_requested_url(server, &requested_url);
-	if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
 	

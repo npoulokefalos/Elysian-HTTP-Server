@@ -72,9 +72,16 @@
 #define ELYSIAN_MAX_MEMORY_USAGE_KB	    			(10)
 
 /*
-** Specify the maximum file size (in Kbytes) that can be uploaded from the HTTP client
+** Specify the maximum size of HTTP body that should be accepted by the server.
+** This is specifically for HTTP requests that are configured to be stored in RAM.
 */
-#define ELYSIAN_MAX_UPLOAD_SIZE_KB	    			(2)
+#define ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM	    		(3)
+
+/*
+** Specify the maximum size of HTTP body that should be accepted by the server.
+** This is specifically for HTTP requests that are configured to be stored in DISK.
+*/
+#define ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK	    		(5 * 1024)
 
 /*
 ** The size of buffer that will be allocated to send the HTTP body

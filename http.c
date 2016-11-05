@@ -49,7 +49,9 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
     elysian_err_t err;
 	char* multipart_boundary;
 	elysian_http_method_e method;
+	elysian_mvc_controller_t* controller;
 	char* url;
+	uint32_t max_http_body_size;
 	
 	client->httpreq.url = NULL;
 	client->httpreq.body_len = 0;
@@ -188,11 +190,25 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 		client->httpreq.body_len = (uint32_t) atoi(header_value);
 		elysian_mem_free(server, header_value);
         
+#if 1
+		controller = elysian_mvc_controller_get(server, client->httpreq.url, client->httpreq.method);
+		if((controller) && (controller->flags & ELYSIAN_MVC_CONTROLLER_FLAG_SAVE_TO_DISK)) {
+			max_http_body_size = ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK;
+		} else {
+			max_http_body_size = ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM;
+		}
+		if(client->httpreq.body_len > max_http_body_size * 1024){
+			elysian_set_fatal_http_status_code(server, ELYSIAN_HTTP_STATUS_CODE_413);
+			err = ELYSIAN_ERR_FATAL;
+            goto handle_error;
+        }
+#else
         if(client->httpreq.body_len > ELYSIAN_MAX_UPLOAD_SIZE_KB * 1024){
 			elysian_set_fatal_http_status_code(server, ELYSIAN_HTTP_STATUS_CODE_413);
 			err = ELYSIAN_ERR_FATAL;
             goto handle_error;
         }
+#endif
 	}
     ELYSIAN_LOG("Content-length = %u!", client->httpreq.body_len);
 	
