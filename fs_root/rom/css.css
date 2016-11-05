@@ -33,9 +33,11 @@ div#page_el_menu {
 	border-top-style:solid;
 	border-top-width:1px;
 	border-top-color:white;
+	border-bottom-style:solid;
+	border-bottom-width:1px;
+	border-bottom-color:black;
 	background-color:rgb(85,85,85);
-	padding-top:5px;
-	padding-bottom:5px;
+	line-height: 30px;
 }
 
 div.page_el_menu_item {

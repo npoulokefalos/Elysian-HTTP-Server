@@ -111,6 +111,7 @@ elysian_err_t elysian_cbuf_list_split(elysian_t* server, elysian_cbuf_t** cbuf_l
 	}
 
 	ELYSIAN_ASSERT(0, "");
+	return ELYSIAN_ERR_FATAL;
 }
 
 #if 0
@@ -168,7 +169,7 @@ elysian_err_t elysian_cbuf_rechain(elysian_t* server, elysian_cbuf_t** cbuf_list
 	/*
 	** Required allocation size if we are going to append a cbuf
 	*/
-	alloc_sz2 = (*cbuf_list)->len - size;
+	alloc_sz2 = cbuf->len - size;
 	
     ELYSIAN_LOG("Rechain sz1=%u, sz2=%u\r\n",alloc_sz1,alloc_sz2);
      

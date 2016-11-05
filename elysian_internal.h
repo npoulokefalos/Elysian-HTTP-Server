@@ -657,9 +657,13 @@ struct elysian_isp_chunked_t{
 };
 
 elysian_err_t elysian_isp_http_headers(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
-elysian_err_t elysian_isp_http_body_raw_multipart(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
 elysian_err_t elysian_isp_http_body_raw(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
 elysian_err_t elysian_isp_http_body_chunked(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
+elysian_err_t elysian_isp_http_body_chunked_multipart(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
+elysian_err_t elysian_isp_http_body_raw_multipart(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
+
+void elysian_isp_cleanup(elysian_t* server);
+
 #if 0
 typedef struct elysian_isp_raw_multipart_t elysian_isp_raw_multipart_t;
 struct elysian_isp_raw_multipart_t{
@@ -683,6 +687,7 @@ struct elysian_isp_t{
 	elysian_isp_raw_t raw;
 	elysian_isp_chunked_t chunked;
 	elysian_isp_multipart_t multipart;
+	elysian_cbuf_t* cbuf_list;
 	elysian_err_t (*func)(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
 };
 

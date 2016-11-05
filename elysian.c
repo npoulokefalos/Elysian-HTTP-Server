@@ -370,21 +370,23 @@ void elysian_state_http_request_body_receive(elysian_t* server, elysian_schdlr_e
 			
 			if (client->httpreq.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_RAW) {
 				if (client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA) {
-					//client->isp.func = elysian_isp_http_body_raw_multipart;
-					client->isp.func = elysian_isp_http_body_raw;
+					client->isp.func = elysian_isp_http_body_raw_multipart;
+					//client->isp.func = elysian_isp_http_body_raw;
 				} else {
 					client->isp.func = elysian_isp_http_body_raw;
 				}
 			} else if (client->httpreq.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED) {
 				if (client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA) {
-					//client->isp.func = elysian_isp_chunked_multipart;
-					client->isp.func = elysian_isp_http_body_chunked;
+					client->isp.func = elysian_isp_http_body_chunked_multipart;
+					//client->isp.func = elysian_isp_http_body_chunked;
 				} else {
 					client->isp.func = elysian_isp_http_body_chunked;
 				}
 			} else {
-				elysian_schdlr_state_set(server, elysian_state_http_disconnect);
-				return;
+				/*
+				** Unknown transfer encoding
+				*/
+				client->isp.func = elysian_isp_http_body_raw;
 			}
 			
 			elysian_schdlr_state_set(server, elysian_state_http_request_store);
@@ -1278,6 +1280,11 @@ elysian_err_t elysian_client_cleanup(elysian_t* server){
     */
     elysian_mvc_clear(server);
 
+	/*
+	** Clear ISP
+	*/
+	elysian_isp_cleanup(server);
+	
     /*
     ** Release resource
     */
