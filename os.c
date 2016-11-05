@@ -313,12 +313,13 @@ void elysian_fs_finit(elysian_t* server, elysian_file_t* file){
     file->partition = NULL;
 }
 
-elysian_err_t elysian_fs_fopen(elysian_t* server, char* vrt_path, elysian_file_mode_t mode, elysian_file_t* file){
+elysian_err_t elysian_fs_fopen(elysian_t* server, char* vrt_path, elysian_file_mode_t mode, elysian_file_t* file) {
+	char abs_path[ELYSIAN_FS_MAX_PATH_LEN];
 	elysian_fs_partition_t* partition;
 	elysian_err_t err;
-	char* abs_path;
-	char* abs_sub_path;
-	uint32_t abs_path_len;
+	//char* abs_path;
+	//char* abs_sub_path;
+	//uint32_t abs_path_len;
 	
 	ELYSIAN_LOG("Opening virtual file '%s'..", vrt_path);
 	
@@ -330,25 +331,18 @@ elysian_err_t elysian_fs_fopen(elysian_t* server, char* vrt_path, elysian_file_m
 		return ELYSIAN_ERR_NOTFOUND;
 	}
 	
-	abs_sub_path = &vrt_path[strlen(partition->vrt_root)];
-	if(strcmp(partition->vrt_root, "") == 0) {
-		abs_path = abs_sub_path;
-		abs_path_len = strlen(abs_sub_path);
+	/*
+	** Don't create a file that we will not be able to remove
+	*/
+	if(strlen(partition->abs_root) + strlen(&vrt_path[strlen(partition->vrt_root)]) + 1 <= ELYSIAN_FS_MAX_PATH_LEN) {
+		elysian_sprintf(abs_path, "%s%s", partition->abs_root, &vrt_path[strlen(partition->vrt_root)]);
 	} else {
-		abs_path_len = strlen(partition->abs_root) + strlen(&vrt_path[strlen(partition->vrt_root)]);
-		abs_path = elysian_mem_malloc(server, abs_path_len + 1,  ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
-		if (!abs_path) {
-			return ELYSIAN_ERR_POLL;
-		}
-		elysian_sprintf(abs_path, "%s%s", partition->abs_root, abs_sub_path);
+		return ELYSIAN_ERR_FATAL;
 	}
 	
 	ELYSIAN_LOG("Opening absolute file '%s'..", abs_path);
 	
 	err = partition->fopen(server, abs_path, mode, file);
-	if(abs_path != abs_sub_path) {
-		elysian_mem_free(server, abs_path);
-	}
 	
 	if(err == ELYSIAN_ERR_OK){
 		file->partition = partition;
@@ -468,35 +462,29 @@ elysian_err_t elysian_fs_fclose(elysian_t* server, elysian_file_t* file){
 	}
 }
 
-elysian_err_t elysian_fs_fremove(elysian_t* server, char* vrt_path){
+/*
+** Never return ELYSIAN_ERR_POLL here, since it could cause memory leaks on user layer.
+** Memory allocation are not allowed here.
+*/
+elysian_err_t elysian_fs_fremove(elysian_t* server, char* vrt_path) {
+	char abs_path[ELYSIAN_FS_MAX_PATH_LEN];
 	elysian_fs_partition_t* partition;
     elysian_err_t err;
-	char* abs_path;
-	char* abs_sub_path;
-	uint32_t abs_path_len;
-	
+
 	partition = elysian_fs_get_partition(vrt_path);
 	if(!partition){
 		return ELYSIAN_ERR_FATAL;
 	}
     
-	abs_sub_path = &vrt_path[strlen(partition->vrt_root)];
-	if(strcmp(partition->vrt_root, "") == 0) {
-		abs_path = abs_sub_path;
+	if(strlen(partition->abs_root) + strlen(&vrt_path[strlen(partition->vrt_root)]) + 1 <= ELYSIAN_FS_MAX_PATH_LEN) {
+		elysian_sprintf(abs_path, "%s%s", partition->abs_root, &vrt_path[strlen(partition->vrt_root)]);
 	} else {
-		abs_path_len = strlen(partition->abs_root) + strlen(&vrt_path[strlen(partition->vrt_root)]);
-		abs_path = elysian_mem_malloc(server, abs_path_len + 1,  ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
-		if (!abs_path) {
-			return ELYSIAN_ERR_POLL;
-		}
-		elysian_sprintf(abs_path, "%s%s", partition->abs_root, abs_sub_path);
+		return ELYSIAN_ERR_FATAL;
 	}
 	
-	//abs_path = &vrt_path[strlen(partition->vrt_root)];
 	err = partition->fremove(server, abs_path);
-	if(abs_path != abs_sub_path) {
-		elysian_mem_free(server, abs_path);
-	}
+	
+	ELYSIAN_ASSERT(err != ELYSIAN_ERR_POLL, "");
 	
     return err;
 }

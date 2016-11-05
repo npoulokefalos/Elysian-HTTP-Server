@@ -169,5 +169,9 @@
 #define ELYSIAN_FS_HUGE_FILE_NAME 					"/huge.file"
 #define ELYSIAN_FS_HUGE_FILE_VRT_ROOT 				ELYSIAN_FS_WS_VRT_ROOT
 
-
+/*
+** Define the maximum path len supported. Files we fail to open/remove if the path is longer than the maximum allowed.
+** Note: Increasing the size of this variable may require an increase of the stack size of the ELYSIAN thread as well.
+*/
+#define ELYSIAN_FS_MAX_PATH_LEN						(256)
 #endif

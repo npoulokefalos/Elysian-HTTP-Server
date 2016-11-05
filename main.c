@@ -483,7 +483,7 @@ elysian_err_t controller_redirected_page0_html(elysian_t* server){
     return ELYSIAN_ERR_OK;
 }
 
-void controller_ajax_example_served(elysian_t* server, void* ptr){
+void controller_ajax_example_served(elysian_t* server, void* ptr) {
 	char* ajax_file_name = (char*) ptr;
 	
     ELYSIAN_LOG("[[ %s ]]", __func__);
