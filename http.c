@@ -469,10 +469,68 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 	param_header = NULL;
 	param_prev = NULL;
 	
+	ELYSIAN_ASSERT(client->httpreq.params == NULL , "");
+	
+	/*
+	** First add the HTTP request header/body params
+	*/
+
+	/*
+	** HTTP headers parameter
+	*/
+	param = elysian_mem_malloc(server, sizeof(elysian_req_param_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	if (!param) {
+		err = ELYSIAN_ERR_POLL;
+		goto handle_error;
+	}
+	param->next = client->httpreq.params;
+	client->httpreq.params = param;
+	param->client = client;
+	param->file = &client->httpreq.headers_file;
+	param->name = elysian_mem_malloc(server, strlen(ELYSIAN_MVC_PARAM_HTTP_HEADERS) + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	if (!param) {
+		err = ELYSIAN_ERR_POLL;
+		goto handle_error;
+	}
+	strcpy(param->name, ELYSIAN_MVC_PARAM_HTTP_HEADERS);
+	param->filename = NULL;
+	param->data_index = 0;
+	err = elysian_fs_fsize(server, param->file, &param->data_size);
+	if(err != ELYSIAN_ERR_OK){
+		ELYSIAN_LOG("ERROR_0");
+		goto handle_error;
+	}
+	
+	/*
+	** HTTP body parameter
+	*/
+	param = elysian_mem_malloc(server, sizeof(elysian_req_param_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	if (!param) {
+		err = ELYSIAN_ERR_POLL;
+		goto handle_error;
+	}
+	param->next = client->httpreq.params;
+	client->httpreq.params = param;
+	param->client = client;
+	param->file = &client->httpreq.body_file;
+	param->name = elysian_mem_malloc(server, strlen(ELYSIAN_MVC_PARAM_HTTP_BODY) + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	if (!param) {
+		err = ELYSIAN_ERR_POLL;
+		goto handle_error;
+	}
+	strcpy(param->name, ELYSIAN_MVC_PARAM_HTTP_BODY);
+	param->filename = NULL;
+	param->data_index = 0;
+	err = elysian_fs_fsize(server, param->file, &param->data_size);
+	if(err != ELYSIAN_ERR_OK){
+		ELYSIAN_LOG("ERROR_0");
+		goto handle_error;
+	}
+	
 	
 #if 1
 	if (client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA) {
-		ELYSIAN_ASSERT(client->httpreq.params == NULL , "");
+		client->isp.multipart.params->next = client->httpreq.params;
 		client->httpreq.params = client->isp.multipart.params;
 		client->isp.multipart.params = NULL;
 		return ELYSIAN_ERR_OK;

@@ -38,12 +38,51 @@
 
 <div id="page_el_description">
 	<div id="page_el_description_header">
-	Web page with static content
+	HTTP request exposure
 	</div>
-	This is a static web page stored in the ROM partition. It does not contain any dynamic contents and for this reason no MVC controller was used to serve it. 
+	There are times when full access to the HTTP request header or/and body are required. This could be true if for example there is a need to send different version
+	of the web page when the HTTP client is a mobile phone, or if the HTTP body is a JSON request. The HTTP request headers/body can be exposed as parameters with
+	certain names. The controller of the example below is retrieving the HTTP headers of the request, and sends them back to the client when the "submit" button
+	is pressed.
 </div>
 
+<div id="page_el_main">
+	<div class="page_el_form">
+		<form action="http_request_exposure_controller" method="post">
+			<div class="page_el_form_label">Sample parameter #1:</div>
+			<div class="page_el_form_input">
+				<input type="text" name="param1" value="Sample data #1">
+			</div>
+			
+			<div class="page_el_form_label">Sample parameter #2:</div>
+			<select name="param2">
+				<option value="Choice #1">Choice 1</option>
+				<option value="Choice #2">Choice 2</option>
+				<option value="Choice #3">Choice 3</option>
+				<option value=""></option>
+			</select>
 
+			<div class="page_el_form_label">Sample parameter #3:</div>
+			<input type="text" name="param3" value="Sample data #3">
+			
+			<div class="page_el_form_label">Sample parameter #4:</div>
+			<input type="text" name="param4" value="Sample data #4">
+			
+			<div class="page_el_form_label">&nbsp;</div>
+			<input type="submit" value="Submit!">
+		</form>
+	</div>	
+	
+	<div id="page_el_main_results">
+	
+	
+	<p><b>HTTP request headers:</b></p>
+	<div id="http_headers_div"><%=attr_http_request_headers%></div>
+	<p><b>HTTP request body:</b></p>
+	<div id="http_body_div"><%=attr_http_request_body%></div>
+	</div>
+	
+</div>
 
 <div id="page_el_footer">
 &copy;2016 Elysian Web Server | All right reserved

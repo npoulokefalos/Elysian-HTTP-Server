@@ -462,9 +462,9 @@ cbuf_t* elysian_cbuf_replace(cbuf_t* cbuf, char* str0, char* str1){
 void cbuf_list_print(elysian_cbuf_t* cbuf){
 	uint32_t index = 0;
     
-	printf("Printing cbuf chain..\r\n");
+	ELYSIAN_LOG("Printing cbuf chain..\r\n");
 	while(cbuf){
-		printf("[cbuf_%u, len %u] -> '%s'\r\n", index++, cbuf->len,  cbuf->data);
+		ELYSIAN_LOG("[cbuf_%u, len %u] -> '%s'\r\n", index++, cbuf->len,  cbuf->data);
 		cbuf = cbuf->next;
 	}
 }

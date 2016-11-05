@@ -585,8 +585,10 @@ elysian_err_t elysian_mvc_get_param_str(elysian_t* server, char* param_name, cha
 		return err;
 	}
 	
-	if (client->httpreq.content_type != ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA) {
-		elysian_http_decode((char*) buf);
+	if ((client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_APPLICATION__X_WWW_FORM_URLENCODED) || (param.file == &client->httpreq.headers_file)) {
+		if ((strcmp(param_name, ELYSIAN_MVC_PARAM_HTTP_HEADERS) != 0) && (strcmp(param_name, ELYSIAN_MVC_PARAM_HTTP_BODY) != 0)) {
+			elysian_http_decode((char*) buf);
+		}
 	}
 	
 	*param_value = (char*) buf;

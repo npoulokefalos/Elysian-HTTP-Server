@@ -344,7 +344,7 @@ elysian_err_t controller_file_upload_html(elysian_t* server){
 	/*
 	** Set the value to the attr_max_upload_size attribute
 	*/
-	if (strcmp(requested_url, ELYSIAN_FS_ROM_VRT_ROOT"/file_upload_controller") == 0) {
+	if (strcmp(requested_url, ELYSIAN_FS_ROM_VRT_ROOT"/file_upload.html") == 0) {
 		elysian_sprintf(max_upload_size, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM);
 	} else {
 		// requested URL was "file_upload_disk_controller"
@@ -377,6 +377,69 @@ elysian_err_t controller_file_upload_html(elysian_t* server){
 	
     return ELYSIAN_ERR_OK;
 }
+
+
+elysian_err_t controller_http_request_exposure_html(elysian_t* server){
+	//elysian_client_t* client = elysian_current_client(server);
+    elysian_err_t err;
+
+    ELYSIAN_LOG("[[ %s ]]", __func__);
+    
+	err = elysian_mvc_attribute_set(server, "attr_http_request_headers", "(Not yet submitted)");
+    if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+
+	err = elysian_mvc_attribute_set(server, "attr_http_request_body", "(Not yet submitted)");
+    if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+
+	err = elysian_mvc_set_view(server, ELYSIAN_FS_ROM_VRT_ROOT"/http_request_exposure.html");
+    if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+	
+    return ELYSIAN_ERR_OK;
+}
+
+elysian_err_t controller_http_request_exposure(elysian_t* server){
+	//elysian_client_t* client = elysian_current_client(server);
+	uint8_t param_found;
+	char* str1;
+	char* str2;
+    elysian_err_t err;
+
+    ELYSIAN_LOG("[[ %s ]]", __func__);
+    
+	err = elysian_mvc_get_param_str(server, ELYSIAN_MVC_PARAM_HTTP_HEADERS, &str1, &param_found);
+    if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+
+	err = elysian_mvc_get_param_str(server, ELYSIAN_MVC_PARAM_HTTP_BODY, &str2, &param_found);
+    if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+	
+	err = elysian_mvc_attribute_set(server, "attr_http_request_headers", str1);
+    if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+
+	err = elysian_mvc_attribute_set(server, "attr_http_request_body", str2);
+    if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+	
+	err = elysian_mvc_set_view(server, ELYSIAN_FS_ROM_VRT_ROOT"/http_request_exposure.html");
+    if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+	
+    return ELYSIAN_ERR_OK;
+}
+
 
 
 elysian_err_t controller_redirected_page1_html(elysian_t* server){
@@ -571,6 +634,11 @@ int main(){
 											controller_file_upload_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
 	elysian_mvc_controller_add(server, ELYSIAN_FS_ROM_VRT_ROOT"/file_upload_controller", 
 											controller_file_upload, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT);
+	
+	elysian_mvc_controller_add(server, ELYSIAN_FS_ROM_VRT_ROOT"/http_request_exposure.html", 
+							   controller_http_request_exposure_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
+	elysian_mvc_controller_add(server, ELYSIAN_FS_ROM_VRT_ROOT"/http_request_exposure_controller", 
+							   controller_http_request_exposure, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT);
 	
 	elysian_mvc_controller_add(server, ELYSIAN_FS_ROM_VRT_ROOT"/redirected_page0.html", 
 											controller_redirected_page0_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST);
