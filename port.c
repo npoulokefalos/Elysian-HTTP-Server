@@ -299,8 +299,13 @@ elysian_err_t elysian_port_socket_accept(elysian_socket_t* server_socket, uint32
     elysian_setblocking(server_socket, 1);
     
     if(client_socket_fd == INVALID_SOCKET) {
-        ELYSIAN_LOG("Accept error!");
-        return ELYSIAN_ERR_FATAL;
+		int win_errno = WSAGetLastError();
+		if (win_errno != WSAEWOULDBLOCK) {
+			printf("accept() failed with error %d\n", WSAGetLastError());
+			return ELYSIAN_ERR_FATAL;
+		} else {
+			return ELYSIAN_ERR_POLL;
+		}
     }
     
     ELYSIAN_LOG("Socket %d accepted!", client_socket_fd);
