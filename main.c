@@ -239,7 +239,8 @@ elysian_err_t controller_file_upload(elysian_t* server){
 	char data[256];
     elysian_err_t err;
 	char* requested_url;
-
+	char* param_file1_filename;
+	
     ELYSIAN_LOG("[[ %s ]]", __func__);
     
 	/*
@@ -285,7 +286,7 @@ elysian_err_t controller_file_upload(elysian_t* server){
 	/*
 	** Read the first bytes of the file1 parameter
 	*/
-	err = elysian_mvc_read_param(server, &param_file1, file1_data, sizeof(file1_data) - 1, &read_size);
+	err = elysian_mvc_read_param(server, &param_file1, 0, file1_data, sizeof(file1_data) - 1, &read_size);
 	if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
@@ -299,7 +300,12 @@ elysian_err_t controller_file_upload(elysian_t* server){
         return err;
     }
 	
-	elysian_sprintf(data, "<b>The size of the uploaded file was %u bytes.</b><br>param1 value was '%s'. <br><br>", param_file1_size, param1_data);
+	err = elysian_mvc_param_filename(server, &param_file1, &param_file1_filename);
+	if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+	
+	elysian_sprintf(data, "<b>The size of the uploaded file (%s) was %u bytes.</b><br>param1 value was '%s'. <br><br>", param_file1_filename, param_file1_size, param1_data);
 	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_size", data);
     if(err != ELYSIAN_ERR_OK){ 
         return err;

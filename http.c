@@ -692,7 +692,6 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 		param->filename = NULL;
 		param->data_index = index0 + strlen(div1);
 		param->data_size = (index1 - strlen(div2)) - (param->data_index);
-		param->data_index_cur = param->data_index;
 		
 		if (param_prev) {
 			param_header_index = param_prev->data_index + param_prev->data_size + strlen(div2) + strlen(div3);

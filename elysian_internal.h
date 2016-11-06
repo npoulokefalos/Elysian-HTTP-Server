@@ -379,7 +379,7 @@ struct elysian_req_param_t{
 	/*
 	** Current data index (next read index)
 	*/
-	uint32_t data_index_cur;
+	//uint32_t data_index_cur;
 };
 
 
