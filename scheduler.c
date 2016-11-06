@@ -243,7 +243,7 @@ void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 						*/
 						err = elysian_socket_accept(&schdlr->socket, 0, &client_socket);
 						if(err != ELYSIAN_ERR_OK){
-							ELYSIAN_LOG("Client rejected due to accept error!");
+							ELYSIAN_LOG("No clients accepted!");
 							continue;
 						}
 						

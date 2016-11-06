@@ -36,18 +36,18 @@
 #include <strings.h> //bzero
 #include <errno.h> //bzero
 
-/*
-****************************************************************************************************************************
+
+/* ---------------------------------------------------------------------------------------------------------------------------------------
 ** Time
-****************************************************************************************************************************
-*/
+** ------------------------------------------------------------------------------------------------------------------------------------ */
+
 uint32_t elysian_port_time_now(){
 #if defined(ELYSIAN_OS_ENV_UNIX)
     struct timeval  tv;
     gettimeofday(&tv, NULL);
     return  ((tv.tv_sec) * 1000) + ((tv.tv_usec) / 1000) ;
 #elif defined(ELYSIAN_OS_ENV_CHIBIOS)
-    return 0;
+    return chTimeNow();
 #elif defined(ELYSIAN_OS_ENV_WINDOWS)
 	SYSTEMTIME time;
 	GetSystemTime(&time);
@@ -86,11 +86,10 @@ void elysian_port_thread_yield(){
 #endif
 }
 
-/*
-****************************************************************************************************************************
+/* ---------------------------------------------------------------------------------------------------------------------------------------
 ** Memory
-****************************************************************************************************************************
-*/
+** ------------------------------------------------------------------------------------------------------------------------------------ */
+
 void* elysian_port_mem_malloc(uint32_t size){
 #if defined(ELYSIAN_OS_ENV_UNIX)
     return malloc(size);
@@ -115,38 +114,57 @@ void elysian_port_mem_free(void* ptr){
 #endif
 }
 
-/*
-****************************************************************************************************************************
+/* ---------------------------------------------------------------------------------------------------------------------------------------
 ** Sockets
-****************************************************************************************************************************
-*/
+** ------------------------------------------------------------------------------------------------------------------------------------ */
 
-/*
-** Get web server's hostname or IP (for example 192.168.1.1). 
-** This information is used when user redirects an HTTP request to other URL.
-*/
+/* 
+** @brief 		Get web server's hostname or IP (for example 192.168.1.1 or xxx.com)
+**
+** @param[in]	server The server instance
+** @param[out] 	hostname Server's hostname
+**
+** @retval ELYSIAN_ERR_OK  		The operation was succesfull. hostname stores the hostname of the server.
+** @retval ELYSIAN_ERR_FATAL  	There was a fatal error. hostname is invalid. Any clients requested the hostname will be closed.
+ */
 elysian_err_t elysian_port_hostname_get(char hostname[64]){
 	strcpy(hostname, "localhost");
 	return ELYSIAN_ERR_OK;
 }
 
-void elysian_setblocking(elysian_socket_t* client_socket, uint8_t blocking){
+/* 
+** @brief 		Make the specific socket blocking or non-blocking
+**
+** @param[in]	server The server instance
+** @param[in] 	socket The socket to be made blocking or non-blocking
+** @param[in] 	blocking If 1, make the socket blocking. If 0, make the socket non-blocking
+**
+** @retval ELYSIAN_ERR_OK  		The server socket was created succesfully. server_socket stores the socket descriptor.
+** @retval ELYSIAN_ERR_FATAL  	There was a fatal error. The server connection was not created. server_socket is invalid.
+ */
+void elysian_setblocking(elysian_socket_t* socket, uint8_t blocking){
 #if defined(ELYSIAN_TCPIP_ENV_UNIX)
-    int flags = fcntl(client_socket->fd, F_GETFL, 0);
+    int flags = fcntl(socket->fd, F_GETFL, 0);
     if (flags < 0) {
         ELYSIAN_LOG("fcntl");
         while(1){}
     };
     flags = blocking ? (flags&~O_NONBLOCK) : (flags|O_NONBLOCK);
-    fcntl(client_socket->fd, F_SETFL, flags);
+    fcntl(socket->fd, F_SETFL, flags);
 #elif defined(ELYSIAN_TCPIP_ENV_WINDOWS)
 	unsigned long flags = !!blocking;
-	ioctlsocket(client_socket->fd, FIONBIO, &flags);
+	ioctlsocket(socket->fd, FIONBIO, &flags);
 #else
 
 #endif
 }
 
+/* 
+** @brief 		Close the specific socket
+**
+** @param[in]	server The server instance
+** @param[in] 	socket The socket to be closed
+ */
 void elysian_port_socket_close(elysian_socket_t* socket){
 #if defined(ELYSIAN_TCPIP_ENV_UNIX)
     close(socket->fd);
@@ -157,6 +175,16 @@ void elysian_port_socket_close(elysian_socket_t* socket){
 #endif
 }
 
+/* 
+** @brief 		Create a server socket and bind it to a specific port
+**
+** @param[in]	server The server instance
+** @param[in] 	port The listening port of the server socket
+** @param[out] 	server_socket The created server socket
+**
+** @retval ELYSIAN_ERR_OK  		The server socket was created succesfully. server_socket stores the socket descriptor.
+** @retval ELYSIAN_ERR_FATAL  	There was a fatal error. The server connection was not created. server_socket is invalid.
+ */
 elysian_err_t elysian_port_socket_listen(uint16_t port, elysian_socket_t* server_socket){
 #if defined(ELYSIAN_TCPIP_ENV_UNIX)
     int server_socket_fd;
@@ -222,6 +250,20 @@ elysian_err_t elysian_port_socket_listen(uint16_t port, elysian_socket_t* server
     return ELYSIAN_ERR_OK;
 }
 
+/* 
+** @brief 		Block for a specified time period waiting for new connections. If timeout_ms is zero, the call must be non blocking.
+**				If this is not true, the web server is not going to behave properly and multi-client support will not be possible.
+**
+** @param[in]	server The server instance
+** @param[in] 	server_socket Server socket descriptor
+** @param[in] 	timeout_ms The maximum perod in msec that the call is allowed block
+** @param[in] 	timeout_ms The maximum time period that this call could block
+** @param[out] 	client_socket The socket descriptor of the accepted client connection.
+**
+** @retval ELYSIAN_ERR_OK  		New client socket was accepted. client_socket stores the socket descriptor for the new client.
+** @retval ELYSIAN_ERR_POLL  	No new connection was accepted. client_socket is invalid.
+** @retval ELYSIAN_ERR_FATAL  	There was a fatal error. No new connection was accepted. client_socket is invalid.
+ */
 elysian_err_t elysian_port_socket_accept(elysian_socket_t* server_socket, uint32_t timeout_ms, elysian_socket_t* client_socket){
     int client_socket_fd;
     struct sockaddr_in client_addr;
@@ -235,12 +277,16 @@ elysian_err_t elysian_port_socket_accept(elysian_socket_t* server_socket, uint32
     client_socket_fd = accept(server_socket->fd, (struct sockaddr *)&client_addr, &sockaddr_in_size);
     elysian_setblocking(server_socket, 1);
     
-    if(client_socket_fd == -1) {
-        ELYSIAN_LOG("Accept error!");
-        return ELYSIAN_ERR_FATAL;
-    }
-    
-    ELYSIAN_LOG("Socket %d accepted!", client_socket_fd);
+    if(client_socket_fd < 0) {
+		if((errno != EAGAIN) && (errno != EWOULDBLOCK)){
+             return ELYSIAN_ERR_FATAL;
+        }else{
+			 return ELYSIAN_ERR_POLL;
+		}
+    } 
+	
+    ELYSIAN_LOG("New socket %d accepted!", client_socket_fd);
+	
     client_socket->fd = client_socket_fd;
     
     return ELYSIAN_ERR_OK;
@@ -267,6 +313,19 @@ elysian_err_t elysian_port_socket_accept(elysian_socket_t* server_socket, uint32
 }
 
 
+/* 
+** @brief 		Read data through socket. The operation must be non blocking. If this is not true, the web server is not going to 
+**				behave properly and multi-client support will not be possible.
+**
+** @param[in]	server The server instance
+** @param[in] 	client_socket The socket descriptor
+** @param[out] 	buf Buffer that is going to store the received data
+** @param[in] 	buf_size The size of data to be read
+**
+** @retval >=0	The number of bytes succesfully read. 0 indicates that there were currently no data available to the particular
+**				socket. Connection is not considered lost in this case.
+** @retval -1	There was a fatal error. Connection is considered lost. elysian_port_socket_close() is going to follow.
+ */
 int elysian_port_socket_read(elysian_socket_t* client_socket, uint8_t* buf, uint16_t buf_size){
     int result;
     
@@ -316,6 +375,19 @@ int elysian_port_socket_read(elysian_socket_t* client_socket, uint8_t* buf, uint
 	return result;
 }
 
+/* 
+** @brief 		Write data through socket. The operation must be non blocking. If this is not true, the web server is not going to 
+**				behave properly and multi-client support will not be possible.
+**
+** @param[in]	server The server instance
+** @param[in] 	client_socket The socket descriptor
+** @param[in] 	buf The data to be sent
+** @param[in] 	buf_size The size of data to be sent
+**
+** @retval >=0	The number of bytes succesfully sent. 0 indicates that there were currently no resurces to perfom the operation,
+**				and the upper layer should try again later with exponential backoff. Connection is not considered lost in this case.
+** @retval -1	There was a fatal error. Connection is considered lost. elysian_port_socket_close() is going to follow.
+ */
 int elysian_port_socket_write(elysian_socket_t* client_socket, uint8_t* buf, uint16_t buf_size){
     int result;
     
@@ -354,6 +426,20 @@ int elysian_port_socket_write(elysian_socket_t* client_socket, uint8_t* buf, uin
 }
 
 #if (ELYSIAN_SOCKET_SELECT_SUPPORTED == 1)
+/* 
+** @brief 		Block for a specified time period waiting for input data (client sockets) or new connections (server socket) from particular sockets. 
+**
+** @param[in]	server The server instance
+** @param[in] 	socket_readset Array of sockets from which read events are expected.
+** @param[in] 	socket_readset_sz The size of the socket_readset array
+** @param[in] 	timeout_ms The maximum time period that this call could block
+** @param[out] 	socket_readset_status Array indicating from which sockets read data(client sockets) or new connections(server socket) are available.
+**				Setting socket_readset_status[k] to 1 means that socket descriptor socket_readset[k] has available data(if it is a client socket) or
+**				has accepted a new connection (if it is a server socket). Setting it to 0 indicates that there were no events for the particular socket.
+**
+** @retval ELYSIAN_ERR_OK  		The operation was succesfull. socket_readset_status[] indicates zero or more sockets that are able to read data.
+** @retval ELYSIAN_ERR_FATAL  	There was a fatal error. 
+ */
 elysian_err_t elysian_port_socket_select(elysian_socket_t* socket_readset[], uint32_t socket_readset_sz, uint32_t timeout_ms, uint8_t socket_readset_status[]){
     uint32_t index;
     int retval;
@@ -436,11 +522,10 @@ elysian_err_t elysian_port_socket_select(elysian_socket_t* socket_readset[], uin
 #endif
 
 
-/*
-****************************************************************************************************************************
+/* ---------------------------------------------------------------------------------------------------------------------------------------
 ** Filesystem
-****************************************************************************************************************************
-*/
+** ------------------------------------------------------------------------------------------------------------------------------------ */
+
 /* 
 ** @brief Open file
 **
