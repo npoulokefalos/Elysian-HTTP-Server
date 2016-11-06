@@ -441,6 +441,19 @@ elysian_err_t elysian_port_socket_select(elysian_socket_t* socket_readset[], uin
 ** Filesystem
 ****************************************************************************************************************************
 */
+/* 
+** @brief Open file
+**
+** @param[in] 	server The server instance
+** @param[in] 	abs_path The absolute file path
+** @param[in] 	mode The desired file mode
+** @param[out] 	file The file descriptor of the opened file
+**
+** @retval ELYSIAN_ERR_OK  		The operation was succesfull, file stores the file descriptor of the opene file.
+** @retval ELYSIAN_ERR_POLL 	There are currently no resurces to perfom the operation, try again later with exponential backoff
+** @retval ELYSIAN_ERR_NOTFOUND There file was not found
+** @retval ELYSIAN_ERR_FATAL  	There was a fatal error. 
+ */
 elysian_err_t elysian_port_fs_disk_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file){
 	ELYSIAN_LOG("[[ Opening disk file '%s']]", abs_path);
 #if (defined(ELYSIAN_FS_ENV_UNIX) || defined(ELYSIAN_FS_ENV_WINDOWS))
@@ -476,6 +489,18 @@ elysian_err_t elysian_port_fs_disk_fopen(elysian_t* server, char* abs_path, elys
 #endif
 }
 
+/* 
+** @brief Get the size of a particular file
+**
+** @param[in] 	server The server instance
+** @param[in] 	file The file descriptor (retrieved using elysian_port_fs_disk_fopen)
+** @param[out] 	filesize The size of the file
+
+** @retval ELYSIAN_ERR_OK  		The operation was succesfull, filesize stores the size of the file.
+** @retval ELYSIAN_ERR_FATAL  	There was a fatal error. The upper layer should avoid using the particular file descriptor 
+**								for fread/fwrite/fseek/ftell as the operation be always failing. elysian_port_fs_disk_fclose() 
+**								is the only file operation that could use the particular file descriptor.
+ */
 elysian_err_t elysian_port_fs_disk_fsize(elysian_t* server, elysian_file_t* file, uint32_t* filesize){
     *filesize = 0;
 #if defined(ELYSIAN_FS_ENV_UNIX)
@@ -496,6 +521,18 @@ elysian_err_t elysian_port_fs_disk_fsize(elysian_t* server, elysian_file_t* file
 #endif
 }
 
+/* 
+** @brief Seek to particular file position.
+**
+** @param[in] 	server The server instance
+** @param[in] 	file The file descriptor (retrieved using elysian_port_fs_disk_fopen)
+** @param[in] 	seekpos The desired seek position. Valid range is [0, fsize -1]
+
+** @retval ELYSIAN_ERR_OK  		The operation was succesfull.
+** @retval ELYSIAN_ERR_FATAL  	There was a fatal error. The upper layer should avoid using the particular file descriptor 
+**								for fread/fwrite/fseek/ftell as the operation be always failing. elysian_port_fs_disk_fclose() 
+**								is the only file operation that could use the particular file descriptor.
+ */
 elysian_err_t elysian_port_fs_disk_fseek(elysian_t* server, elysian_file_t* file, uint32_t seekpos){
 #if defined(ELYSIAN_FS_ENV_UNIX)
     elysian_file_disk_t* file_disk = &file->descriptor.disk;
@@ -516,6 +553,18 @@ elysian_err_t elysian_port_fs_disk_fseek(elysian_t* server, elysian_file_t* file
 #endif
 }
 
+/* 
+** @brief Get the seek position of an opened file
+**
+** @param[in] 	server The server instance
+** @param[in] 	file The file descriptor (retrieved using elysian_port_fs_disk_fopen)
+** @param[out] 	seekpos The current seek position. Valid range is [0, fsize -1]
+
+** @retval ELYSIAN_ERR_OK  		The operation was succesfull, seekpos stores the current seek position.
+** @retval ELYSIAN_ERR_FATAL  	There was a fatal error. The upper layer should avoid using the particular file descriptor 
+**								for fread/fwrite/fseek/ftell as the operation be always failing. elysian_port_fs_disk_fclose() 
+**								is the only file operation that could use the particular file descriptor.
+ */
 elysian_err_t elysian_port_fs_disk_ftell(elysian_t* server, elysian_file_t* file, uint32_t* seekpos){
 #if defined(ELYSIAN_FS_ENV_UNIX)
     elysian_file_disk_t* file_disk = &file->descriptor.disk;
@@ -532,6 +581,19 @@ elysian_err_t elysian_port_fs_disk_ftell(elysian_t* server, elysian_file_t* file
 #endif
 }
 
+/* 
+** @brief Read data from an opened file
+**
+** @param[in] server The server instance
+** @param[in] file The file descriptor (retrieved using elysian_port_fs_disk_fopen)
+** @param[out] buf The buffer that is going to store the retrieved data
+** @param[in] buf_size The size of buf
+
+** @retval >=0  The number of bytes succesfully read. If the value is less than buf_size, EOF is indicated.
+** @retval -1 	There was a fatal error. The upper layer should avoid using the particular file descriptor 
+**				for fread/fwrite/fseek/ftell as the operation be always failing. elysian_port_fs_disk_fclose() 
+**				is the only file operation that could use the particular file descriptor.
+ */
 int elysian_port_fs_disk_fread(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size){
 #if defined(ELYSIAN_FS_ENV_UNIX)
 	int result;
@@ -554,6 +616,20 @@ int elysian_port_fs_disk_fread(elysian_t* server, elysian_file_t* file, uint8_t*
 #endif
 }
 
+/* 
+** @brief Write data to an opened file
+**
+** @param[in] server The server instance
+** @param[in] file The file descriptor (retrieved using elysian_port_fs_disk_fopen)
+** @param[in] buf The buffer containing the data to be written
+** @param[in] buf_size The size of buf
+
+** @retval >=0 	The number of bytes succesfully written. 0 indicates that there were currently no resurces to perfom the operation,
+**				and the upper layer should try again later with exponential backoff.
+** @retval -1 	There was a fatal error. The upper layer should avoid using the particular file descriptor 
+**				for fread/fwrite/fseek/ftell as the operation be always failing. elysian_port_fs_disk_fclose() 
+**				is the only file operation that could use the particular file descriptor.
+ */
 int elysian_port_fs_disk_fwrite(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size){
 #if defined(ELYSIAN_FS_ENV_UNIX)
 	int result;
@@ -582,6 +658,15 @@ int elysian_port_fs_disk_fwrite(elysian_t* server, elysian_file_t* file, uint8_t
 #endif
 }
 
+/* 
+** @brief Close an opened file
+**
+** @param[in] server The server instance
+** @param[in] file The file descriptor (retrieved using elysian_port_fs_disk_fopen)
+**
+** @retval ELYSIAN_ERR_OK 		The file was found and succesfully closed
+** @retval ELYSIAN_ERR_FATAL 	The file could not be closed (either because it was not found or because DISK is not mounted)
+ */
 elysian_err_t elysian_port_fs_disk_fclose(elysian_t* server, elysian_file_t* file){
 #if defined(ELYSIAN_FS_ENV_UNIX)
     elysian_file_disk_t* file_disk = &file->descriptor.disk;
@@ -602,6 +687,15 @@ elysian_err_t elysian_port_fs_disk_fclose(elysian_t* server, elysian_file_t* fil
 #endif
 }
 
+/* 
+** @brief Remove a file from the disk.
+**
+** @param[in] server The server instance
+** @param[in] abs_path The absolute file path
+**
+** @retval ELYSIAN_ERR_OK 		The file was found and succesfully removed
+** @retval ELYSIAN_ERR_FATAL 	The file could not be removed (either because it was not found or because DISK is not mounted)
+ */
 elysian_err_t elysian_port_fs_disk_fremove(elysian_t* server, char* abs_path){
 	ELYSIAN_LOG("[[ Removing disk file '%s']]", abs_path);
 #if (defined(ELYSIAN_FS_ENV_UNIX) || defined(ELYSIAN_FS_ENV_WINDOWS))
