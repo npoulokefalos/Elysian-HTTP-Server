@@ -414,38 +414,6 @@ elysian_err_t elysian_http_request_get_header(elysian_t* server, char* header_na
     return ELYSIAN_ERR_OK;
 }
 
-/*
-  http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2
- 
-		 FORMAT:
-		  '--[BOUNDARY]\r\n
-		  [HEADER]\r\n
-		  [HEADER]\r\n\r\n
-			
-		  [DATA]\r\n
-		  --[BOUNDARY]\r\n
-		  [HEADER]\r\n
-		  [HEADER]\r\n\r\n
-
-		  [DATA]\r\n
-		  --[BOUNDARY]--\r\n  (\r\n after -- is optional)
-		  '
-		  
-		 SAMPLE:
-		  '-----------------------------548189129986
-		  Content-Disposition: form-data; name="text1"
-
-
-		  -----------------------------548189129986
-		  Content-Disposition: form-data; name="file1"; filename=""
-		  Content-Type: application/octet-stream
-
-
-		  -----------------------------548189129986--'
-		   
-		 EMPTY SAMPLE:
-		  '-----------------------------25857811622488--'
-*/
 elysian_err_t elysian_http_request_get_params(elysian_t* server){
 	elysian_err_t err;
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
@@ -479,9 +447,9 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 	
 	ELYSIAN_ASSERT(client->httpreq.params == NULL , "");
 	
-	/*
+	/* ------------------------------------------------------------------------------------------------------------------
 	** First add the HTTP request header/body params
-	*/
+	** ---------------------------------------------------------------------------------------------------------------- */
 
 	/*
 	** HTTP headers parameter
@@ -538,7 +506,10 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 	}
 	
 	
-#if 1
+	/* ------------------------------------------------------------------------------------------------------------------
+	** If this is a multipart request, read the parameters from multipart ISP 
+	** (analyzed on the fly during HTTP body reception)
+	** ---------------------------------------------------------------------------------------------------------------- */
 	if (client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA) {
 		/*
 		** Append multipart params
@@ -558,7 +529,12 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 		client->isp.multipart.params = NULL;
 		return ELYSIAN_ERR_OK;
 	}
-#endif
+
+	/* ------------------------------------------------------------------------------------------------------------------
+	** Not a multipart request, but rather an HTTP POST (params on the HTTP body) or GET (params on the HTTP headers)
+	** Analaze the parameters now.
+	** ---------------------------------------------------------------------------------------------------------------- */
+	
 	/*
 	** MULTIPART: 
 	** START: 		index0=indexof("--BOUNDARY\r\n") + strlen("--BOUNDARY\r\n"), on body file
@@ -576,14 +552,16 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 	** STOP: 		index1=filesize
 	**
 	*/
-	if(client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA){
+	if(client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_APPLICATION__X_WWW_FORM_URLENCODED){
 		ELYSIAN_LOG("Parameters located in HTTP body");
 		param_file = &client->httpreq.body_file;
+		err = elysian_fs_fsize(server, param_file, &max_index);
 		err = elysian_fs_fsize(server, param_file, &max_index);
 		if(err != ELYSIAN_ERR_OK){
 			ELYSIAN_LOG("ERROR_0");
 			goto handle_error;
 		}
+		
 		if(max_index == 0) {
 			/*
 			** no parts exist
@@ -593,92 +571,51 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 			goto handle_error;
 		} else {
 			max_index--;
-			elysian_sprintf(param_search_pattern, "--%s\r\n", client->httpreq.multipart_boundary);
-			err = elysian_strstr_file(server, param_file, 0, param_search_pattern, "", 0, &index0, &index1);
-			if(err != ELYSIAN_ERR_OK){
-				ELYSIAN_LOG("ERROR_1");
-				goto handle_error;
-			}
-			if (index0 == ELYSIAN_INDEX_OOB32) {
-				/*
-				** Not found, no parts exist
-				*/
-				ELYSIAN_LOG("NO_PARTS");
-				err = ELYSIAN_ERR_OK;
-				goto handle_error;
-			} else {
-				div1 = "\r\n\r\n";
-				div2 = "\r\n";
-				div3 = param_search_pattern;
-				param_search_index = index0 + strlen(param_search_pattern);
-			}
+			div1 = "=";
+			div2 = "";
+			div3 = "&";
+			param_search_index = 0;
 		}
-	}else {
-		if(client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_APPLICATION__X_WWW_FORM_URLENCODED){
-			ELYSIAN_LOG("Parameters located in HTTP body");
-			param_file = &client->httpreq.body_file;
-			err = elysian_fs_fsize(server, param_file, &max_index);
-			err = elysian_fs_fsize(server, param_file, &max_index);
-			if(err != ELYSIAN_ERR_OK){
-				ELYSIAN_LOG("ERROR_0");
-				goto handle_error;
-			}
-			
+	} else {
+		ELYSIAN_LOG("Parameters located in HTTP header");
+		param_file = &client->httpreq.headers_file;
+		err = elysian_strstr_file(server, param_file, 0, " HTTP/", "", 0, &index0, &index1);
+		if(err != ELYSIAN_ERR_OK){
+			ELYSIAN_LOG("ERROR_0");
+			goto handle_error;
+		}
+		if(index0 == ELYSIAN_INDEX_OOB32){
+			ELYSIAN_LOG("ERROR_1");
+			err = ELYSIAN_ERR_FATAL;
+			goto handle_error;
+		} else {
+			max_index = index0;
 			if(max_index == 0) {
 				/*
 				** no parts exist
 				*/
 				ELYSIAN_LOG("NO_PARTS");
 				err = ELYSIAN_ERR_OK;
-                goto handle_error;
+				goto handle_error;
 			} else {
 				max_index--;
-				div1 = "=";
-				div2 = "";
-				div3 = "&";
-				param_search_index = 0;
-			}
-		} else {
-			ELYSIAN_LOG("Parameters located in HTTP header");
-			param_file = &client->httpreq.headers_file;
-            err = elysian_strstr_file(server, param_file, 0, " HTTP/", "", 0, &index0, &index1);
-            if(err != ELYSIAN_ERR_OK){
-				ELYSIAN_LOG("ERROR_0");
-                goto handle_error;
-            }
-            if(index0 == ELYSIAN_INDEX_OOB32){
-				ELYSIAN_LOG("ERROR_1");
-				err = ELYSIAN_ERR_FATAL;
-                goto handle_error;
-            } else {
-				max_index = index0;
-				if(max_index == 0) {
+				err = elysian_strstr_file(server, param_file, 0, "?", "", 0, &index0, &index1);
+				if(err != ELYSIAN_ERR_OK){
+					ELYSIAN_LOG("ERROR_2");
+					goto handle_error;
+				}
+				if((index0 == ELYSIAN_INDEX_OOB32) || (index0 > max_index)){
 					/*
-					** no parts exist
+					** Not found, no parts exist
 					*/
 					ELYSIAN_LOG("NO_PARTS");
 					err = ELYSIAN_ERR_OK;
 					goto handle_error;
 				} else {
-					max_index--;
-					err = elysian_strstr_file(server, param_file, 0, "?", "", 0, &index0, &index1);
-					if(err != ELYSIAN_ERR_OK){
-						ELYSIAN_LOG("ERROR_2");
-						goto handle_error;
-					}
-					if((index0 == ELYSIAN_INDEX_OOB32) || (index0 > max_index)){
-						/*
-						** Not found, no parts exist
-						*/
-						ELYSIAN_LOG("NO_PARTS");
-						err = ELYSIAN_ERR_OK;
-						goto handle_error;
-					} else {
-						div1 = "=";
-						div2 = "";
-						div3 = "&";
-						param_search_index = index0 + 1;
-					}
+					div1 = "=";
+					div2 = "";
+					div3 = "&";
+					param_search_index = index0 + 1;
 				}
 			}
 		}
