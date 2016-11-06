@@ -451,17 +451,17 @@ elysian_err_t elysian_mvc_read_param(elysian_t* server, elysian_req_param_t* req
     uint32_t current_offset;
     elysian_err_t err;
      
-    ELYSIAN_ASSERT(req_param, "");
-    ELYSIAN_ASSERT(req_param->client, "");
-    ELYSIAN_ASSERT(req_param->file, "");
     ELYSIAN_ASSERT(buf, "");
     
     *read_size = 0;
     
-    if(!req_param->file){
-        return ELYSIAN_ERR_FATAL;
-    }
-
+	if ((!req_param) || (req_param->client) || (!req_param->file) || (req_param.data_index == ELYSIAN_INDEX_OOB32)) {
+		/*
+		** elysian_mvc_get_param() was not used, or was used but returned "parameter not found"
+		*/
+		return ELYSIAN_ERR_FATAL;
+	}
+	
 	/*
 	** This could happen in POST request, where the last param index 
 	** could be equal to filesize, if for example the last param is empty.

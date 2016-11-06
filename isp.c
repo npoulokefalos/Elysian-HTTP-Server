@@ -259,9 +259,9 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 	elysian_err_t err;
 	elysian_cbuf_t* cbuf_list_out_tmp;
 	
-	ELYSIAN_LOG("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-	cbuf_list_print(*cbuf_list_in);
-	ELYSIAN_LOG("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+	//ELYSIAN_LOG("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+	//cbuf_list_print(*cbuf_list_in);
+	//ELYSIAN_LOG("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 	
 	strlen_boundary = strlen(client->httpreq.multipart_boundary);
 	while(1) {
@@ -274,9 +274,9 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 			args->state = 4;
 		}
 		switch(args->state){
+			ELYSIAN_LOG("state %u", args->state);
 			case 0: /* Part body */
 			{
-				ELYSIAN_LOG("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! state 0");
 				cbuf_list_print(*cbuf_list_in);
 				if (cbuf_len < 2 /* -- */ + strlen_boundary) {
 					err = ELYSIAN_ERR_READ;
@@ -316,7 +316,6 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 			} break;
 			case 1: /* Do we have we more parts? */
 			{
-				ELYSIAN_LOG("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! state 1");
 				cbuf_list_print(*cbuf_list_in);
 				if (cbuf_len < 2) {
 					err = ELYSIAN_ERR_READ;
@@ -370,7 +369,6 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 			} break;
 			case 2: /* Part header */
 			{
-				ELYSIAN_LOG("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! state 2");
 				cbuf_list_print(*cbuf_list_in);
 				if (cbuf_len < 4) {
 					err = ELYSIAN_ERR_READ;
@@ -400,7 +398,7 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 					for (i = 0; i < sizeof(search_strs) / sizeof(search_strs[0]); i++) {
 						search_index = 0;
 						while (1) {
-							ELYSIAN_LOG("searching for '%s' from index %u, max index = %u", search_strs[i], search_index, index);
+							//ELYSIAN_LOG("searching for '%s' from index %u, max index = %u", search_strs[i], search_index, index);
 							if (search_index >= index) {
 								index0 = ELYSIAN_INDEX_OOB32;
 							} else {
@@ -451,7 +449,8 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 							}
 						}
 						
-						ELYSIAN_LOG("Found at index %u", index0);
+						//ELYSIAN_LOG("Found at index %u", index0);
+						
 						/*
 						** Locate ending index
 						*/
@@ -479,16 +478,16 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 								if (index0 + strlen(search_strs[i]) == index1) {
 									strcpy(search_value, "");
 								} else {
-									ELYSIAN_LOG("Copying str index [%u, %u]", index0, index1);
+									//ELYSIAN_LOG("Copying str index [%u, %u]", index0, index1);
 									elysian_cbuf_strcpy(*cbuf_list_in, index0 + strlen(search_strs[i]) , index1 - 1, search_value);
 								}
-								ELYSIAN_LOG("!!!!!!!!!!!!!!!!!!!!!!This is part %s\" =  '%s'", search_strs[i], search_value);
-									switch(i) {									
+								switch(i) {									
 									case 0:
 									{
 										/*
 										** Name
 										*/
+										//ELYSIAN_LOG("Part name '%s'", search_value);
 										args->params->name = search_value;
 									} break;
 									case 1:
@@ -496,6 +495,7 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 										/*
 										** Filename
 										*/
+										//ELYSIAN_LOG("Part filename '%s'", search_value);
 										args->params->filename = search_value;
 									} break;
 
@@ -516,7 +516,6 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 					** All things of interest were processed fuccesfully, now split
 					*/
 					split_size = index + 4;
-					ELYSIAN_LOG("!!!!!!!!!!!!!!!!!!!!!! Splitting at %u", split_size);
 					err = elysian_cbuf_list_split(server, cbuf_list_in, split_size, &cbuf_list_out_tmp);
 					if (err != ELYSIAN_ERR_OK) {
 						if(args->params->name){
@@ -537,13 +536,10 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 			} break;	
 			case 3: /* Optional data */
 			{
-				ELYSIAN_LOG("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! state 3");
 				elysian_cbuf_list_append(cbuf_list_out, *cbuf_list_in);
 				*cbuf_list_in = NULL;
 				if (end_of_stream) {
 					args->state = 4;
-					//err = ELYSIAN_ERR_OK; /* We have finished */
-					//goto handle_error;
 				} else {
 					err = ELYSIAN_ERR_READ;
 					goto handle_error;
@@ -551,8 +547,6 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 			} break;
 			case 4: /* Finished  */
 			{
-				ELYSIAN_LOG("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! state 4");
-				ELYSIAN_LOG("[ISP ELYSIAN_ERR_OK]");
 				err = ELYSIAN_ERR_OK;
 				goto handle_error;
 			} break;
@@ -568,7 +562,6 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 		if (err == ELYSIAN_ERR_FATAL) {
 			args->state = 5;
 			while(args->params){
-				ELYSIAN_LOG("RELEASINGGGGGGGGGGGGGGGGGGGGGGGGGG");
 				param_next = args->params->next;
 				if(args->params->name){
 					elysian_mem_free(server, args->params->name);
@@ -635,7 +628,7 @@ elysian_err_t elysian_isp_http_body_raw_multipart(elysian_t* server, elysian_cbu
 	elysian_err_t err;
 	
 	//ELYSIAN_LOG("[1] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-	cbuf_list_print(*cbuf_list_in);
+	//cbuf_list_print(*cbuf_list_in);
 	//ELYSIAN_LOG("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 	
 	err = elysian_isp_http_body_raw(server, cbuf_list_in, &cbuf_list_out_tmp, 0);
@@ -646,13 +639,11 @@ elysian_err_t elysian_isp_http_body_raw_multipart(elysian_t* server, elysian_cbu
 		case ELYSIAN_ERR_READ:
 		{
 			// Stream not exchausted
-			ELYSIAN_LOG("NOT END OF STREAM)))))))))))))))))))))))))))))))))))");
 			err = elysian_isp_http_body_multipart(server, &client->isp.cbuf_list, cbuf_list_out, 0);
 		}break;
 		case ELYSIAN_ERR_OK:
 		{
 			// End-of-stream detected
-			ELYSIAN_LOG("END OF STREAM)))))))))))))))))))))))))))))))))))");
 			err = elysian_isp_http_body_multipart(server, &client->isp.cbuf_list, cbuf_list_out, 1);
 		}break;
 		default:
@@ -661,11 +652,7 @@ elysian_err_t elysian_isp_http_body_raw_multipart(elysian_t* server, elysian_cbu
 	}
 
 	//ELYSIAN_ASSERT(index0 <= index1, "");
-	
-	ELYSIAN_LOG("[1] !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-	cbuf_list_print(client->isp.cbuf_list);
-	ELYSIAN_LOG("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-	
+
 	if (err == ELYSIAN_ERR_FATAL) {
 		elysian_isp_cleanup(server);
 	}
@@ -686,13 +673,11 @@ elysian_err_t elysian_isp_http_body_chunked_multipart(elysian_t* server, elysian
 		case ELYSIAN_ERR_READ:
 		{
 			// Stream not exchausted
-			ELYSIAN_LOG("NOT END OF STREAM)))))))))))))))))))))))))))))))))))");
 			err = elysian_isp_http_body_multipart(server, &client->isp.cbuf_list, cbuf_list_out, 0);
 		}break;
 		case ELYSIAN_ERR_OK:
 		{
 			// End-of-stream detected
-			ELYSIAN_LOG("END OF STREAM)))))))))))))))))))))))))))))))))))");
 			err = elysian_isp_http_body_multipart(server, &client->isp.cbuf_list, cbuf_list_out, 1);
 		}break;
 		default:

@@ -38,9 +38,15 @@
 		
 		var interval = 500; // msec
 		setInterval(ajax_send_http_request, interval);
-
+		var ajax_request_pending = 0;
+		
 		function ajax_send_http_request() {
 		  var xhttp;
+		  
+		  if (ajax_request_pending) {
+			return -1;
+		  }
+		  
 		  xhttp = new(this.XMLHttpRequest || ActiveXObject)('MSXML2.XMLHTTP.3.0');
 		  xhttp.onreadystatechange = function() {
 			//alert('status ' + this.status)
@@ -49,8 +55,7 @@
 				var ajax_response_args = this.responseText.split(",");
 				ram_usage_instant = parseInt(ajax_response_args[0]);
 				total_ram = parseInt(ajax_response_args[1]);
-				//alert('status ' + ajax_response_args[0] + "-" + ajax_response_args[1]);
-				
+
 				document.getElementById("ajax_result").innerHTML = "Instant RAM usage is <b>" + ram_usage_instant +"</b> bytes (" + Math.round((ram_usage_instant * 100) / total_ram) + "%).";
 				
 				for (i = ram_usage_history.length - 1; i > 0; i--) { 
@@ -60,10 +65,15 @@
 				ram_usage_history[0] = ram_usage_instant;
 			
 				graph_func(ram_usage_history, total_ram);
+				
+				ajax_request_pending = 0;
 			}
 		  };
+		  ajax_request_pending = 1;
 		  xhttp.open("GET", "/fs_root/rom/ajax_controller", true);
 		  xhttp.send();
+		  
+		  return 0;
 		}
 	</script>
 	
