@@ -483,7 +483,8 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 									elysian_cbuf_strcpy(*cbuf_list_in, index0 + strlen(search_strs[i]) , index1 - 1, search_value);
 								}
 								ELYSIAN_LOG("!!!!!!!!!!!!!!!!!!!!!!This is part %s\" =  '%s'", search_strs[i], search_value);
-									switch(i) {									case 0:
+									switch(i) {									
+									case 0:
 									{
 										/*
 										** Name

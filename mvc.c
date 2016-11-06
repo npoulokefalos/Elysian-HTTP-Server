@@ -394,7 +394,7 @@ elysian_err_t elysian_mvc_get_param(elysian_t* server, char* param_name, elysian
 
 	ELYSIAN_LOG("elysian_mvc_get_param(%s)", param_name);
 	
-#if 0
+#if 1
 	param_next = client->httpreq.params;
 	while(param_next){
 		ELYSIAN_LOG("Comparing with '%s'", param_next->name);
@@ -498,7 +498,7 @@ elysian_err_t elysian_mvc_read_param(elysian_t* server, elysian_req_param_t* req
     return err;
 }
 
-elysian_err_t elysian_mvc_get_param_bytes(elysian_t* server, char* param_name, uint8_t** param_value, uint8_t* param_found) {
+elysian_err_t elysian_mvc_get_param_raw(elysian_t* server, char* param_name, uint8_t decode, uint8_t** param_value, uint8_t* param_found) {
 	//elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	uint32_t actual_read_size;
 	elysian_req_param_t param;
@@ -512,58 +512,20 @@ elysian_err_t elysian_mvc_get_param_bytes(elysian_t* server, char* param_name, u
 		return err;
 	}
 	if(param.data_index == ELYSIAN_INDEX_OOB32){
+		/*
+		** Parameter not found
+		*/
 		return ELYSIAN_ERR_OK;
-	}else{
-		*param_found = 1;
 	}
 	
-	ELYSIAN_LOG("Parameters len is %u", param.data_size);
-	
-	buf = elysian_mem_malloc(server, param.data_size, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
-	if(buf == NULL){
-		return ELYSIAN_ERR_POLL;
-	}
-	
-	err = elysian_mvc_read_param(server, &param, buf, param.data_size, &actual_read_size);
-	if(err != ELYSIAN_ERR_OK){
-		elysian_mem_free(server, buf);
-		return err;
-	}
-	
-	ELYSIAN_ASSERT(param.data_size == actual_read_size , "");
-	
-	err = elysian_mvc_add_alloc(server, buf);
-	if(err != ELYSIAN_ERR_OK){
-		elysian_mem_free(server, buf);
-		return err;
-	}
-	
-	*param_value = buf;
-	
-	return ELYSIAN_ERR_OK;
-}
+	/*
+	** Parameter found
+	*/
+	*param_found = 1;
 
-elysian_err_t elysian_mvc_get_param_str(elysian_t* server, char* param_name, char** param_value, uint8_t* param_found){
-	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-	uint32_t actual_read_size;
-	elysian_req_param_t param;
-	uint8_t* buf;
-	elysian_err_t err;
-	
-	*param_value = "";
-	*param_found = 0;
-	err = elysian_mvc_get_param(server, param_name, &param);
-	if(err != ELYSIAN_ERR_OK){
-		return err;
-	}
-	if(param.data_index == ELYSIAN_INDEX_OOB32){
-		return ELYSIAN_ERR_OK;
-	}else{
-		*param_found = 1;
-	}
-	
-	ELYSIAN_LOG("Parameters len is %u", param.data_size);
-	
+	/*
+	** Allocate size +1 so it can be used as raw bytes or string
+	*/
 	buf = elysian_mem_malloc(server, param.data_size + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
 	if(buf == NULL){
 		return ELYSIAN_ERR_POLL;
@@ -579,19 +541,53 @@ elysian_err_t elysian_mvc_get_param_str(elysian_t* server, char* param_name, cha
 	
 	buf[actual_read_size] = '\0';
 	
+	if (decode) {
+		elysian_http_decode((char*) buf);
+	}
+	
 	err = elysian_mvc_add_alloc(server, buf);
 	if(err != ELYSIAN_ERR_OK){
 		elysian_mem_free(server, buf);
 		return err;
 	}
 	
-	if ((client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_APPLICATION__X_WWW_FORM_URLENCODED) || (param.file == &client->httpreq.headers_file)) {
-		if ((strcmp(param_name, ELYSIAN_MVC_PARAM_HTTP_HEADERS) != 0) && (strcmp(param_name, ELYSIAN_MVC_PARAM_HTTP_BODY) != 0)) {
-			elysian_http_decode((char*) buf);
+	*param_value = buf;
+	
+	return ELYSIAN_ERR_OK;
+}
+
+elysian_err_t elysian_mvc_get_param_bytes(elysian_t* server, char* param_name, uint8_t** param_value, uint8_t* param_found) {
+	//elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_err_t err;
+	
+	err = elysian_mvc_get_param_raw(server, param_name, 0, param_value, param_found);
+	if(err != ELYSIAN_ERR_OK){
+		return err;
+	}
+		
+	return ELYSIAN_ERR_OK;
+}
+
+elysian_err_t elysian_mvc_get_param_str(elysian_t* server, char* param_name, char** param_value, uint8_t* param_found){
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	uint8_t decode = 0;
+	elysian_err_t err;
+	
+	/*
+	** Decode only if it is a parameter of HTML form submission with POST or GET method.
+	*/
+	if ((strcmp(param_name, ELYSIAN_MVC_PARAM_HTTP_HEADERS) != 0) && (strcmp(param_name, ELYSIAN_MVC_PARAM_HTTP_BODY) != 0)) {
+		if ((client->httpreq.method == ELYSIAN_HTTP_METHOD_GET) || 
+				(client->httpreq.method == ELYSIAN_HTTP_METHOD_HEAD) || 
+				(client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_APPLICATION__X_WWW_FORM_URLENCODED)) {
+			decode = 1;
 		}
 	}
-	
-	*param_value = (char*) buf;
+
+	err = elysian_mvc_get_param_raw(server, param_name, decode, (uint8_t**) param_value, param_found);
+	if(err != ELYSIAN_ERR_OK){
+		return err;
+	}
 	
 	return ELYSIAN_ERR_OK;
 }
@@ -606,8 +602,8 @@ elysian_err_t elysian_mvc_get_param_uint(elysian_t* server, char* param_name, ui
 		return err;
 	}
 	
-	*param_value = atoi(param_value_str);
-	
+	elysian_str2uint(param_value_str, param_value);
+
 	return ELYSIAN_ERR_OK;
 }
 

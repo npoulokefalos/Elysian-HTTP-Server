@@ -59,7 +59,6 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 	client->httpreq.content_type = ELYSIAN_HTTP_CONTENT_TYPE_NA;
 	client->httpreq.method = ELYSIAN_HTTP_METHOD_NA;
 	
-	
 	/*
 	** Get any "Expect: 100-continue"
 	*/
@@ -141,18 +140,27 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 			barrier = elysian_strstr(header_value_tmp, "-");
 			if(barrier){
 				*barrier = '\0';
-                if(strlen(header_value_tmp)){
-                    client->httpreq.range_start = atoi(header_value_tmp);
-                }else{
+                if (strlen(header_value_tmp)) {
+					err = elysian_str2uint(header_value_tmp, &client->httpreq.range_start);
+					if (err != ELYSIAN_ERR_OK) {
+						elysian_mem_free(server, header_value);
+						err = ELYSIAN_ERR_FATAL;
+						goto handle_error;
+					}
+                } else {
                     elysian_mem_free(server, header_value);
                     err = ELYSIAN_ERR_FATAL;
                     goto handle_error;
                 }
 				ELYSIAN_LOG("Range start is '%u'", client->httpreq.range_start);
 				header_value_tmp = barrier + 1;
-				//ELYSIAN_LOG("Range header_value is '%s'", header_value);
                 if(strlen(header_value_tmp)){
-                    client->httpreq.range_end = atoi(header_value_tmp);
+					err = elysian_str2uint(header_value_tmp, &client->httpreq.range_end);
+					if (err != ELYSIAN_ERR_OK) {
+						elysian_mem_free(server, header_value);
+						err = ELYSIAN_ERR_FATAL;
+						goto handle_error;
+					}
                 }else{
                     client->httpreq.range_end = ELYSIAN_HTTP_RANGE_EOF;
                 }
@@ -532,11 +540,22 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 	
 #if 1
 	if (client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA) {
-		if (client->isp.multipart.params) {
-			client->isp.multipart.params->next = client->httpreq.params;
+		/*
+		** Append multipart params
+		*/
+		param = client->httpreq.params;
+		if (param) {
+			while (param) {
+				if(!param->next) {
+					param->next = client->isp.multipart.params;
+					break;
+				}
+				param = param->next;
+			}
+		} else {
 			client->httpreq.params = client->isp.multipart.params;
-			client->isp.multipart.params = NULL;
 		}
+		client->isp.multipart.params = NULL;
 		return ELYSIAN_ERR_OK;
 	}
 #endif
