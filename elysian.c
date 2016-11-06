@@ -149,7 +149,7 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server){
 				** File created, completely written and closed.
 				** We need to open it in read mode.
 				*/
-				ELYSIAN_LOG("Openning file in read mode..");
+				ELYSIAN_LOG("Opening file in read mode..");
 				err = elysian_fs_fopen(server, filename, ELYSIAN_FILE_MODE_READ, file);
 				return err;
 			}
@@ -157,11 +157,11 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server){
 			/*
 			** File is opened, continue writting
 			*/
-			ELYSIAN_LOG("writting cbuf chain..");
+			//ELYSIAN_LOG("writting cbuf chain..");
 			while(client->store_cbuf_list){
-				ELYSIAN_LOG("writting cbuf..");
+				//ELYSIAN_LOG("writting cbuf..");
 				cbuf = client->store_cbuf_list;
-				ELYSIAN_LOG("Storring '%s'", &cbuf->data[client->store_cbuf_list_offset]);
+				//ELYSIAN_LOG("Storring '%s'", &cbuf->data[client->store_cbuf_list_offset]);
 				err = elysian_fs_fwrite(server, file, &cbuf->data[client->store_cbuf_list_offset],  cbuf->len - client->store_cbuf_list_offset, &actual_write_sz);
 				if(err != ELYSIAN_ERR_OK){
 					return err;

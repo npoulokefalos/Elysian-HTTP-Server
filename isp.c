@@ -275,9 +275,9 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 		}
 		switch(args->state){
 			ELYSIAN_LOG("state %u", args->state);
+			//cbuf_list_print(*cbuf_list_in);
 			case 0: /* Part body */
 			{
-				cbuf_list_print(*cbuf_list_in);
 				if (cbuf_len <  strlen_boundary) {
 					err = ELYSIAN_ERR_READ;
 					goto handle_error;
@@ -316,7 +316,6 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 			} break;
 			case 1: /* Do we have we more parts? */
 			{
-				cbuf_list_print(*cbuf_list_in);
 				if (cbuf_len < 2) {
 					err = ELYSIAN_ERR_READ;
 					goto handle_error;
@@ -369,7 +368,6 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 			} break;
 			case 2: /* Part header */
 			{
-				cbuf_list_print(*cbuf_list_in);
 				if (cbuf_len < 4) {
 					err = ELYSIAN_ERR_READ;
 					goto handle_error;
@@ -559,6 +557,9 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 	}
 	
 	handle_error:
+		if ((err == ELYSIAN_ERR_READ) && (end_of_stream)) {
+			err = ELYSIAN_ERR_FATAL;
+		}
 		if (err == ELYSIAN_ERR_FATAL) {
 			args->state = 5;
 			while(args->params){
