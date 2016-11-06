@@ -278,7 +278,7 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 			case 0: /* Part body */
 			{
 				cbuf_list_print(*cbuf_list_in);
-				if (cbuf_len < 2 /* -- */ + strlen_boundary) {
+				if (cbuf_len <  strlen_boundary) {
 					err = ELYSIAN_ERR_READ;
 					goto handle_error;
 				}
