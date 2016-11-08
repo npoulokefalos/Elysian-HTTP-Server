@@ -203,7 +203,7 @@ elysian_err_t elysian_port_socket_listen(uint16_t port, elysian_socket_t* server
         return ELYSIAN_ERR_FATAL;
     }
 
-    if (listen(server_socket_fd, 10) == -1) {
+    if (listen(server_socket_fd, ELYSIAN_MAX_CLIENTS_NUM) == -1) {
         ELYSIAN_LOG_ERR("listen error!");
         return ELYSIAN_ERR_FATAL;
     }
@@ -237,7 +237,7 @@ elysian_err_t elysian_port_socket_listen(uint16_t port, elysian_socket_t* server
         return ELYSIAN_ERR_FATAL;
     }
 
-    if (listen(server_socket_fd, 10) == SOCKET_ERROR) {
+    if (listen(server_socket_fd, ELYSIAN_MAX_CLIENTS_NUM) == SOCKET_ERROR) {
         ELYSIAN_LOG_ERR("listen error!");
 		WSACleanup();
         return ELYSIAN_ERR_FATAL;
