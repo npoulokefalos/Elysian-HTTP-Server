@@ -18,7 +18,7 @@ UNAME := $(shell uname)
 FLAGS=
 
 ifeq ($(OS),Windows_NT)
-	FLAGS=-lws2_32
+	#FLAGS=-lws2_32
 else
 	ifeq ($(UNAME), MINGW32_NT-6.1)
 		FLAGS=-lws2_32
