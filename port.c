@@ -554,13 +554,17 @@ elysian_err_t elysian_port_fs_disk_fopen(elysian_t* server, char* abs_path, elys
 #endif
 	
 #if defined(ELYSIAN_FS_ENV_UNIX)
-    file->descriptor.disk.fd = fopen(abs_path, (mode == ELYSIAN_FILE_MODE_READ) ? "r" : "w");
+    file->descriptor.disk.fd = fopen(abs_path, (mode == ELYSIAN_FILE_MODE_READ) ? "rb" : "wb");
     if(!file->descriptor.disk.fd){
         return ELYSIAN_ERR_NOTFOUND;
     }
     return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
-	return ELYSIAN_ERR_NOTFOUND;
+    file->descriptor.disk.fd = fopen(abs_path, (mode == ELYSIAN_FILE_MODE_READ) ? "rb" : "wb");
+    if(!file->descriptor.disk.fd){
+        return ELYSIAN_ERR_NOTFOUND;
+    }
+    return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
     FIL* file;
     FRESULT res;
@@ -601,7 +605,13 @@ elysian_err_t elysian_port_fs_disk_fsize(elysian_t* server, elysian_file_t* file
     fseek(file_disk->fd, seekpos, SEEK_SET);
     return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
-	return ELYSIAN_ERR_FATAL;
+    elysian_file_disk_t* file_disk = &file->descriptor.disk;
+    uint32_t seekpos = ftell(file_disk->fd);
+    fseek(file_disk->fd, 0L, SEEK_END);
+    *filesize = ftell(file_disk->fd);
+    fseek(file_disk->fd, seekpos, SEEK_SET);
+	
+    return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
 	elysian_file_disk_t* file_disk = &file->descriptor.disk;
 	*filesize = f_size(file_disk->fd);
@@ -629,7 +639,9 @@ elysian_err_t elysian_port_fs_disk_fseek(elysian_t* server, elysian_file_t* file
     fseek(file_disk->fd, seekpos, SEEK_SET);
     return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
-	return ELYSIAN_ERR_FATAL;
+    elysian_file_disk_t* file_disk = &file->descriptor.disk;
+    fseek(file_disk->fd, seekpos, SEEK_SET);
+    return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
 	FRESULT res;
 	elysian_file_disk_t* file_disk = &file->descriptor.disk;
@@ -661,7 +673,9 @@ elysian_err_t elysian_port_fs_disk_ftell(elysian_t* server, elysian_file_t* file
     *seekpos = ftell(file_disk->fd);
     return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
-	return ELYSIAN_ERR_FATAL;
+    elysian_file_disk_t* file_disk = &file->descriptor.disk;
+    *seekpos = ftell(file_disk->fd);
+    return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
 	elysian_file_disk_t* file_disk = &file->descriptor.disk;
 	*filesize = f_tell(file_disk->fd);
@@ -691,7 +705,10 @@ int elysian_port_fs_disk_fread(elysian_t* server, elysian_file_t* file, uint8_t*
     result = fread(buf, 1, buf_size, file_disk->fd);
     return result;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
-	return ELYSIAN_ERR_FATAL;
+	int result;
+    elysian_file_disk_t* file_disk = &file->descriptor.disk;
+    result = fread(buf, 1, buf_size, file_disk->fd);
+    return result;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
    	FRESULT res;
 	elysian_file_disk_t* file_disk = &file->descriptor.disk;
@@ -732,7 +749,15 @@ int elysian_port_fs_disk_fwrite(elysian_t* server, elysian_file_t* file, uint8_t
 		return -1;
 	}
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
-	return -1;
+	int result;
+    elysian_file_disk_t* file_disk = &file->descriptor.disk;
+	
+	result = fwrite(buf, 1, buf_size, file_disk->fd);
+	if(result == buf_size){
+		return result;
+	}else{
+		return -1;
+	}
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
    	FRESULT res;
 	int actual_write_sz;
@@ -763,7 +788,9 @@ elysian_err_t elysian_port_fs_disk_fclose(elysian_t* server, elysian_file_t* fil
     fclose(file_disk->fd);
     return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
-	return ELYSIAN_ERR_FATAL;
+    elysian_file_disk_t* file_disk = &file->descriptor.disk;
+    fclose(file_disk->fd);
+    return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
    	FRESULT res;
 	elysian_file_disk_t* file_disk = &file->descriptor.disk;
@@ -799,7 +826,8 @@ elysian_err_t elysian_port_fs_disk_fremove(elysian_t* server, char* abs_path){
     remove(abs_path);
     return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
-	return ELYSIAN_ERR_FATAL;
+    remove(abs_path);
+    return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
 	FRESULT res;
     res = f_unlink(abs_path);

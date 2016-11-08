@@ -1102,8 +1102,8 @@ void elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev)
 				*/
 				#if 1
 				if((client->httpresp.buf_index * 100) / client->httpresp.buf_size >= 25){
+					ELYSIAN_LOG("Defragging, index = %u/%u", client->httpresp.buf_index, client->httpresp.buf_size);
 					for(i = 0; i < client->httpresp.buf_size - client->httpresp.buf_index; i++){
-						ELYSIAN_LOG("Defragging..");
 						client->httpresp.buf[i] = client->httpresp.buf[client->httpresp.buf_index + i];
 					}
 					client->httpresp.buf_index = 0;

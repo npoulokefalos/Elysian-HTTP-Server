@@ -16,11 +16,16 @@ SOURCE_C = \
 
 UNAME := $(shell uname)
 FLAGS=
-ifeq ($(UNAME), MINGW32_NT-6.1)
+
+ifeq ($(OS),Windows_NT)
 	FLAGS=-lws2_32
-endif
-ifeq ($(UNAME), MINGW64_NT-6.1)
-	FLAGS=-lws2_32
+else
+	ifeq ($(UNAME), MINGW32_NT-6.1)
+		FLAGS=-lws2_32
+	endif
+	ifeq ($(UNAME), MINGW64_NT-6.1)
+		FLAGS=-lws2_32
+	endif
 endif
 
 all:

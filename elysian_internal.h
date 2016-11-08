@@ -232,9 +232,11 @@ struct elysian_file_rom_t{
 
 typedef struct elysian_file_disk_t elysian_file_disk_t;
 struct elysian_file_disk_t{
-#ifdef ELYSIAN_FS_ENV_UNIX
+#if defined(ELYSIAN_FS_ENV_UNIX)
     FILE* fd;
-#elif ELYSIAN_FS_ENV_FATAFS
+#elif defined(ELYSIAN_ENV_WINDOWS)
+	FILE* fd;
+#elif defined(ELYSIAN_FS_ENV_FATAFS)
     FIL* fd;
 #else
 
