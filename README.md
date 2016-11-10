@@ -1,5 +1,5 @@
 # Elysian Web Server
-Extremely lightweight, full HTTP Server implementation for embedded microcontrollers. 
+Extremely lightweight, full HTTP Server implementation for embedded devices and microcontrollers. 
 
 Elysian is a free, open source, lightweight HTTP server implementation written entirely in C. 
 The focus of the implementation is to reduce resource usage while still providing an  almost 
