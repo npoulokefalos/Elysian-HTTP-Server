@@ -34,14 +34,14 @@
 
 <div id="page_el_description">
 	<div id="page_el_description_header">
-	File upload, HTTP request body saved to RAM
+	File upload, HTTP request body temporary saved to the RAM
 	</div>
-	Use the form below to upload a small file to the web server. The controller used here specifies that the HTTP body should be temporary stored
-	in the RAM memory of the web server. For this reason the maximum HTTP body size is <%=attr_max_upload_size%> Kbytes.
+	Example for uploading small files to the web server. The controller used here temporary stores the HTTP body in the RAM memory of the Web Server. 
+	Consequently, the maximum HTTP body size is <%=attr_max_upload_size%> Kbytes.
 	Use the <b>ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM</b> and <b>ELYSIAN_MAX_MEMORY_USAGE_KB</b> configuration options to increase the maximum allowed HTTP body size.<br/> <br/> 
 	HTTP controllers that store the HTTP body in the RAM memory are suitable for small HTTP requests etc for small HTML forms with configuration options. <br/> <br/> 
 	If there is a need to upload files of bigger size (etc .mp3 or .pdf files), refer to the "File Upload Form (Disk)" example, whose controller saves the HTTP body to the
-	DISK partition (SD Card or HDD).	
+	"EXT(ernal)" storage device (SD Card or HDD).	
 </div>
 
 <div id="page_el_main">

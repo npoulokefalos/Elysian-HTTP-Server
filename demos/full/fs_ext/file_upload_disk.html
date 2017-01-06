@@ -38,14 +38,14 @@
 
 <div id="page_el_description">
 	<div id="page_el_description_header">
-	File upload, HTTP request body saved to DISK
+	File upload, HTTP request body saved to the "EXT(ernal)" (Hard Disk) storage device
 	</div>
-	Use the form below to upload relatively big files to the web server. The controller used here specifies that the HTTP body should be temporary stored in the DISK partition of the web server. 
-	For this reason the maximum HTTP body size is <%=attr_max_upload_size%> Kbytes. Use the <b>ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK</b> configuration option to increase the maximum allowed HTTP body size.<br/><br/>
+	Example for uploading relatively big files to the web server. The controller used here temporary stores the HTTP body in the "EXT(ernal)" (Hard Disk) storage device of the Web Server. 
+	Consequently, the maximum HTTP body size is <%=attr_max_upload_size%> Kbytes. Use the <b>ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK</b> configuration option to increase the maximum allowed HTTP body size.<br/><br/>
 
 	HTTP controllers that store the HTTP body in the DISK partition (SD Card or HDD) are suitable for bigger HTTP requests etc when there is a need to upload .mp3 or .pdf files. <br/><br/>
 
-	For an example showing the same form submission, but storing the HTTP body to the RAM memory instead of DISK partition, refer to the "File Upload Form" example, whose controller saves the HTTP body to the RAM memory.<br/><br/>
+	For an example showing the same form submission, but storing the HTTP body to the RAM memory instead of DISK partition, refer to the "File Upload Form" example, whose controller saves the HTTP body to RAM.<br/><br/>
 </div>
 
 <div id="page_el_main">
