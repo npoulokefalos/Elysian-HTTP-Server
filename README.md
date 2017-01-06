@@ -33,10 +33,17 @@ Supported features include:
 - Much emphasis on ease of use, easy integration and power consumption
 
 
-# Give it a try using Unix or Cygwin under Windows:
--  (Optionally )Set your enviroment in elysian_config.h (choose from ELYSIAN_ENV_UNIX, ELYSIAN_ENV_WINDOWS, ELYSIAN_ENV_EMBEDDED). 
-   Default is ELYSIAN_ENV_UNIX (works also on Windows under Cygwin).
-- Issue "make". Image size may be big for embedded devices (~200 Kbytes), but that's because the default demo app contains images and audio files.
+# Give it a try under Linux or Windows:
+
+## Linux or Cygwin: 
+- Open a terminal and navigate to demos/full
+- Isuue "make plat=linux"
+- Run the "./elysian.out" executable.
+- Open a browser and navigate to "http://localhost:9000"
+
+## Windows (MinGW): 
+- Open cmd and navigate to demos/full
+- Isuue "mingw32-make make plat=windows"
 - Run the "elysian.out" executable.
 - Open a browser and navigate to "http://localhost:9000"
 

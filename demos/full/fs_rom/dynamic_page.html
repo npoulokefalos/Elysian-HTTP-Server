@@ -1,0 +1,58 @@
+<link rel="stylesheet" type="text/css" href="../fs_rom/css.css">
+</head>
+<body>
+
+<div id="page_el_header">
+	<h1>Elysian Web Server</h1>
+	<h3>/Expectations revised</h3>
+</div>
+
+<div class="page_el_menu">
+	<div class="page_el_menu_item"><a href="../fs_rom/index.html">Home</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/static_page.html">Static Web Page</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/dynamic_page.html">Dynamic Web Page</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/basic_access_auth.html">Basic Access Auth (admin, admin)</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/ajax.html">Ajax</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/gallery.html">Gallery</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/file_download.html">File Download</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/partial_content.html">Streaming Audio (HTTP Partial Content)</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/redirected_page0.html">HTTP Redirection</a></div>
+	<div class="page_el_cleaner"></div>
+</div>
+<div class="page_el_menu">
+	<div class="page_el_menu_item"><a href="../fs_rom/form_get.html">HTTP GET Form</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/form_post.html">HTTP POST Form</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/file_upload.html">File Upload Form</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/http_request_exposure.html">HTTP Request Exposure</a></div>
+	<div class="page_el_cleaner"></div>
+</div>
+<div class="page_el_menu">
+	<div class="page_el_menu_item"><a href="../fs_ext/dynamic_page_disk.html">Dynamic Web Page (Disk)</a></div>
+	<div class="page_el_menu_item"><a href="../fs_ext/file_upload_disk.html">File Upload Form (Disk)</a></div>
+	<div class="page_el_cleaner"></div>
+</div>
+
+<div id="page_el_description">
+	<div id="page_el_description_header">
+	Web page with dynamic content
+	</div>
+	
+	This is a dynamic web page showing some of the Elysian configuration values found on <b>elysian_config.h</b>). To provide the dynamic content an MVC controller was used.
+</div>
+
+<div id="page_el_main">
+	<div id="page_el_main_results">
+	<b>Timestamp</b>  = <%=attr_timestamp%> msec <br>
+	<b>Maximum allowed clients</b>  = <%=attr_ELYSIAN_MAX_CLIENTS_NUM%> <br>
+	<b>Maximum allowed memory usage</b>  = <%=attr_ELYSIAN_MAX_MEMORY_USAGE_KB%> Kbytes<br>
+	<b>Maximum allowed HTTP body size (RAM)</b> = <%=attr_ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM%> Kbytes<br>
+	<b>Maximum allowed HTTP body size (DISK)</b> = <%=attr_ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK%> Kbytes<br>
+	</div>
+</div>
+
+<div id="page_el_footer">
+&copy;2016 Elysian Web Server | All right reserved
+</div>
+
+</body>
+</html>

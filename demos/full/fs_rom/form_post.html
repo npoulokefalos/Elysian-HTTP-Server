@@ -1,0 +1,82 @@
+<link rel="stylesheet" type="text/css" href="../fs_rom/css.css">
+</head>
+<body>
+
+<div id="page_el_header">
+	<h1>Elysian Web Server</h1>
+	<h3>/Expectations revised</h3>
+</div>
+
+<div class="page_el_menu">
+	<div class="page_el_menu_item"><a href="../fs_rom/index.html">Home</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/static_page.html">Static Web Page</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/dynamic_page.html">Dynamic Web Page</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/basic_access_auth.html">Basic Access Auth (admin, admin)</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/ajax.html">Ajax</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/gallery.html">Gallery</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/file_download.html">File Download</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/partial_content.html">Streaming Audio (HTTP Partial Content)</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/redirected_page0.html">HTTP Redirection</a></div>
+	<div class="page_el_cleaner"></div>
+</div>
+<div class="page_el_menu">
+	<div class="page_el_menu_item"><a href="../fs_rom/form_get.html">HTTP GET Form</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/form_post.html">HTTP POST Form</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/file_upload.html">File Upload Form</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/http_request_exposure.html">HTTP Request Exposure</a></div>
+	<div class="page_el_cleaner"></div>
+</div>
+<div class="page_el_menu">
+	<div class="page_el_menu_item"><a href="../fs_ext/dynamic_page_disk.html">Dynamic Web Page (Disk)</a></div>
+	<div class="page_el_menu_item"><a href="../fs_ext/file_upload_disk.html">File Upload Form (Disk)</a></div>
+	<div class="page_el_cleaner"></div>
+</div>
+
+<div id="page_el_description">
+	<div id="page_el_description_header">
+	HTTP form submission, using HTTP POST method
+	</div>
+	Use the form below to perform HTML form submission using the HTTP POST method.
+	The specific controller is going to extract the form parameters and send them back to the browser for display.
+	All the parameters will be HTML decoded.
+</div>
+
+<div id="page_el_main">
+	<div class="page_el_form">
+		<form action="../fs_rom/form_post_controller" method="post">
+			<div class="page_el_form_label">Sample parameter #1:</div>
+			<div class="page_el_form_input">
+				<input type="text" name="param1" value="Sample data #1">
+			</div>
+			
+			<div class="page_el_form_label">Sample parameter #2:</div>
+			<select name="param2">
+				<option value="Choice #1">Choice 1</option>
+				<option value="Choice #2">Choice 2</option>
+				<option value="Choice #3">Choice 3</option>
+				<option value=""></option>
+			</select>
+
+			<div class="page_el_form_label">Sample parameter #3:</div>
+			<input type="text" name="param3" value="Sample data #3">
+			
+			<div class="page_el_form_label">Sample parameter #4:</div>
+			<input type="text" name="param4" value="Sample data #4">
+			
+			<div class="page_el_form_label">&nbsp;</div>
+			<input type="submit" value="Submit!">
+		</form>
+	</div>	
+	
+	<div id="page_el_main_results">
+	<%=response_message%>
+	</div>
+	
+</div>
+
+<div id="page_el_footer">
+&copy;2016 Elysian Web Server | All right reserved
+</div>
+
+</body>
+</html>
