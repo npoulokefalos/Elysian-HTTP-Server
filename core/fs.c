@@ -316,15 +316,18 @@ elysian_err_t elysian_fs_rom_fopen(elysian_t* server, char* abs_path, elysian_fi
 		return ELYSIAN_ERR_FATAL;
 	}
 	
-	for(i = 0; i < server->rom_fs_size; i++){
-		printf("checking with %s --------- %s\r\n",  abs_path, server->rom_fs[i].name);
-		if(strcmp(abs_path, server->rom_fs[i].name) == 0){
-			(file)->descriptor.rom.ptr = server->rom_fs[i].ptr;
-			(file)->descriptor.rom.size = server->rom_fs[i].size;
-			(file)->descriptor.rom.pos = 0;
-			return ELYSIAN_ERR_OK;
+	if (server->rom_fs) {
+		for(i = 0; server->rom_fs[i].name != NULL; i++){
+			printf("checking with %s --------- %s\r\n",  abs_path, server->rom_fs[i].name);
+			if(strcmp(abs_path, server->rom_fs[i].name) == 0){
+				(file)->descriptor.rom.ptr = server->rom_fs[i].ptr;
+				(file)->descriptor.rom.size = server->rom_fs[i].size;
+				(file)->descriptor.rom.pos = 0;
+				return ELYSIAN_ERR_OK;
+			}
 		}
 	}
+	
 	
 	return ELYSIAN_ERR_NOTFOUND;
 }

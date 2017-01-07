@@ -62,7 +62,6 @@ struct elysian_t{
     elysian_mvc_controller_t* controllers;
 	elysian_authentication_cb_t authentication_cb;
 	const elysian_file_rom_t* rom_fs;
-	uint32_t rom_fs_size;
 	uint32_t starvation_detection_t0;
 };
 
@@ -71,9 +70,7 @@ struct elysian_t{
  ======================================================================================================================================*/
 elysian_t* elysian_new(void);
 
-elysian_err_t elysian_rom_fs(elysian_t* server, const elysian_file_rom_t rom_fs[], uint32_t rom_fs_size);
-
-elysian_err_t elysian_start(elysian_t* server, uint16_t port, elysian_authentication_cb_t authentication_cb);
+elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_file_rom_t rom_fs[], elysian_authentication_cb_t authentication_cb);
 elysian_err_t elysian_poll(elysian_t* server, uint32_t intervalms);
 void elysian_stop(elysian_t* server);
 

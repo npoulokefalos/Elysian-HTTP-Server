@@ -673,10 +673,8 @@ int main(){
 											controller_file_upload_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
 	elysian_mvc_controller_add(server, "/fs_ext/file_upload_disk_controller", 
 											controller_file_upload, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT | ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS);
-
-	elysian_rom_fs(server, rom_fs, sizeof(rom_fs) / sizeof(elysian_file_rom_t));
-				   
-    elysian_start(server, 9000, authentication_cb);
+		   
+    elysian_start(server, 9000, rom_fs, authentication_cb);
     
     while(!stop){
         elysian_poll(server, 4000);

@@ -1428,19 +1428,11 @@ elysian_t* elysian_new(){
     
     server->controllers = NULL;
 	server->rom_fs = NULL;
-	server->rom_fs_size = 0;
-	
+
     return server;
 }
 
-elysian_err_t elysian_rom_fs(elysian_t* server, const elysian_file_rom_t rom_fs[], uint32_t rom_fs_size){
-	server->rom_fs = rom_fs;
-	server->rom_fs_size = rom_fs_size;
-	return ELYSIAN_ERR_OK;
-}
-			   
-			   
-elysian_err_t elysian_start(elysian_t* server, uint16_t port, elysian_authentication_cb_t authentication_cb){
+elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_file_rom_t rom_fs[], elysian_authentication_cb_t authentication_cb) {
     elysian_err_t err;
 	
 #if defined(ELYSIAN_OS_ENV_UNIX)
@@ -1448,11 +1440,11 @@ elysian_err_t elysian_start(elysian_t* server, uint16_t port, elysian_authentica
 		ELYSIAN_LOG("Could not ignore the SIGPIPE signal!")
 	}
 #endif
-
+	server->rom_fs = rom_fs;
 	server->listening_port = port;
 	server->authentication_cb = authentication_cb;
+	
     err = elysian_schdlr_init(server, port, elysian_state_http_connection_accepted);
-    
     
     return err;
 }

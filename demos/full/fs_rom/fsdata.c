@@ -51,4 +51,5 @@ const elysian_file_rom_t rom_fs[] = { /* 85052 bytes total */
 	{.name = (char*) "/images/img6.jpg", .ptr = (uint8_t*)data_img6_jpg, .size = sizeof(data_img6_jpg)}, /* 3554 bytes */
 	{.name = (char*) "/images/img7.jpg", .ptr = (uint8_t*)data_img7_jpg, .size = sizeof(data_img7_jpg)}, /* 3526 bytes */
 	{.name = (char*) "/images/img8.jpg", .ptr = (uint8_t*)data_img8_jpg, .size = sizeof(data_img8_jpg)}, /* 2994 bytes */
+	{.name = (char*) NULL, .ptr = (uint8_t*) NULL, .size = 0}, /* End of FS */
 };

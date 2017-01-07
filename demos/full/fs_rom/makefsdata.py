@@ -60,6 +60,7 @@ fd_dst.write('\r\n\r\nconst elysian_file_rom_t rom_fs[] = { /* ' + str(fs_size) 
 for filepath in processed_filepaths:
 	fd_dst.write('\t{.name = (char*) \"' + filepath[len(WORKING_DIRECTORY):] + '\", .ptr = (uint8_t*)' + filepath2variable(filepath) +', .size = sizeof(' + filepath2variable(filepath) + ')}, /* ' + str(filepath2size(filepath)) + ' bytes */\r\n');
 #len(fs_ROM_VRT_ROOT)
+fd_dst.write('\t{.name = (char*) NULL, .ptr = (uint8_t*) NULL, .size = 0}, /* End of FS */\r\n');
 fd_dst.write('};\r\n');
 fd_dst.close()
 
