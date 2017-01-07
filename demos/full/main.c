@@ -589,7 +589,7 @@ elysian_err_t controller_ajax(elysian_t* server){
         return err;
     }
 	
-	elysian_mvc_set_reqserved_cb(server, controller_ajax_example_served, ajax_file_name);
+	elysian_mvc_httpreq_served_handler(server, controller_ajax_example_served, ajax_file_name);
 	return ELYSIAN_ERR_OK;
 }
 
@@ -664,50 +664,50 @@ int main(){
 	/*
 	** Controllers for files stored in ROM
 	*/
-	elysian_mvc_controller_add(server, "/fs_rom/dynamic_page.html", 
+	elysian_mvc_controller(server, "/fs_rom/dynamic_page.html", 
 											controller_dynamic_page_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
 	
-	elysian_mvc_controller_add(server, "/fs_rom/form_get.html", 
+	elysian_mvc_controller(server, "/fs_rom/form_get.html", 
 											controller_form_get_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
-	elysian_mvc_controller_add(server, "/fs_rom/form_get_controller", 
+	elysian_mvc_controller(server, "/fs_rom/form_get_controller", 
 											controller_form_get, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
 	
-	elysian_mvc_controller_add(server, "/fs_rom/form_post.html", 
+	elysian_mvc_controller(server, "/fs_rom/form_post.html", 
 											controller_form_post_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
-	elysian_mvc_controller_add(server, "/fs_rom/form_post_controller", 
+	elysian_mvc_controller(server, "/fs_rom/form_post_controller", 
 											controller_form_post, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST);
 	
-	elysian_mvc_controller_add(server, "/fs_rom/file_upload.html", 
+	elysian_mvc_controller(server, "/fs_rom/file_upload.html", 
 											controller_file_upload_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
-	elysian_mvc_controller_add(server, "/fs_rom/file_upload_controller", 
+	elysian_mvc_controller(server, "/fs_rom/file_upload_controller", 
 											controller_file_upload, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT);
 	
-	elysian_mvc_controller_add(server, "/fs_rom/http_request_exposure.html", 
+	elysian_mvc_controller(server, "/fs_rom/http_request_exposure.html", 
 							   controller_http_request_exposure_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
-	elysian_mvc_controller_add(server, "/fs_rom/http_request_exposure_controller", 
+	elysian_mvc_controller(server, "/fs_rom/http_request_exposure_controller", 
 							   controller_http_request_exposure, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT);
 	
-	elysian_mvc_controller_add(server, "/fs_rom/redirected_page0.html", 
+	elysian_mvc_controller(server, "/fs_rom/redirected_page0.html", 
 											controller_redirected_page0_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST);
-	elysian_mvc_controller_add(server, "/fs_rom/redirected_page1.html", 
+	elysian_mvc_controller(server, "/fs_rom/redirected_page1.html", 
 											controller_redirected_page1_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
 	
-	elysian_mvc_controller_add(server, "/fs_rom/ajax_controller", 
+	elysian_mvc_controller(server, "/fs_rom/ajax_controller", 
 											controller_ajax, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
 	
-	elysian_mvc_controller_add(server, "/fs_rom/file_download.html", 
+	elysian_mvc_controller(server, "/fs_rom/file_download.html", 
 											controller_file_download_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
 	
 	/*
 	** Controllers for files stored in external memory
 	*/
-	elysian_mvc_controller_add(server, "/fs_ext/dynamic_page_disk.html", 
+	elysian_mvc_controller(server, "/fs_ext/dynamic_page_disk.html", 
 											controller_dynamic_page_disk_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
 	
 	// Hits the same controller with the ROM alternative
-	elysian_mvc_controller_add(server, "/fs_ext/file_upload_disk.html", 
+	elysian_mvc_controller(server, "/fs_ext/file_upload_disk.html", 
 											controller_file_upload_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
-	elysian_mvc_controller_add(server, "/fs_ext/file_upload_disk_controller", 
+	elysian_mvc_controller(server, "/fs_ext/file_upload_disk_controller", 
 											controller_file_upload, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT | ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS);
 		   
     elysian_start(server, 9000, rom_fs, authentication_cb);

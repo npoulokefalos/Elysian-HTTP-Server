@@ -264,7 +264,7 @@ elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url){
 /* --------------------------------------------------------------------------------------------------------------------------------
 | Controllers
 -------------------------------------------------------------------------------------------------------------------------------- */
-elysian_err_t elysian_mvc_controller_add(elysian_t* server, const char* url, elysian_mvc_controller_cb_t cb, elysian_mvc_controller_flag_e flags){
+elysian_err_t elysian_mvc_controller(elysian_t* server, const char* url, elysian_mvc_controller_cb_t cb, elysian_mvc_controller_flag_e flags){
     elysian_mvc_controller_t* controller;
     
     ELYSIAN_ASSERT(server != NULL, "");
@@ -394,7 +394,7 @@ elysian_err_t elysian_mvc_add_alloc(elysian_t* server, void* data) {
 /* --------------------------------------------------------------------------------------------------------------------------------
 | Callbacks
 -------------------------------------------------------------------------------------------------------------------------------- */
-elysian_err_t elysian_mvc_set_reqserved_cb(elysian_t* server, elysian_reqserved_cb_t cb, void* data){
+elysian_err_t elysian_mvc_httpreq_served_handler(elysian_t* server, elysian_reqserved_cb_t cb, void* data){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     client->reqserved_cb = cb;
     client->reqserved_cb_data = data;

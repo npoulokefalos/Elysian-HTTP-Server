@@ -1453,8 +1453,8 @@ void elysian_stop(elysian_t* server){
 	elysian_schdlr_stop(server);
 }
 
-elysian_err_t elysian_poll(elysian_t* server, uint32_t intervalms){
-    elysian_schdlr_poll(server, intervalms);
+elysian_err_t elysian_poll(elysian_t* server, uint32_t interval_ms){
+    elysian_schdlr_poll(server, interval_ms);
     return ELYSIAN_ERR_OK;
 }
 

@@ -29,7 +29,7 @@
 #define ELYSIAN_ASSERT(cond,msg,...)  if(!(cond)){ELYSIAN_PRINTF("[%u] **** LOG %s():%d: " msg "\r\n", elysian_time_now(), __func__, __LINE__, ##__VA_ARGS__);while(1){}}
 #define ELYSIAN_UNUSED_ARG(arg)       (void)(arg)
 
-#define ELYSIAN_INDEX_OOB32			((uint32_t)0xffffffff) /* Index out of bounds */
+#define ELYSIAN_INDEX_OOB32				((uint32_t)0xffffffff) /* Index out of bounds */
 
 typedef enum{
     ELYSIAN_ERR_OK = 0,
@@ -42,8 +42,6 @@ typedef enum{
     //ELYSIAN_ERR_EOF,
     //ELYSIAN_ERR_FILENOTFOUND,
 }elysian_err_t;
-
-
 
 typedef enum{
 	ELYSIAN_MVC_CONTROLLER_FLAG_NONE 			= 0,
@@ -68,24 +66,52 @@ struct elysian_t{
 /*======================================================================================================================================
  Setup                                                      															
  ======================================================================================================================================*/
+/* 
+** @brief 		Allocates space for a new server instance
+**
+** @param[in]	server The server instance
+**
+** @return  	The allocated server instance or NULL
+ */
 elysian_t* elysian_new(void);
 
+/* 
+** @brief 		Starts the particular server instance
+**
+** @param[in]	server 				The server instance
+** @param[in]	port				Server's listening port
+** @param[in]	rom_fs				Pointer to the list of files which constitute the ROM filesystem.
+** @param[in]	authentication_cb	Authentication callback, used for base access authentication
+**
+** @retval  	ELYSIAN_ERR_OK		On success
+** @retval  	ELYSIAN_ERR_FATAL	On failure
+ */
 elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_file_rom_t rom_fs[], elysian_authentication_cb_t authentication_cb);
-elysian_err_t elysian_poll(elysian_t* server, uint32_t intervalms);
+
+/* 
+** @brief 		Executes the server shceduler for the particular interval.
+**
+** @param[in]	server 				The server instance
+** @param[in]	interval_ms			Number of milliseconds that the function will block.
+**
+** @retval  	ELYSIAN_ERR_OK		On success
+** @retval  	ELYSIAN_ERR_FATAL	On failure.
+ */
+elysian_err_t elysian_poll(elysian_t* server, uint32_t interval_ms);
+
+/* 
+** @brief 		Stops the particular server instance
+**
+** @param[in]	server	The server instance
+ */
 void elysian_stop(elysian_t* server);
 
 /*======================================================================================================================================
  Controllers and MVC                                                       															
  ======================================================================================================================================*/
-elysian_err_t elysian_mvc_controller_add(elysian_t* server, const char* url, elysian_mvc_controller_cb_t cb, elysian_mvc_controller_flag_e flags);
-elysian_err_t elysian_mvc_attribute_set(elysian_t* server, char* name, char* value);
-
-elysian_err_t elysian_mvc_set_reqserved_cb(elysian_t* server, elysian_reqserved_cb_t cb, void* data);
-
-
 elysian_client_t* elysian_current_client(elysian_t* server);
-elysian_err_t elysian_mvc_view_set(elysian_t* server, char* view);
-elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url);
+elysian_err_t elysian_mvc_controller(elysian_t* server, const char* url, elysian_mvc_controller_cb_t cb, elysian_mvc_controller_flag_e flags);
+elysian_err_t elysian_mvc_attribute_set(elysian_t* server, char* name, char* value);
 
 elysian_err_t elysian_mvc_httpreq_url_get(elysian_t* server, char** url);
 elysian_err_t elysian_mvc_httpreq_header_get(elysian_t* server, char* header_name, char** header_value);
@@ -98,6 +124,11 @@ elysian_err_t elysian_mvc_param_get_bytes(elysian_t* server, char* param_name, u
 elysian_err_t elysian_mvc_param_get_str(elysian_t* server, char* param_name, char** param_value, uint8_t* param_found);
 elysian_err_t elysian_mvc_param_get_uint(elysian_t* server, char* param_name, uint32_t* param_value, uint8_t* param_found);
 elysian_err_t elysian_mvc_param_get_int(elysian_t* server, char* param_name, int32_t* param_value, uint8_t* param_found);
+
+elysian_err_t elysian_mvc_view_set(elysian_t* server, char* view);
+elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url);
+
+elysian_err_t elysian_mvc_httpreq_served_handler(elysian_t* server, elysian_reqserved_cb_t cb, void* data);
 
 /*======================================================================================================================================
  Memory Management                                                 															
