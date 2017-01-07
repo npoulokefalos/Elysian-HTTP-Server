@@ -252,7 +252,7 @@ elysian_err_t controller_file_upload(elysian_t* server){
 	** Set the MVC view to be sent to the client
 	** Check if this was called from a ROM or DISK page
 	*/
-	err = elysian_mvc_get_requested_url(server, &requested_url);
+	err = elysian_mvc_httpreq_url_get(server, &requested_url);
 	if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
@@ -347,7 +347,7 @@ elysian_err_t controller_file_upload_html(elysian_t* server){
 	** Set the MVC view to be sent to the client
 	** Check if this was called from a ROM or DISK page
 	*/
-	err = elysian_mvc_get_requested_url(server, &requested_url);
+	err = elysian_mvc_httpreq_url_get(server, &requested_url);
 	if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
@@ -406,6 +406,16 @@ elysian_err_t controller_http_request_exposure_html(elysian_t* server){
         return err;
     }
 
+	err = elysian_mvc_attribute_set(server, "attr_http_request_url", "(Not yet submitted)");
+    if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+	
+	err = elysian_mvc_attribute_set(server, "attr_http_request_header", "(Not yet submitted)");
+    if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+	
 	err = elysian_mvc_view_set(server, "/fs_rom/http_request_exposure.html");
     if(err != ELYSIAN_ERR_OK){ 
         return err;
@@ -419,6 +429,8 @@ elysian_err_t controller_http_request_exposure(elysian_t* server){
 	uint8_t param_found;
 	char* str1;
 	char* str2;
+	char* str3;
+	char* str4;
     elysian_err_t err;
 
     ELYSIAN_LOG("[[ %s ]]", __func__);
@@ -433,12 +445,36 @@ elysian_err_t controller_http_request_exposure(elysian_t* server){
         return err;
     }
 	
+	elysian_mvc_httpreq_url_get(server, &str3);
+	if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+
+	err = elysian_mvc_httpreq_header_get(server, "user-agent", &str4);
+	if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+	if (str3 == NULL) {
+		/* The requested header was not found, add a custom string */
+		str3 = "HTTP header not found!";
+	}
+	
 	err = elysian_mvc_attribute_set(server, "attr_http_request_headers", str1);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
 
 	err = elysian_mvc_attribute_set(server, "attr_http_request_body", str2);
+    if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+	
+	err = elysian_mvc_attribute_set(server, "attr_http_request_url", str3);
+    if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+	
+	err = elysian_mvc_attribute_set(server, "attr_http_request_header", str4);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
     }

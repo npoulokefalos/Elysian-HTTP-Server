@@ -87,7 +87,9 @@ elysian_client_t* elysian_current_client(elysian_t* server);
 elysian_err_t elysian_mvc_view_set(elysian_t* server, char* view);
 elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url);
 
-elysian_err_t elysian_mvc_get_requested_url(elysian_t* server, char** requested_url);
+elysian_err_t elysian_mvc_httpreq_url_get(elysian_t* server, char** url);
+elysian_err_t elysian_mvc_httpreq_header_get(elysian_t* server, char* header_name, char** header_value);
+
 elysian_err_t elysian_mvc_param_get(elysian_t* server, char* param_name, elysian_req_param_t* req_param);
 elysian_err_t elysian_mvc_param_size(elysian_t* server, elysian_req_param_t* req_param, uint32_t* param_size);
 elysian_err_t elysian_mvc_param_filename(elysian_t* server, elysian_req_param_t* req_param, char** filename);

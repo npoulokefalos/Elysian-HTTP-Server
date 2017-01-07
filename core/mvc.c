@@ -21,6 +21,7 @@
 #include "elysian.h"
 
 elysian_err_t elysian_mvc_read_req_params(elysian_t* server);
+elysian_err_t elysian_mvc_add_alloc(elysian_t* server, void* data);
 
 void elysian_mvc_init(elysian_t* server){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
@@ -191,10 +192,25 @@ elysian_err_t elysian_mvc_view_set(elysian_t* server, char* view){
 }
 
 
-elysian_err_t elysian_mvc_get_requested_url(elysian_t* server, char** requested_url) {
+elysian_err_t elysian_mvc_httpreq_url_get(elysian_t* server, char** url) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-	*requested_url = client->httpreq.url;
+	*url = client->httpreq.url;
 	return ELYSIAN_ERR_OK;
+}
+
+elysian_err_t elysian_mvc_httpreq_header_get(elysian_t* server, char* header_name, char** header_value) {
+	elysian_err_t err;
+	
+	err = elysian_http_request_get_header(server, header_name, header_value);
+	if (err != ELYSIAN_ERR_OK) {
+		return err;
+	}
+	
+	if (*header_value) {
+		elysian_mvc_add_alloc(server, *header_value);
+	}
+	
+	return err;
 }
 
 /* --------------------------------------------------------------------------------------------------------------------------------
@@ -356,7 +372,7 @@ elysian_mvc_attribute_t* elysian_mvc_attribute_get(elysian_t* server, char* name
 /* --------------------------------------------------------------------------------------------------------------------------------
 | Allocations
 -------------------------------------------------------------------------------------------------------------------------------- */
-elysian_err_t elysian_mvc_add_alloc(elysian_t* server, void* data){
+elysian_err_t elysian_mvc_add_alloc(elysian_t* server, void* data) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_mvc_alloc_t* alloc;
     
