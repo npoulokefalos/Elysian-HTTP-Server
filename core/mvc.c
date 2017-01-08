@@ -162,6 +162,10 @@ elysian_err_t elysian_mvc_configure(elysian_t* server){
     return ELYSIAN_ERR_OK;
 }
 
+elysian_client_t* elysian_mvc_client(elysian_t* server) {
+	return elysian_current_client(server);
+}
+
 elysian_err_t elysian_mvc_view_set(elysian_t* server, char* view){
     elysian_client_t* client = elysian_schdlr_current_client_get(server);
     if(client->mvc.view){

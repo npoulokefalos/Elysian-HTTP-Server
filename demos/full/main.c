@@ -39,7 +39,7 @@ uint8_t authentication_cb(elysian_t* server, char* url, char* username, char* pa
 }
 
 elysian_err_t controller_dynamic_page_html(elysian_t* server){
-	//elysian_client_t* client = elysian_current_client(server);
+	//elysian_client_t* client = elysian_mvc_client(server);
 	char attr_value[32];
     elysian_err_t err;
 
@@ -84,7 +84,7 @@ elysian_err_t controller_dynamic_page_html(elysian_t* server){
 }
 
 elysian_err_t controller_form_get(elysian_t* server){
-	//elysian_client_t* client = elysian_current_client(server);
+	//elysian_client_t* client = elysian_mvc_client(server);
     char* str1;
 	char* str2;
 	char* str3;
@@ -142,7 +142,7 @@ elysian_err_t controller_form_get(elysian_t* server){
 }
 
 elysian_err_t controller_form_get_html(elysian_t* server){
-	//elysian_client_t* client = elysian_current_client(server);
+	//elysian_client_t* client = elysian_mvc_client(server);
     elysian_err_t err;
 	
     ELYSIAN_LOG("[[ %s ]]", __func__);
@@ -162,7 +162,7 @@ elysian_err_t controller_form_get_html(elysian_t* server){
 
 
 elysian_err_t controller_form_post(elysian_t* server){
-	//elysian_client_t* client = elysian_current_client(server);
+	//elysian_client_t* client = elysian_mvc_client(server);
     char* str1;
 	char* str2;
 	char* str3;
@@ -214,7 +214,7 @@ elysian_err_t controller_form_post(elysian_t* server){
 }
 
 elysian_err_t controller_form_post_html(elysian_t* server){
-	//elysian_client_t* client = elysian_current_client(server);
+	//elysian_client_t* client = elysian_mvc_client(server);
     elysian_err_t err;
 	
     ELYSIAN_LOG("[[ %s ]]", __func__);
@@ -233,7 +233,7 @@ elysian_err_t controller_form_post_html(elysian_t* server){
 }
 
 elysian_err_t controller_file_upload(elysian_t* server){
-	//elysian_client_t* client = elysian_current_client(server);
+	//elysian_client_t* client = elysian_mvc_client(server);
 	uint32_t param_file1_size;
 	char max_upload_size[16];
 	char* param1_data;
@@ -336,7 +336,7 @@ elysian_err_t controller_file_upload(elysian_t* server){
 }
 
 elysian_err_t controller_file_upload_html(elysian_t* server){
-	//elysian_client_t* client = elysian_current_client(server);
+	//elysian_client_t* client = elysian_mvc_client(server);
 	char* requested_url;
 	char max_upload_size[32];
     elysian_err_t err;
@@ -391,7 +391,7 @@ elysian_err_t controller_file_upload_html(elysian_t* server){
 
 
 elysian_err_t controller_http_request_exposure_html(elysian_t* server){
-	//elysian_client_t* client = elysian_current_client(server);
+	//elysian_client_t* client = elysian_mvc_client(server);
     elysian_err_t err;
 
     ELYSIAN_LOG("[[ %s ]]", __func__);
@@ -425,7 +425,7 @@ elysian_err_t controller_http_request_exposure_html(elysian_t* server){
 }
 
 elysian_err_t controller_http_request_exposure(elysian_t* server){
-	//elysian_client_t* client = elysian_current_client(server);
+	//elysian_client_t* client = elysian_mvc_client(server);
 	uint8_t param_found;
 	char* str1;
 	char* str2;
@@ -490,7 +490,7 @@ elysian_err_t controller_http_request_exposure(elysian_t* server){
 
 
 elysian_err_t controller_redirected_page1_html(elysian_t* server){
-	//elysian_client_t* client = elysian_current_client(server);
+	//elysian_client_t* client = elysian_mvc_client(server);
 	char* str1;
 	uint8_t param_found;
     elysian_err_t err;
@@ -517,7 +517,7 @@ elysian_err_t controller_redirected_page1_html(elysian_t* server){
 }
 
 elysian_err_t controller_redirected_page0_html(elysian_t* server){
-	//elysian_client_t* client = elysian_current_client(server);
+	//elysian_client_t* client = elysian_mvc_client(server);
     elysian_err_t err;
 
     ELYSIAN_LOG("[[ %s ]]", __func__);
@@ -547,7 +547,7 @@ elysian_err_t controller_ajax(elysian_t* server){
 	static uint32_t ajax_file_id = 0;
 	char * ajax_file_contents = "<%=ajax_attr%>";
 	char buffer[128];
-	//elysian_client_t* client = elysian_current_client(server);
+	//elysian_client_t* client = elysian_mvc_client(server);
     elysian_err_t err;
 
     ELYSIAN_LOG("[[ %s ]]", __func__);
@@ -595,7 +595,7 @@ elysian_err_t controller_ajax(elysian_t* server){
 
 
 elysian_err_t controller_file_download_html(elysian_t* server){
-	//elysian_client_t* client = elysian_current_client(server);
+	//elysian_client_t* client = elysian_mvc_client(server);
 	char attr_value[32];
     elysian_err_t err;
 
@@ -616,7 +616,7 @@ elysian_err_t controller_file_download_html(elysian_t* server){
 }
 
 elysian_err_t controller_dynamic_page_disk_html(elysian_t* server){
-	//elysian_client_t* client = elysian_current_client(server);
+	//elysian_client_t* client = elysian_mvc_client(server);
 	elysian_file_t disk_file;
 	uint32_t file_size;
 	char attr_value[64];

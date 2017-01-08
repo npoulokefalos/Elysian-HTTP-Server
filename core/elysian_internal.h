@@ -161,6 +161,7 @@ struct elysian_cbuf_t{
 	uint8_t wa[0];
 };
 
+elysian_client_t* elysian_current_client(elysian_t* server);
 
 elysian_cbuf_t* elysian_cbuf_alloc(elysian_t* server, uint8_t* data, uint32_t len);
 void elysian_cbuf_free(elysian_t* server, elysian_cbuf_t* cbuf);
