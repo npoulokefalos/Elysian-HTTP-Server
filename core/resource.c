@@ -244,7 +244,7 @@ elysian_err_t elysian_resource_read_dynamic(elysian_t* server, uint8_t* read_buf
                 ELYSIAN_LOG("index0=%u, index1=%u", priv->sbuf_index0, priv->sbuf_index1);
 				if(priv->sbuf_index0 == priv->sbuf_index1){break;}
 			}
-			ELYSIAN_ASSERT( priv->sbuf_index0 <= priv->sbuf_index1, "");
+			ELYSIAN_ASSERT( priv->sbuf_index0 <= priv->sbuf_index1);
 			if(priv->sbuf_index0 == priv->sbuf_index1){
 				break; /* Whole input processed */
 			}
@@ -261,7 +261,7 @@ elysian_err_t elysian_resource_read_dynamic(elysian_t* server, uint8_t* read_buf
 						while((char*) &priv->sbuf[priv->sbuf_index0] < (char*) &suffix_ptr[suffix_len]){
 							priv->sbuf_index0++;
 							if(priv->sbuf_index0 > priv->sbuf_index1){ /* Some part may belong to the shadow buffer, take care of it */
-								ELYSIAN_ASSERT(priv->shadow_buf_size, "");
+								ELYSIAN_ASSERT(priv->shadow_buf_size);
 								priv->sbuf_index1++;
 								priv->shadow_buf_size--;
 							}
@@ -357,7 +357,7 @@ uint8_t elysian_resource_isopened(elysian_t* server){
 elysian_err_t elysian_resource_read(elysian_t* server, uint8_t* readbuf, uint32_t readbufsz, uint32_t* readbufszactual){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_err_t err;
-    ELYSIAN_ASSERT(client->resource != NULL, "");
+    ELYSIAN_ASSERT(client->resource != NULL);
     err = client->resource->read(server, readbuf, readbufsz, readbufszactual);
     return err;
 }
@@ -365,7 +365,7 @@ elysian_err_t elysian_resource_read(elysian_t* server, uint8_t* readbuf, uint32_
 elysian_err_t elysian_resource_close(elysian_t* server){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_err_t err;
-    ELYSIAN_ASSERT(client->resource != NULL, "");
+    ELYSIAN_ASSERT(client->resource != NULL);
     
     err = client->resource->close(server);
     if(err != ELYSIAN_ERR_OK){

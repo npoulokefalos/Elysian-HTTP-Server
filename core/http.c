@@ -436,7 +436,7 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 	param_header = NULL;
 	param_prev = NULL;
 	
-	ELYSIAN_ASSERT(client->httpreq.params == NULL , "");
+	ELYSIAN_ASSERT(client->httpreq.params == NULL);
 	
 	/* ------------------------------------------------------------------------------------------------------------------
 	** First add the HTTP request header/body params
@@ -833,7 +833,7 @@ elysian_err_t elysian_http_response_build(elysian_t* server){
 #endif
 	
 	if(client->httpresp.status_code == ELYSIAN_HTTP_STATUS_CODE_302){
-		ELYSIAN_ASSERT(client->httpresp.redirection_url, "");
+		ELYSIAN_ASSERT(client->httpresp.redirection_url);
 		err = elysian_http_add_response_header_line(server, "Location", client->httpresp.redirection_url);
 		if(err != ELYSIAN_ERR_OK){
 			return err;
@@ -886,7 +886,6 @@ elysian_err_t elysian_http_add_response_header_line(elysian_t* server, char* hea
         client->httpresp.buf_len += 2;
         return ELYSIAN_ERR_OK;
     }else{
-        //ELYSIAN_ASSERT(0,"");
         return ELYSIAN_ERR_BUF;
     } 
 }
@@ -901,7 +900,6 @@ elysian_err_t elysian_http_add_response_empty_line(elysian_t* server){
         client->httpresp.buf[client->httpresp.buf_len] = '\0';
 		return ELYSIAN_ERR_OK;
 	}else{
-		//ELYSIAN_ASSERT(0,"");
 		return ELYSIAN_ERR_BUF;
 	}
 }
@@ -1069,17 +1067,17 @@ const elysian_http_status_code_t elysian_http_status_codes[] = {
 };
 
 uint16_t elysian_http_get_status_code_num(elysian_http_status_code_e status_code){
-	ELYSIAN_ASSERT(status_code < ELYSIAN_HTTP_STATUS_CODE_MAX, "");
+	ELYSIAN_ASSERT(status_code < ELYSIAN_HTTP_STATUS_CODE_MAX);
 	return elysian_http_status_codes[status_code].code_num;
 }
 
 char* elysian_http_get_status_code_msg(elysian_http_status_code_e status_code){
-	ELYSIAN_ASSERT(status_code < ELYSIAN_HTTP_STATUS_CODE_MAX, "");
+	ELYSIAN_ASSERT(status_code < ELYSIAN_HTTP_STATUS_CODE_MAX);
 	return elysian_http_status_codes[status_code].code_msg;
 }
 
 char* elysian_http_get_status_code_body(elysian_http_status_code_e status_code){
-	ELYSIAN_ASSERT(status_code < ELYSIAN_HTTP_STATUS_CODE_MAX, "");
+	ELYSIAN_ASSERT(status_code < ELYSIAN_HTTP_STATUS_CODE_MAX);
 	return elysian_http_status_codes[status_code].code_body;
 }
 
@@ -1214,7 +1212,7 @@ elysian_err_t elysian_http_authenticate(elysian_t* server){
 	strcpy(&user_pass[strlen(user_pass)], username);
 	strcpy(&user_pass[strlen(user_pass)], ":");
 	strcpy(&user_pass[strlen(user_pass)], password);
-	ELYSIAN_ASSERT(strlen(user_pass) < sizeof(user_pass), "");
+	ELYSIAN_ASSERT(strlen(user_pass) < sizeof(user_pass));
 	if(strcmp(user_pass, ":") == 0){
 		return ELYSIAN_ERR_OK;
 	}

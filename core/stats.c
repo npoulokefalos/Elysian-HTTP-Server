@@ -57,7 +57,7 @@ void elysian_stats_update(elysian_stats_res_t recource_id, uint32_t value){
             recource_type = elysian_stats_RES_TYPE_INTERVAL;
             break;
         default:
-            ELYSIAN_ASSERT(0, "");
+            ELYSIAN_ASSERT(0);
             break;
     };
 

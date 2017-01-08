@@ -23,13 +23,13 @@
 
 #include "elysian_config.h"
 
-#define ELYSIAN_PRINTF                printf
-#define ELYSIAN_LOG(msg, ...)         do{ELYSIAN_PRINTF("[%u] LOG %s():%d: " msg "\r\n", elysian_time_now(), __func__, __LINE__, ##__VA_ARGS__);}while(0);
-#define ELYSIAN_LOG_ERR(msg, ...)     do{ELYSIAN_PRINTF("[%u] **** LOG %s():%d: " msg "\r\n", elysian_time_now(), __func__, __LINE__, ##__VA_ARGS__);}while(0);
-#define ELYSIAN_ASSERT(cond,msg,...)  if(!(cond)){ELYSIAN_PRINTF("[%u] **** LOG %s():%d: " msg "\r\n", elysian_time_now(), __func__, __LINE__, ##__VA_ARGS__);while(1){}}
-#define ELYSIAN_UNUSED_ARG(arg)       (void)(arg)
+#define ELYSIAN_PRINTF                	printf
+#define ELYSIAN_LOG(msg, ...)         	do { ELYSIAN_PRINTF("[%u] ELYSIAN_LOG %s():%d: " msg "\r\n", elysian_time_now(), __func__, __LINE__, ##__VA_ARGS__);} while(0);
+#define ELYSIAN_LOG_ERR(msg, ...)     	do { ELYSIAN_PRINTF("[%u] ELYSIAN_ERR %s():%d: " msg "\r\n", elysian_time_now(), __func__, __LINE__, ##__VA_ARGS__);} while(0);
+#define ELYSIAN_ASSERT(cond)     		if (!(cond)) { ELYSIAN_PRINTF("[%u] ELYSIAN_ASSERT Function %s(), Line %d\r\n", elysian_time_now(), __func__, __LINE__); while(1){} }
+#define ELYSIAN_UNUSED_ARG(arg)       	(void)(arg)
 
-#define ELYSIAN_INDEX_OOB32				((uint32_t)0xffffffff) /* Index out of bounds */
+#define ELYSIAN_INDEX_OOB32				((uint32_t) 0xFFFFFFFF) /* Index out of bounds */
 
 typedef enum{
     ELYSIAN_ERR_OK = 0,
@@ -110,7 +110,7 @@ void elysian_stop(elysian_t* server);
  Controllers and MVC                                                       															
  ======================================================================================================================================*/
 elysian_client_t* elysian_current_client(elysian_t* server);
-elysian_err_t elysian_mvc_controller(elysian_t* server, const char* url, elysian_mvc_controller_cb_t cb, elysian_mvc_controller_flag_e flags);
+elysian_err_t elysian_mvc_controller(elysian_t* server, const char* url, elysian_mvc_controller_handler_t cb, elysian_mvc_controller_flag_e flags);
 elysian_err_t elysian_mvc_attribute_set(elysian_t* server, char* name, char* value);
 
 elysian_err_t elysian_mvc_httpreq_url_get(elysian_t* server, char** url);

@@ -76,7 +76,7 @@ uint32_t elysian_mem_threshold(elysian_mem_malloc_prio_t prio){
 			mem_threshold -= ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MIN;
 			break;
 		default:
-			ELYSIAN_ASSERT(0, "");
+			ELYSIAN_ASSERT(0);
 			break;
 	}
 	return mem_threshold;
@@ -143,7 +143,7 @@ elysian_err_t elysian_os_hostname_get(char hostname[64]){
 */
 
 void elysian_socket_close(elysian_socket_t* socket){
-    ELYSIAN_ASSERT(socket->actively_closed == 0,"");
+    ELYSIAN_ASSERT(socket->actively_closed == 0);
     if(socket->actively_closed){return;}
     elysian_port_socket_close(socket);
     socket->actively_closed = 1;
@@ -158,7 +158,7 @@ elysian_err_t elysian_socket_listen(uint16_t port, elysian_socket_t* server_sock
 elysian_err_t elysian_socket_accept(elysian_socket_t* server_socket, uint32_t timeout_ms, elysian_socket_t* client_socket){
     elysian_err_t err;
     
-    ELYSIAN_ASSERT(server_socket->actively_closed == 0, "");
+    ELYSIAN_ASSERT(server_socket->actively_closed == 0);
     
     if((server_socket->passively_closed) || (server_socket->actively_closed)){
         return ELYSIAN_ERR_FATAL;
@@ -175,7 +175,7 @@ elysian_err_t elysian_socket_accept(elysian_socket_t* server_socket, uint32_t ti
 elysian_err_t elysian_socket_read(elysian_socket_t* client_socket, uint8_t* data, uint16_t datalen, uint32_t* received){
     int result;
     
-    ELYSIAN_ASSERT(client_socket->actively_closed == 0, "");
+    ELYSIAN_ASSERT(client_socket->actively_closed == 0);
     
     *received = 0;
     if((client_socket->passively_closed) || (client_socket->actively_closed)){
@@ -198,7 +198,7 @@ elysian_err_t elysian_socket_read(elysian_socket_t* client_socket, uint8_t* data
 elysian_err_t elysian_socket_write(elysian_socket_t* client_socket, uint8_t* data, uint16_t datalen, uint32_t* sent){
     int result;
     
-    ELYSIAN_ASSERT(client_socket->actively_closed == 0, "");
+    ELYSIAN_ASSERT(client_socket->actively_closed == 0);
     
     *sent = 0;
     if((client_socket->passively_closed) || (client_socket->actively_closed)){
@@ -323,7 +323,7 @@ elysian_err_t elysian_fs_fopen(elysian_t* server, char* vrt_path, elysian_file_m
 	
 	ELYSIAN_LOG("Opening virtual file '%s'..", vrt_path);
 	
-	ELYSIAN_ASSERT(mode == ELYSIAN_FILE_MODE_READ || mode == ELYSIAN_FILE_MODE_WRITE, "");
+	ELYSIAN_ASSERT(mode == ELYSIAN_FILE_MODE_READ || mode == ELYSIAN_FILE_MODE_WRITE);
 	
 	partition = elysian_fs_get_partition(vrt_path);
 	if(!partition){
@@ -368,9 +368,9 @@ uint8_t elysian_fs_fisopened(elysian_t* server, elysian_file_t* file){
 elysian_err_t elysian_fs_fsize(elysian_t* server, elysian_file_t* file, uint32_t* filesize){
     elysian_err_t err;
 	
-	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED, "");
-	ELYSIAN_ASSERT(file->mode == ELYSIAN_FILE_MODE_READ, "");
-	ELYSIAN_ASSERT(file->partition, "");
+	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED);
+	ELYSIAN_ASSERT(file->mode == ELYSIAN_FILE_MODE_READ);
+	ELYSIAN_ASSERT(file->partition);
 	
 	err = file->partition->fsize(server, file, filesize);
 	
@@ -380,9 +380,9 @@ elysian_err_t elysian_fs_fsize(elysian_t* server, elysian_file_t* file, uint32_t
 elysian_err_t elysian_fs_fseek(elysian_t* server, elysian_file_t* file, uint32_t seekpos){
     elysian_err_t err;
 	
-	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED, "");
-	ELYSIAN_ASSERT(file->mode == ELYSIAN_FILE_MODE_READ, "");
-	ELYSIAN_ASSERT(file->partition, "");
+	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED);
+	ELYSIAN_ASSERT(file->mode == ELYSIAN_FILE_MODE_READ);
+	ELYSIAN_ASSERT(file->partition);
 	
 	err = file->partition->fseek(server, file, seekpos);
 
@@ -392,9 +392,9 @@ elysian_err_t elysian_fs_fseek(elysian_t* server, elysian_file_t* file, uint32_t
 elysian_err_t elysian_fs_ftell(elysian_t* server, elysian_file_t* file, uint32_t* seekpos){
     elysian_err_t err;
 	
-	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED, "");
-	ELYSIAN_ASSERT(file->mode == ELYSIAN_FILE_MODE_READ, "");
-	ELYSIAN_ASSERT(file->partition, "");
+	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED);
+	ELYSIAN_ASSERT(file->mode == ELYSIAN_FILE_MODE_READ);
+	ELYSIAN_ASSERT(file->partition);
 	
 	err = file->partition->ftell(server, file, seekpos);
 
@@ -404,9 +404,9 @@ elysian_err_t elysian_fs_ftell(elysian_t* server, elysian_file_t* file, uint32_t
 elysian_err_t elysian_fs_fread(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size, uint32_t* actualreadsize){
     int result;
     
-	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED, "");
-	ELYSIAN_ASSERT(file->mode == ELYSIAN_FILE_MODE_READ, "");
-	ELYSIAN_ASSERT(file->partition, "");
+	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED);
+	ELYSIAN_ASSERT(file->mode == ELYSIAN_FILE_MODE_READ);
+	ELYSIAN_ASSERT(file->partition);
 	
 	*actualreadsize = 0;
 	result = file->partition->fread(server, file, buf, buf_size);
@@ -425,9 +425,9 @@ elysian_err_t elysian_fs_fread(elysian_t* server, elysian_file_t* file, uint8_t*
 elysian_err_t elysian_fs_fwrite(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size, uint32_t* actual_write_sz){
     int result;
     
-	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED, "");
-	ELYSIAN_ASSERT(file->mode == ELYSIAN_FILE_MODE_WRITE, "");
-	ELYSIAN_ASSERT(file->partition, "");
+	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED);
+	ELYSIAN_ASSERT(file->mode == ELYSIAN_FILE_MODE_WRITE);
+	ELYSIAN_ASSERT(file->partition);
 	
 	result = file->partition->fwrite(server, file, buf, buf_size);
 	if(result > 0){
@@ -446,8 +446,8 @@ elysian_err_t elysian_fs_fwrite(elysian_t* server, elysian_file_t* file, uint8_t
 elysian_err_t elysian_fs_fclose(elysian_t* server, elysian_file_t* file){
     elysian_err_t err;
     
-	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED, "");
-	ELYSIAN_ASSERT(file->partition, "");
+	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED);
+	ELYSIAN_ASSERT(file->partition);
 	
 	err = file->partition->fclose(server, file);
     
@@ -484,7 +484,7 @@ elysian_err_t elysian_fs_fremove(elysian_t* server, char* vrt_path) {
 	
 	err = partition->fremove(server, abs_path);
 	
-	ELYSIAN_ASSERT(err != ELYSIAN_ERR_POLL, "");
+	ELYSIAN_ASSERT(err != ELYSIAN_ERR_POLL);
 	
     return err;
 }

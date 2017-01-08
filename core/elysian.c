@@ -96,7 +96,7 @@ void elysian_state_http_connection_accepted(elysian_t* server, elysian_schdlr_ev
         }break;
         default:
         {
-            ELYSIAN_ASSERT(0, "");
+            ELYSIAN_ASSERT(0);
         }break;
     };
 }
@@ -138,7 +138,7 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server){
 				** File not yet created
 				*/
 				elysian_sprintf(filename, filename_template, client->id);
-				ELYSIAN_ASSERT(strlen(filename) < sizeof(client->httpreq.headers_filename), "");
+				ELYSIAN_ASSERT(strlen(filename) < sizeof(client->httpreq.headers_filename));
 				err = elysian_fs_fopen(server, filename, ELYSIAN_FILE_MODE_WRITE, file);
 				if(err != ELYSIAN_ERR_OK){
 					strcpy(filename, "");
@@ -180,8 +180,8 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server){
 				/*
 				** The whore range was stored, close the file
 				*/
-				ELYSIAN_ASSERT(client->store_cbuf_list == NULL, "");
-				ELYSIAN_ASSERT(client->store_cbuf_list_offset == 0, "");
+				ELYSIAN_ASSERT(client->store_cbuf_list == NULL);
+				ELYSIAN_ASSERT(client->store_cbuf_list_offset == 0);
 				ELYSIAN_LOG("File write completed, closing..");
 				elysian_fs_fclose(server, file);
 				//continue and reopen file
@@ -205,7 +205,7 @@ void elysian_state_http_request_store(elysian_t* server, elysian_schdlr_ev_t ev)
             elysian_schdlr_state_timeout_set(server, 4000);
 			elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_LOW);
 
-			ELYSIAN_ASSERT(client->store_cbuf_list == NULL, "");
+			ELYSIAN_ASSERT(client->store_cbuf_list == NULL);
 			
 			/*
 			** Suppose we expect infinity bytes, until the input stream 
@@ -255,7 +255,7 @@ void elysian_state_http_request_store(elysian_t* server, elysian_schdlr_ev_t ev)
 					return;
                     break;
                 default:
-                    ELYSIAN_ASSERT(0, "");
+                    ELYSIAN_ASSERT(0);
                     break;
             };
 			
@@ -294,7 +294,7 @@ void elysian_state_http_request_store(elysian_t* server, elysian_schdlr_ev_t ev)
                     break;
                 default:
 					ELYSIAN_LOG("err was %u",err);
-                    ELYSIAN_ASSERT(0, "");
+                    ELYSIAN_ASSERT(0);
                     break;
             };
         }break;
@@ -305,7 +305,7 @@ void elysian_state_http_request_store(elysian_t* server, elysian_schdlr_ev_t ev)
         }break;
         default:
         {
-            ELYSIAN_ASSERT(0, "");
+            ELYSIAN_ASSERT(0);
         }break;
     };
 }
@@ -321,7 +321,7 @@ void elysian_state_http_request_headers_receive(elysian_t* server, elysian_schdl
             elysian_schdlr_state_timeout_set(server, 4000);
 			elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_LOW);
 			
-			ELYSIAN_ASSERT(client->store_cbuf_list == NULL, "");
+			ELYSIAN_ASSERT(client->store_cbuf_list == NULL);
 			
 			client->http_pipelining_enabled = 0;
 			client->httpresp.status_code = ELYSIAN_HTTP_STATUS_CODE_NA;
@@ -350,7 +350,7 @@ void elysian_state_http_request_headers_receive(elysian_t* server, elysian_schdl
         }break;
         default:
         {
-            ELYSIAN_ASSERT(0, "");
+            ELYSIAN_ASSERT(0);
         }break;
     };
 }
@@ -366,7 +366,7 @@ void elysian_state_http_request_body_receive(elysian_t* server, elysian_schdlr_e
             elysian_schdlr_state_timeout_set(server, 4000);
 			elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_LOW);
 			
-			ELYSIAN_ASSERT(client->store_cbuf_list == NULL, "");
+			ELYSIAN_ASSERT(client->store_cbuf_list == NULL);
 			
 			memset(&client->isp, 0, sizeof(client->isp));
 			
@@ -406,7 +406,7 @@ void elysian_state_http_request_body_receive(elysian_t* server, elysian_schdlr_e
         }break;
         default:
         {
-            ELYSIAN_ASSERT(0, "");
+            ELYSIAN_ASSERT(0);
         }break;
     };
 }
@@ -451,7 +451,7 @@ void elysian_state_http_request_headers_parse(elysian_t* server, elysian_schdlr_
 					return;
                     break;
                 default:
-                    ELYSIAN_ASSERT(0, "");
+                    ELYSIAN_ASSERT(0);
                     break;
             };
         }break;
@@ -462,7 +462,7 @@ void elysian_state_http_request_headers_parse(elysian_t* server, elysian_schdlr_
         }break;
         default:
         {
-            ELYSIAN_ASSERT(0, "");
+            ELYSIAN_ASSERT(0);
         }break;
     };
 }
@@ -524,7 +524,7 @@ void elysian_state_http_expect_reply(elysian_t* server, elysian_schdlr_ev_t ev){
         }break;
         default:
         {
-            ELYSIAN_ASSERT(0, "");
+            ELYSIAN_ASSERT(0);
         }break;
     };
 }
@@ -574,7 +574,7 @@ void elysian_state_http_request_authenticate(elysian_t* server, elysian_schdlr_e
 					return;
 					break;
 				default:
-					ELYSIAN_ASSERT(0, "");
+					ELYSIAN_ASSERT(0);
 					break;
 			};
         }break;
@@ -585,7 +585,7 @@ void elysian_state_http_request_authenticate(elysian_t* server, elysian_schdlr_e
         }break;
         default:
         {
-            ELYSIAN_ASSERT(0, "");
+            ELYSIAN_ASSERT(0);
         }break;
     };
 }
@@ -622,7 +622,7 @@ void elysian_state_http_request_params_get(elysian_t* server, elysian_schdlr_ev_
 					return;
 					break;
 				default:
-					ELYSIAN_ASSERT(0, "");
+					ELYSIAN_ASSERT(0);
 					break;
 			};
         }break;
@@ -633,7 +633,7 @@ void elysian_state_http_request_params_get(elysian_t* server, elysian_schdlr_ev_
         }break;
         default:
         {
-            ELYSIAN_ASSERT(0, "");
+            ELYSIAN_ASSERT(0);
         }break;
     };
 }
@@ -696,7 +696,7 @@ void elysian_state_fatal_error_entry(elysian_t* server, elysian_schdlr_ev_t ev){
         }break;
         default:
         {
-            ELYSIAN_ASSERT(0, "");
+            ELYSIAN_ASSERT(0);
         }break;
     };
 }
@@ -748,7 +748,7 @@ void elysian_state_http_response_entry(elysian_t* server, elysian_schdlr_ev_t ev
         }break;
         default:
         {
-            ELYSIAN_ASSERT(0, "");
+            ELYSIAN_ASSERT(0);
         }break;
     };
 }
@@ -804,7 +804,7 @@ void elysian_state_configure_mvc(elysian_t* server, elysian_schdlr_ev_t ev){
 					return;
 					break;
 				default:
-					ELYSIAN_ASSERT(0, "");
+					ELYSIAN_ASSERT(0);
 					elysian_schdlr_state_set(server, elysian_state_http_disconnect);
 					return;
 					break;
@@ -817,7 +817,7 @@ void elysian_state_configure_mvc(elysian_t* server, elysian_schdlr_ev_t ev){
         }break;
         default:
         {
-            ELYSIAN_ASSERT(0, "");
+            ELYSIAN_ASSERT(0);
         }break;
     };
 }
@@ -943,7 +943,7 @@ void elysian_state_prepare_http_response(elysian_t* server, elysian_schdlr_ev_t 
 				}
 				default:
 				{
-					ELYSIAN_ASSERT(0, "");
+					ELYSIAN_ASSERT(0);
 					elysian_schdlr_state_set(server, elysian_state_http_disconnect);
 					return;
 					break;
@@ -957,7 +957,7 @@ void elysian_state_prepare_http_response(elysian_t* server, elysian_schdlr_ev_t 
         }break;
         default:
         {
-            ELYSIAN_ASSERT(0, "");
+            ELYSIAN_ASSERT(0);
         }break;
     };
 }
@@ -1023,7 +1023,7 @@ void elysian_state_build_http_response(elysian_t* server, elysian_schdlr_ev_t ev
 					return;
 					break;
 				default:
-					ELYSIAN_ASSERT(0, "");
+					ELYSIAN_ASSERT(0);
 					elysian_schdlr_state_set(server, elysian_state_http_disconnect);
 					return;
 					break;
@@ -1036,7 +1036,7 @@ void elysian_state_build_http_response(elysian_t* server, elysian_schdlr_ev_t ev
         }break;
         default:
         {
-            ELYSIAN_ASSERT(0, "");
+            ELYSIAN_ASSERT(0);
         }break;
     };
 }
@@ -1086,7 +1086,7 @@ void elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev)
 					return;
 				}
 				client->httpresp.buf = elysian_mem_malloc(server, client->httpresp.buf_size, ELYSIAN_MEM_MALLOC_PRIO_HIGH);
-				ELYSIAN_ASSERT(client->httpresp.buf, "");
+				ELYSIAN_ASSERT(client->httpresp.buf);
 				if(!client->httpresp.buf){
 					elysian_schdlr_state_poll_backoff(server);
 					return;
@@ -1136,7 +1136,7 @@ void elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev)
 							return;
 							break;
 						default:
-							ELYSIAN_ASSERT(0, "");
+							ELYSIAN_ASSERT(0);
 							elysian_schdlr_state_set(server, elysian_state_http_disconnect);
 							return;
 							break;
@@ -1204,7 +1204,7 @@ void elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev)
         }break;
         default:
         {
-            ELYSIAN_ASSERT(0, "");
+            ELYSIAN_ASSERT(0);
         }break;
     };
 }
@@ -1257,7 +1257,7 @@ void elysian_state_http_keepalive(elysian_t* server, elysian_schdlr_ev_t ev){
         }break;
         default:
         {
-            ELYSIAN_ASSERT(0, "");
+            ELYSIAN_ASSERT(0);
         }break;
     };
 }
@@ -1320,7 +1320,7 @@ void elysian_state_http_disconnect(elysian_t* server, elysian_schdlr_ev_t ev){
         }break;
         default:
         {
-            ELYSIAN_ASSERT(0, "");
+            ELYSIAN_ASSERT(0);
         }break;
     };
 }

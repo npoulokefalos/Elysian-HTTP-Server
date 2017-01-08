@@ -162,7 +162,7 @@ elysian_err_t elysian_fs_ram_fseek(elysian_t* server, elysian_file_t* file, uint
 		return err;
 	}
 	
-	ELYSIAN_ASSERT(seekpos < filesize, "");
+	ELYSIAN_ASSERT(seekpos < filesize);
 	
 	if(seekpos > filesize){
 		return ELYSIAN_ERR_FATAL;
@@ -249,13 +249,13 @@ elysian_err_t elysian_fs_ram_fclose(elysian_t* server, elysian_file_t* file){
     fs_ram_file = file_ram->fd;
     
 	if(file->mode == ELYSIAN_FILE_MODE_READ){
-		ELYSIAN_ASSERT(fs_ram_file->read_handles > 0, "");
+		ELYSIAN_ASSERT(fs_ram_file->read_handles > 0);
 		fs_ram_file->read_handles--;
         return ELYSIAN_ERR_OK;
 	}
 	
 	if(file->mode == ELYSIAN_FILE_MODE_WRITE){
-		ELYSIAN_ASSERT(fs_ram_file->write_handles > 0, "");
+		ELYSIAN_ASSERT(fs_ram_file->write_handles > 0);
 		fs_ram_file->write_handles--;
         return ELYSIAN_ERR_OK;
 	}
@@ -288,7 +288,7 @@ elysian_err_t elysian_fs_ram_fremove(elysian_t* server, char* abs_path){
 		/*
 		** File not found
 		*/
-		ELYSIAN_ASSERT(0, "");
+		ELYSIAN_ASSERT(0);
 		return ELYSIAN_ERR_FATAL;
 	}
 	
@@ -464,7 +464,7 @@ int elysian_fs_ws_fread(elysian_t* server, elysian_file_t* file, uint8_t* buf, u
 }
 
 int elysian_fs_ws_fwrite(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size){
-	ELYSIAN_ASSERT(0, "");
+	ELYSIAN_ASSERT(0);
 	return -1;
 }
 
@@ -473,6 +473,6 @@ elysian_err_t elysian_fs_ws_fclose(elysian_t* server, elysian_file_t* file){
 }
 
 elysian_err_t elysian_fs_ws_fremove(elysian_t* server, char* abs_path){
-	ELYSIAN_ASSERT(0, "");
+	ELYSIAN_ASSERT(0);
 	return ELYSIAN_ERR_FATAL;
 }

@@ -499,7 +499,7 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 
 									default:
 									{
-										ELYSIAN_ASSERT(0, "");
+										ELYSIAN_ASSERT(0);
 										elysian_mem_free(server, search_value);
 										err = ELYSIAN_ERR_FATAL;
 										goto handle_error;

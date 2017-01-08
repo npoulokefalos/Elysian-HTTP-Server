@@ -83,7 +83,7 @@ elysian_err_t elysian_cbuf_list_split(elysian_t* server, elysian_cbuf_t** cbuf_l
         return ELYSIAN_ERR_OK;
     }
 	
-	ELYSIAN_ASSERT(*cbuf_list0 != NULL, "");
+	ELYSIAN_ASSERT(*cbuf_list0 != NULL);
 	//ELYSIAN_ASSERT(*cbuf_list1 == NULL, "");
 	
 	err = elysian_cbuf_rechain(server, cbuf_list0, size);
@@ -94,8 +94,8 @@ elysian_err_t elysian_cbuf_list_split(elysian_t* server, elysian_cbuf_t** cbuf_l
 	*cbuf_list1 = NULL;
 	while(size){
 		cbuf = *cbuf_list0;
-		ELYSIAN_ASSERT(cbuf != NULL, "");
-        ELYSIAN_ASSERT(size >= cbuf->len, "");
+		ELYSIAN_ASSERT(cbuf != NULL);
+        ELYSIAN_ASSERT(size >= cbuf->len);
         
 		cbuf_next = cbuf->next;
         size -= cbuf->len;
@@ -110,7 +110,7 @@ elysian_err_t elysian_cbuf_list_split(elysian_t* server, elysian_cbuf_t** cbuf_l
 		cbuf = cbuf_next;
 	}
 
-	ELYSIAN_ASSERT(0, "");
+	ELYSIAN_ASSERT(0);
 	return ELYSIAN_ERR_FATAL;
 }
 
@@ -141,7 +141,7 @@ elysian_err_t elysian_cbuf_rechain(elysian_t* server, elysian_cbuf_t** cbuf_list
         return ELYSIAN_ERR_OK;
     }
     
-	ELYSIAN_ASSERT((*cbuf_list) != NULL, "");
+	ELYSIAN_ASSERT((*cbuf_list) != NULL);
 	
     cbuf_prev = NULL;
     cbuf = *cbuf_list;
@@ -157,8 +157,8 @@ elysian_err_t elysian_cbuf_rechain(elysian_t* server, elysian_cbuf_t** cbuf_list
         }
 	}
     
-    ELYSIAN_ASSERT(cbuf != NULL, "");
-    ELYSIAN_ASSERT(cbuf->len > size, "");
+    ELYSIAN_ASSERT(cbuf != NULL);
+    ELYSIAN_ASSERT(cbuf->len > size);
 
    
 	/*
@@ -216,7 +216,7 @@ void elysian_cbuf_strget(elysian_cbuf_t* cbuf, uint32_t cbuf_index, char* buf, u
     
     buf_index = 0;
     while(buf_index < buf_len){
-        ELYSIAN_ASSERT(cbuf != NULL, "");
+        ELYSIAN_ASSERT(cbuf != NULL);
         copy_size = (cbuf->len - cbuf_index > buf_len - buf_index) ? buf_len - buf_index : cbuf->len - cbuf_index;
         memcpy(&buf[buf_index], &cbuf->data[cbuf_index], copy_size);
         cbuf_index +=  copy_size;
@@ -240,7 +240,7 @@ uint8_t elysian_cbuf_strcmp(elysian_cbuf_t* cbuf, uint32_t index, char* str, uin
 		cbuf = cbuf->next;
 	}
     
-    ELYSIAN_ASSERT(cbuf != NULL, "");
+    ELYSIAN_ASSERT(cbuf != NULL);
     
 	strLen = strlen(str);
     
@@ -269,7 +269,7 @@ void elysian_cbuf_strcpy(elysian_cbuf_t* cbuf, uint32_t index0, uint32_t index1,
     uint32_t copy_len;
     uint32_t index;
 
-    ELYSIAN_ASSERT(index0 <= index1, "");
+    ELYSIAN_ASSERT(index0 <= index1);
     
     *str = '\0';
 
@@ -282,7 +282,7 @@ void elysian_cbuf_strcpy(elysian_cbuf_t* cbuf, uint32_t index0, uint32_t index1,
     
     copy_len = index1 - index0 + 1;
 	for(index = 0; index < copy_len; index++){
-        ELYSIAN_ASSERT(cbuf != NULL, "");
+        ELYSIAN_ASSERT(cbuf != NULL);
         
 		str[index] = cbuf->data[index0++];
 

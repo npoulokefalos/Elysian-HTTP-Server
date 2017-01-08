@@ -78,14 +78,14 @@ elysian_err_t elysian_mvc_configure(elysian_t* server){
     elysian_mvc_controller_t* controller;
 	elysian_req_param_t* param_next;
 	
-	ELYSIAN_ASSERT(client->mvc.view == NULL, "");
-	ELYSIAN_ASSERT(client->mvc.attributes == NULL, "");
+	ELYSIAN_ASSERT(client->mvc.view == NULL);
+	ELYSIAN_ASSERT(client->mvc.attributes == NULL);
 		
 	controller = elysian_mvc_controller_get(server, client->httpreq.url, client->httpreq.method);
 	if(controller){
 		ELYSIAN_LOG("Calling user defined controller..");
 
-		err = controller->cb(server);
+		err = controller->handler(server);
 		//ELYSIAN_ASSERT(err == ELYSIAN_ERR_OK || err == ELYSIAN_ERR_POLL || err == ELYSIAN_ERR_FATAL, "");
 		if((err != ELYSIAN_ERR_OK) && (err != ELYSIAN_ERR_POLL) && (err != ELYSIAN_ERR_FATAL)) {
 			/*
@@ -153,8 +153,8 @@ elysian_err_t elysian_mvc_configure(elysian_t* server){
 		*/
 	}
 
-	ELYSIAN_ASSERT(client->mvc.view == NULL, "");
-	ELYSIAN_ASSERT(client->httpreq.url != NULL, "");
+	ELYSIAN_ASSERT(client->mvc.view == NULL);
+	ELYSIAN_ASSERT(client->httpreq.url != NULL);
 	
 	client->mvc.view = client->httpreq.url;
 	client->httpreq.url = NULL;
@@ -264,20 +264,21 @@ elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url){
 /* --------------------------------------------------------------------------------------------------------------------------------
 | Controllers
 -------------------------------------------------------------------------------------------------------------------------------- */
-elysian_err_t elysian_mvc_controller(elysian_t* server, const char* url, elysian_mvc_controller_cb_t cb, elysian_mvc_controller_flag_e flags){
+elysian_err_t elysian_mvc_controller(elysian_t* server, const char* url, elysian_mvc_controller_handler_t handler, elysian_mvc_controller_flag_e flags){
     elysian_mvc_controller_t* controller;
     
-    ELYSIAN_ASSERT(server != NULL, "");
-    ELYSIAN_ASSERT(url != NULL, "");
-    ELYSIAN_ASSERT(cb != NULL, "");
-    
+    ELYSIAN_ASSERT(server != NULL);
+    ELYSIAN_ASSERT(url != NULL);
+    ELYSIAN_ASSERT(handler != NULL);
+    ELYSIAN_ASSERT(flags != ELYSIAN_MVC_CONTROLLER_FLAG_NONE);
+	
     controller = elysian_mem_malloc(server, sizeof(elysian_mvc_controller_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
     if(!controller){
         return ELYSIAN_ERR_POLL;
     }
     
     controller->url = url;
-    controller->cb = cb;
+    controller->handler = handler;
 	controller->flags = flags;
     controller->next = server->controllers;
     server->controllers = controller;
@@ -316,9 +317,9 @@ elysian_err_t elysian_mvc_attribute_set(elysian_t* server, char* name, char* val
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_mvc_attribute_t* attribute;
     
-    ELYSIAN_ASSERT(client != NULL, "");
-    ELYSIAN_ASSERT(name != NULL, "");
-    ELYSIAN_ASSERT(strlen(name) > 0, "");
+    ELYSIAN_ASSERT(client != NULL);
+    ELYSIAN_ASSERT(name != NULL);
+    ELYSIAN_ASSERT(strlen(name) > 0);
     
     attribute = elysian_mem_malloc(server, sizeof(elysian_mvc_attribute_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
     if(!attribute){
@@ -376,8 +377,8 @@ elysian_err_t elysian_mvc_add_alloc(elysian_t* server, void* data) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_mvc_alloc_t* alloc;
     
-    ELYSIAN_ASSERT(client != NULL, "");
-    ELYSIAN_ASSERT(data != NULL, "");
+    ELYSIAN_ASSERT(client != NULL);
+    ELYSIAN_ASSERT(data != NULL);
 
 	alloc = elysian_mem_malloc(server, sizeof(elysian_mvc_alloc_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
     if(!alloc){
@@ -477,7 +478,7 @@ elysian_err_t elysian_mvc_param_read(elysian_t* server, elysian_req_param_t* req
     uint32_t current_offset;
     elysian_err_t err;
      
-    ELYSIAN_ASSERT(buf, "");
+    ELYSIAN_ASSERT(buf);
     
     *read_size = 0;
     
@@ -567,7 +568,7 @@ elysian_err_t elysian_mvc_param_get_raw(elysian_t* server, char* param_name, uin
 		return err;
 	}
 	
-	ELYSIAN_ASSERT(param.data_size == actual_read_size , "");
+	ELYSIAN_ASSERT(param.data_size == actual_read_size);
 	
 	buf[actual_read_size] = '\0';
 	

@@ -219,7 +219,7 @@ elysian_err_t elysian_uint2str(uint32_t uint_var, char* buf, uint32_t buf_size){
         buf[--uint_len] = digit[uint_var%10];
         uint_var = uint_var/10;
     }while(uint_var);
-    ELYSIAN_ASSERT(uint_len == 0, "");
+    ELYSIAN_ASSERT(uint_len == 0);
 	return ELYSIAN_ERR_OK;
 }
 

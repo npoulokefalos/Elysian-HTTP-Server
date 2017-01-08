@@ -421,12 +421,12 @@ struct elysian_mvc_attribute_t{
     elysian_mvc_attribute_t* next;
 };
 
-typedef elysian_err_t (*elysian_mvc_controller_cb_t)(elysian_t* server);
+typedef elysian_err_t (*elysian_mvc_controller_handler_t)(elysian_t* server);
 	
 typedef struct elysian_mvc_controller_t elysian_mvc_controller_t;
 struct elysian_mvc_controller_t{
     const char* url;
-    elysian_mvc_controller_cb_t cb;
+    elysian_mvc_controller_handler_t handler;
     //uint8_t http_methods_mask;
 	elysian_mvc_controller_flag_e flags;
 
