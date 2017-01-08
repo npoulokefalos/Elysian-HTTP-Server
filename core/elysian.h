@@ -119,79 +119,9 @@ void elysian_stop(elysian_t* server);
 ** @param[in]	handler		The handler that will be triggered when the specific URL will be requested
 ** @param[in]	flags		Controller flags indicating the HTTP method that will trigger the controller
 **
-** @retval  	ELYSIAN_ERR_OK		Indicates success. Web Server will serve the HTTP request using the
-**									MVC configuration set by the user.
-** @retval  	ELYSIAN_ERR_FATAL	Indicates a none-recoverable error. Web Server will send a HTTP response
-**									with "HTTP 500 Internal Server Error" status code. MVC configuration set
-**									by user will be ignored.
-** @retval  	ELYSIAN_ERR_POLL	Indicates temporary but recoverable error. The HTTP request will not be dropped.
-**									Web Server will trigger the specific handler later with exponential backoff until
-**									succesfull handling (ELYSIAN_ERR_OK) or until timeout. The exponential backoff
-**									mechanism will trigger the handler using the following delay sequence:
-**									{1ms, 2ms, 4ms, 8ms, ..., 256ms, 512ms, 512ms, 512ms, .. }. When the total delay
-**									between the fist handler triggering and the current timestamp reaches the timeout
-**									value (depending on HTTP state the timeout will be between 5.000 and 10.000 msec)
-**									the Web Server will automatically generate a HTTP response using the 
-**									"HTTP 500 Internal Server Error" status code. This polling mechanism makes the
-**									Web Server extremely robust, since temporary failed memory allocations do not
-**									prevent HTTP request servicing and also increases the multi-client performance
-**									without requiring extra memory. Due to the exponsentially increased delay periods
-**									the power consumption and CPU usage are not affected.
-**
-**									It si important to note that, since the MVC handler might be called more than once
-**									for a specific HTTP request, all user memory allocations should be freed before the
-**									handler returns the ELYSIAN_ERR_POLL code, to prevent memory leaks. Below is a
-**									demonstrative part of code:
-
-									elysian_err_t test_controller_handler(elysian_t* server) {
-										elysian_err_t err;
-										char* param_value;
-										uint8_t param_found;
-										char* buf;
-										
-										buf = elysian_mem_malloc(server, 512, ELYSIAN_MEM_MALLOC_PRIO_NORMAL); // user allocated memory block
-										if (!buf) {
-											return ELYSIAN_ERR_POLL;
-										}
-										
-										err = elysian_mvc_param_get_str(server, "test_parameter", &param_value, &param_found);
-										if(err != ELYSIAN_ERR_OK){ 
-											elysian_mem_free(server, buf); 	// Since ELYSIAN_ERR_POLL or ELYSIAN_ERR_FATAL will be returned, the
-																			// user allocated "buf" should be freed.
-											return err;
-										}
-										
-										//	...
-										//	Use "param_value" / "buf" variables
-										//	...
-										
-										// Free user allocated memory if needed
-										elysian_mem_free(server, buf);
-										
-										return ELYSIAN_ERR_OK;
-									}
-**
-**									Consider for example that at a specific time, the Web Server is servicing 5 HTTP requests
-**									and the free memory will be limited for 1200ms (etc until the 3rd HTTP request will be served
-**									and the associated allocated memory will be freed), preventing a 6th HTTP request to be serviced. 
-** 									If the 6th HTTP request is received, the corresponding MVC handler is highly likely to return
-**									an ELYSIAN_ERR_POLL error code. The behavior of the exponsential backoff mechanism will be
-**									as follows:
-**			
-**									[Time 0 ms] 	MVC handler for the 6th HTTP request is triggered for first time, but
-**													due to temporary limited memory resources returns ELYSIAN_ERR_POLL
-**									[Time 1 ms] 	MVC handler called again, returns ELYSIAN_ERR_POLL
-**									[Time 3 ms] 	MVC handler called again, returns ELYSIAN_ERR_POLL
-**									[Time 7 ms] 	MVC handler called again, returns ELYSIAN_ERR_POLL
-**									[Time 15 ms] 	MVC handler called again, returns ELYSIAN_ERR_POLL
-**									[Time 31 ms] 	MVC handler called again, returns ELYSIAN_ERR_POLL
-**									[Time 63 ms] 	MVC handler called again, returns ELYSIAN_ERR_POLL
-**									[Time 127 ms] 	MVC handler called again, returns ELYSIAN_ERR_POLL
-**									[Time 255 ms] 	MVC handler called again, returns ELYSIAN_ERR_POLL
-**									[Time 511 ms] 	MVC handler called again, returns ELYSIAN_ERR_POLL
-**									[Time 1023 ms] 	MVC handler called again, returns ELYSIAN_ERR_POLL
-**									[Time 1535 ms] 	MVC handler called again, 3rd HTTP request has been served, 6th HTTP request will 
-**													be served normally since the required memory is now available.
+** @retval  	ELYSIAN_ERR_OK		Indicates success. 
+** @retval  	ELYSIAN_ERR_POLL	Indicates memory allocation error.
+** @retval  	ELYSIAN_ERR_FATAL	Indicates wrong configuration.
  */
 elysian_err_t elysian_mvc_controller(elysian_t* server, const char* url, elysian_mvc_controller_handler_t handler, elysian_mvc_controller_flag_e flags);
 
