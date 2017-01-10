@@ -101,8 +101,6 @@ elysian_err_t elysian_strncpy_file(elysian_t* server, elysian_file_t* file, uint
 	return ELYSIAN_ERR_OK;
 }
 
-
-#if 1
 elysian_err_t elysian_strstr_file(elysian_t* server, elysian_file_t* file, uint32_t offset, char* pattern1, char* pattern2, uint8_t match_case, uint32_t* index1, uint32_t* index2){
 	uint8_t tmp_buf[128 + 1];  /* This is the maximum size of pattern we can search for */
 	uint8_t* buf;
@@ -135,11 +133,6 @@ elysian_err_t elysian_strstr_file(elysian_t* server, elysian_file_t* file, uint3
 	** Try to allocate a bigger buffer to speedup the search process.
 	** If we are out of memory we are going to work with tmp_buf.
 	*/
-
-#if 0
-	buf = tmp_buf;
-	buf_sz = sizeof(tmp_buf) - 1;
-#else
 	buf_sz = 8 * 512;
 	while(1){
 		buf = elysian_mem_malloc(server, buf_sz + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
@@ -154,7 +147,6 @@ elysian_err_t elysian_strstr_file(elysian_t* server, elysian_file_t* file, uint3
 			break;
 		}
 	};
-#endif
 	
 	eof = 0;
 	*index1 = ELYSIAN_INDEX_OOB32;
@@ -169,6 +161,7 @@ elysian_err_t elysian_strstr_file(elysian_t* server, elysian_file_t* file, uint3
 	while(1){
 		if(buf_index == buf_index1){
 			if(eof){
+				err = ELYSIAN_ERR_OK;
 				goto op_finished; /* The whole file stream was processed */
 			}
 
@@ -188,7 +181,7 @@ elysian_err_t elysian_strstr_file(elysian_t* server, elysian_file_t* file, uint3
 				//f_read(file, &buf[buf_index1], buf_sz - buf_index1,(UINT*)&read_len);
                 err = elysian_fs_fread(server, file, &buf[buf_index1], buf_sz - buf_index1, &read_len);
                 if(err != ELYSIAN_ERR_OK){
-                    return err;
+                    goto op_finished;
                 }
 				if(read_len != buf_sz - buf_index1){
 					eof = 1;
@@ -223,10 +216,12 @@ elysian_err_t elysian_strstr_file(elysian_t* server, elysian_file_t* file, uint3
 					pattern_len = strlen(pattern2);
 					if(pattern_len == 0){
 						ELYSIAN_LOG("pattern_len == 0\r\n");
+						err = ELYSIAN_ERR_OK;
 						goto op_finished;
 					}
 				}else{
 					*index2 = match_index + buf_index0;
+					err = ELYSIAN_ERR_OK;
 					goto op_finished;
 				}
 			}
@@ -245,128 +240,6 @@ op_finished:
     
     return ELYSIAN_ERR_OK;
 }
-#else
-
-void file_strstr(FIL* file, uint32_t offset, char* pattern1, char* pattern2, uint8_t match_case, uint32_t* index1, uint32_t* index2){
-	uint8_t tmp_buf[128 + 1];  /* This is the maximum size of pattern we can search for */
-	uint8_t* buf;
-	uint32_t buf_sz;
-	char* pattern;
-	uint32_t pattern_len;
-	uint32_t seek_pos;
-	int read_len;
-	uint8_t eof;
-	uint32_t index;
-	uint32_t match_index;
-	uint32_t buf_index, buf_index0, buf_index1, pattern_index;
-
-	/*
-	** Seek to the appropriate file position
-	*/
-	seek_pos = f_tell(file);
-	if(offset != seek_pos){
-		f_lseek(file, offset);
-	}
-	
-	/*
-	** Try to allocate a bigger buffer to speedup the search process.
-	** If we are out of memory we are going to work with tmp_buf.
-	*/
-#if 0
-	buf = tmp_buf;
-	buf_sz = sizeof(tmp_buf) - 1;
-#else
-	buf_sz = 8 * 512;
-	while(1){
-		buf = r_os_malloc(buf_sz + 1);
-		if(!buf){
-			buf_sz = (buf_sz > 512) ? buf_sz - 512 : 0;
-			if(buf_sz <= sizeof(tmp_buf) - 1){
-				buf = tmp_buf;
-				buf_sz = sizeof(tmp_buf) - 1;
-				break;
-			}
-		}else{
-			break;
-		}
-	};
-#endif
-	
-    /*
-    ** Start searching
-    */
-	eof = 0;
-	*index1 = ELYSIAN_INDEX_OOB32;
-	*index2 = ELYSIAN_INDEX_OOB32;
-	pattern = pattern1;
-	pattern_len = strlen(pattern1);
-	match_index = offset;
-	buf_index0 = 0;
-	buf_index1 = 0;
-	pattern_index = 0;
-	buf_index = 0;
-	while(!eof){
-        for(index = 0; index < pattern_index; index++){
-            buf[index] = buf[buf_index0 + index];
-        }
-        match_index += buf_index0;
-        buf_index   -= buf_index0;
-        buf_index0  = 0;
-        buf_index1  = pattern_index;
-        if(buf_sz - buf_index1 == 0){
-            goto op_finished; /* Pattern len is bigger than our working buffer, abort */
-        }
-        f_read(file,&buf[buf_index1], buf_sz - buf_index1,(UINT*)&read_len);
-        if(read_len != buf_sz - buf_index1){
-            eof = 1;
-        }
-        buf_index1 += (uint32_t) read_len;
-        buf[buf_index1] = '\0';
-
-#define search_loop(c1, c2) \
-        while(buf_index1 - buf_index){ \
-            if(c1 == c2){ \
-                buf_index++; \
-                pattern_index++; \
-                if(pattern_index == pattern_len){ \
-                    if(pattern == pattern1){ \
-                        *index1 = match_index + buf_index0; \
-                        buf_index0 += pattern_len; \
-                        pattern_index = 0; \
-                        buf_index = buf_index0; \
-                        pattern = pattern2; \
-                        pattern_len = strlen(pattern2); \
-                        if(pattern_len == 0){ \
-                            goto op_finished; \
-                        } \
-                    }else{ \
-                        *index2 = match_index + buf_index0; \
-                        goto op_finished; \
-                    } \
-                } \
-            }else{ \
-                buf_index0++; \
-                pattern_index = 0; \
-                buf_index = buf_index0; \
-            } \
-        } \
-     
-        if(match_case){
-            search_loop(buf[buf_index], pattern[pattern_index])
-        }else{
-            search_loop(upper(buf[buf_index]), upper(pattern[pattern_index]))
-        }
-        
-#undef search_loop
-	}
-    
-op_finished:
-	
-	if(buf != tmp_buf){
-		r_os_free(buf);
-	}
-}
-#endif
 
 #if 0
 

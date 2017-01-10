@@ -77,7 +77,8 @@
 
 /*
 ** Specify the maximum size of HTTP body that should be accepted by the server.
-** This is specifically for HTTP requests that are configured to be stored in DISK.
+** This is specifically for HTTP requests that are configured to be stored in EXT storage device.
+** (using the ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS flag)
 */
 #define ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK	    		(5 * 1024)
 
@@ -96,7 +97,7 @@
 
 
 /* 
-** DISK partition which refers to resources stored into the hard disk or external SDCARD.
+** Absolute root path of the EXT storage device (SD Card, USB, Hard Disk, ..)
 */
 #define ELYSIAN_FS_EXT_ABS_ROOT						"/fs_ext"
 

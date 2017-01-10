@@ -545,7 +545,7 @@ elysian_err_t elysian_port_socket_select(elysian_socket_t* socket_readset[], uin
 ** @retval ELYSIAN_ERR_FATAL  	There was a fatal error. 
  */
 elysian_err_t elysian_port_fs_ext_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file){
-	ELYSIAN_LOG("[[ Opening disk file '%s']]", abs_path);
+	ELYSIAN_LOG("[[ Opening ext file '%s']]", abs_path);
 #if (defined(ELYSIAN_FS_ENV_UNIX) || defined(ELYSIAN_FS_ENV_WINDOWS))
 	/*
 	** Make path relative to the "elysian" executable by removing leading '/'
@@ -554,14 +554,14 @@ elysian_err_t elysian_port_fs_ext_fopen(elysian_t* server, char* abs_path, elysi
 #endif
 	
 #if defined(ELYSIAN_FS_ENV_UNIX)
-    file->descriptor.disk.fd = fopen(abs_path, (mode == ELYSIAN_FILE_MODE_READ) ? "rb" : "wb");
-    if(!file->descriptor.disk.fd){
+    file->descriptor.ext.fd = fopen(abs_path, (mode == ELYSIAN_FILE_MODE_READ) ? "rb" : "wb");
+    if(!file->descriptor.ext.fd){
         return ELYSIAN_ERR_NOTFOUND;
     }
     return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
-    file->descriptor.disk.fd = fopen(abs_path, (mode == ELYSIAN_FILE_MODE_READ) ? "rb" : "wb");
-    if(!file->descriptor.disk.fd){
+    file->descriptor.ext.fd = fopen(abs_path, (mode == ELYSIAN_FILE_MODE_READ) ? "rb" : "wb");
+    if(!file->descriptor.ext.fd){
         return ELYSIAN_ERR_NOTFOUND;
     }
     return ELYSIAN_ERR_OK;
@@ -598,14 +598,14 @@ elysian_err_t elysian_port_fs_ext_fopen(elysian_t* server, char* abs_path, elysi
 elysian_err_t elysian_port_fs_ext_fsize(elysian_t* server, elysian_file_t* file, uint32_t* filesize){
     *filesize = 0;
 #if defined(ELYSIAN_FS_ENV_UNIX)
-    elysian_file_disk_t* file_disk = &file->descriptor.disk;
+    elysian_file_ext_t* file_disk = &file->descriptor.ext;
     uint32_t seekpos = ftell(file_disk->fd);
     fseek(file_disk->fd, 0L, SEEK_END);
     *filesize = ftell(file_disk->fd);
     fseek(file_disk->fd, seekpos, SEEK_SET);
     return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
-    elysian_file_disk_t* file_disk = &file->descriptor.disk;
+    elysian_file_ext_t* file_disk = &file->descriptor.ext;
     uint32_t seekpos = ftell(file_disk->fd);
     fseek(file_disk->fd, 0L, SEEK_END);
     *filesize = ftell(file_disk->fd);
@@ -613,7 +613,7 @@ elysian_err_t elysian_port_fs_ext_fsize(elysian_t* server, elysian_file_t* file,
 	
     return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
-	elysian_file_disk_t* file_disk = &file->descriptor.disk;
+	elysian_file_ext_t* file_disk = &file->descriptor.ext;
 	*filesize = f_size(file_disk->fd);
     return ELYSIAN_ERR_OK;
 #else
@@ -635,16 +635,16 @@ elysian_err_t elysian_port_fs_ext_fsize(elysian_t* server, elysian_file_t* file,
  */
 elysian_err_t elysian_port_fs_ext_fseek(elysian_t* server, elysian_file_t* file, uint32_t seekpos){
 #if defined(ELYSIAN_FS_ENV_UNIX)
-    elysian_file_disk_t* file_disk = &file->descriptor.disk;
+    elysian_file_ext_t* file_disk = &file->descriptor.ext;;
     fseek(file_disk->fd, seekpos, SEEK_SET);
     return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
-    elysian_file_disk_t* file_disk = &file->descriptor.disk;
+	elysian_file_ext_t* file_disk = &file->descriptor.ext;
     fseek(file_disk->fd, seekpos, SEEK_SET);
     return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
 	FRESULT res;
-	elysian_file_disk_t* file_disk = &file->descriptor.disk;
+	elysian_file_ext_t* file_disk = &file->descriptor.ext;
 	res = f_lseek(file_disk->fd, seekpos);
 	if(res != FR_OK){
 		return ELYSIAN_ERR_FATAL;
@@ -669,15 +669,15 @@ elysian_err_t elysian_port_fs_ext_fseek(elysian_t* server, elysian_file_t* file,
  */
 elysian_err_t elysian_port_fs_ext_ftell(elysian_t* server, elysian_file_t* file, uint32_t* seekpos){
 #if defined(ELYSIAN_FS_ENV_UNIX)
-    elysian_file_disk_t* file_disk = &file->descriptor.disk;
+	elysian_file_ext_t* file_disk = &file->descriptor.ext;
     *seekpos = ftell(file_disk->fd);
     return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
-    elysian_file_disk_t* file_disk = &file->descriptor.disk;
+	elysian_file_ext_t* file_disk = &file->descriptor.ext;
     *seekpos = ftell(file_disk->fd);
     return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
-	elysian_file_disk_t* file_disk = &file->descriptor.disk;
+	elysian_file_ext_t* file_disk = &file->descriptor.ext;
 	*filesize = f_tell(file_disk->fd);
     return ELYSIAN_ERR_OK;
 #else
@@ -701,17 +701,17 @@ elysian_err_t elysian_port_fs_ext_ftell(elysian_t* server, elysian_file_t* file,
 int elysian_port_fs_ext_fread(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size){
 #if defined(ELYSIAN_FS_ENV_UNIX)
 	int result;
-    elysian_file_disk_t* file_disk = &file->descriptor.disk;
+	elysian_file_ext_t* file_disk = &file->descriptor.ext;
     result = fread(buf, 1, buf_size, file_disk->fd);
     return result;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
 	int result;
-    elysian_file_disk_t* file_disk = &file->descriptor.disk;
+	elysian_file_ext_t* file_disk = &file->descriptor.ext;
     result = fread(buf, 1, buf_size, file_disk->fd);
     return result;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
    	FRESULT res;
-	elysian_file_disk_t* file_disk = &file->descriptor.disk;
+	elysian_file_ext_t* file_disk = &file->descriptor.ext;
 	res = f_read(file_disk->fd, readbuf, readbufsize, actualreadsize);
 	if(res != FR_OK){
 		*actualreadsize = 0;
@@ -740,7 +740,7 @@ int elysian_port_fs_ext_fread(elysian_t* server, elysian_file_t* file, uint8_t* 
 int elysian_port_fs_ext_fwrite(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size){
 #if defined(ELYSIAN_FS_ENV_UNIX)
 	int result;
-    elysian_file_disk_t* file_disk = &file->descriptor.disk;
+	elysian_file_ext_t* file_disk = &file->descriptor.ext;
 	
 	result = fwrite(buf, 1, buf_size, file_disk->fd);
 	if(result == buf_size){
@@ -750,7 +750,7 @@ int elysian_port_fs_ext_fwrite(elysian_t* server, elysian_file_t* file, uint8_t*
 	}
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
 	int result;
-    elysian_file_disk_t* file_disk = &file->descriptor.disk;
+	elysian_file_ext_t* file_disk = &file->descriptor.ext;
 	
 	result = fwrite(buf, 1, buf_size, file_disk->fd);
 	if(result == buf_size){
@@ -761,7 +761,7 @@ int elysian_port_fs_ext_fwrite(elysian_t* server, elysian_file_t* file, uint8_t*
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
    	FRESULT res;
 	int actual_write_sz;
-	elysian_file_disk_t* file_disk = &file->descriptor.disk;
+	elysian_file_ext_t* file_disk = &file->descriptor.ext;
 	res = f_write(file_disk->fd, write_buf, write_buf_sz, &actual_write_sz);
 	if(res != FR_OK){
 		return -1;
@@ -780,20 +780,20 @@ int elysian_port_fs_ext_fwrite(elysian_t* server, elysian_file_t* file, uint8_t*
 ** @param[in] file The file descriptor (retrieved using elysian_port_fs_ext_fopen)
 **
 ** @retval ELYSIAN_ERR_OK 		The file was found and succesfully closed
-** @retval ELYSIAN_ERR_FATAL 	The file could not be closed (either because it was not found or because DISK is not mounted)
+** @retval ELYSIAN_ERR_FATAL 	The file could not be closed (either because it was not found or because EXT is not mounted)
  */
 elysian_err_t elysian_port_fs_ext_fclose(elysian_t* server, elysian_file_t* file){
 #if defined(ELYSIAN_FS_ENV_UNIX)
-    elysian_file_disk_t* file_disk = &file->descriptor.disk;
+	elysian_file_ext_t* file_disk = &file->descriptor.ext;
     fclose(file_disk->fd);
     return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
-    elysian_file_disk_t* file_disk = &file->descriptor.disk;
+	elysian_file_ext_t* file_disk = &file->descriptor.ext;
     fclose(file_disk->fd);
     return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
    	FRESULT res;
-	elysian_file_disk_t* file_disk = &file->descriptor.disk;
+	elysian_file_ext_t* file_disk = &file->descriptor.ext;
 	res = f_close(file_disk->fd);
 	if(res != FR_OK){
 		return ELYSIAN_ERR_FATAL;
@@ -805,16 +805,16 @@ elysian_err_t elysian_port_fs_ext_fclose(elysian_t* server, elysian_file_t* file
 }
 
 /* 
-** @brief Remove a file from the disk.
+** @brief Remove a file from the storage device.
 **
 ** @param[in] server The server instance
 ** @param[in] abs_path The absolute file path
 **
 ** @retval ELYSIAN_ERR_OK 		The file was found and succesfully removed
-** @retval ELYSIAN_ERR_FATAL 	The file could not be removed (either because it was not found or because DISK is not mounted)
+** @retval ELYSIAN_ERR_FATAL 	The file could not be removed (either because it was not found or because EXT is not mounted)
  */
 elysian_err_t elysian_port_fs_ext_fremove(elysian_t* server, char* abs_path){
-	ELYSIAN_LOG("[[ Removing disk file '%s']]", abs_path);
+	ELYSIAN_LOG("[[ Removing ext file '%s']]", abs_path);
 #if (defined(ELYSIAN_FS_ENV_UNIX) || defined(ELYSIAN_FS_ENV_WINDOWS))
 	/*
 	** Make path relative to the "elysian" executable by removing leading '/'

@@ -54,18 +54,11 @@
 */
 
 /* 
-** RAM partition which provides an abstraction so data stored in either RAM/ROM/DISK can be handled in the same manner.
+** RAM partition which provides an abstraction so data stored in either RAM/ROM/EXT can be handled in the same manner.
 ** It is mostly used internally by the web server (for example to store small POST requests), but it can be used from user too.
 */
 #define ELYSIAN_FS_RAM_VRT_ROOT						"/fs_ram"
 #define ELYSIAN_FS_RAM_ABS_ROOT						""
-
-/* 
-** Web Server's internal partition for sending default content, for example default error pages (404, 500, ..)
-** when user-defined error pages are not provided in any other user partition.
-*/
-#define ELYSIAN_FS_WS_VRT_ROOT						"/fs_ws"
-#define ELYSIAN_FS_WS_ABS_ROOT						""
 
 /* 
 ** ROM partition which refers to resources stored as "const" variables in the .text area of the program
@@ -75,12 +68,17 @@
 #define ELYSIAN_FS_ROM_ABS_ROOT						""
 
 /* 
-** DISK partition which refers to resources stored into the hard disk or external SDCARD.
+** EXT partition which refers to resources stored to an external storage device (SD Card, USB, Hard Disk, ..).
 */
 #define ELYSIAN_FS_EXT_VRT_ROOT						"/fs_ext"
 //#define ELYSIAN_FS_EXT_ABS_ROOT					Defined by app
 
-
+/* 
+** Web Server's internal partition for sending default content, for example default error pages (404, 500, ..)
+** when user-defined error pages are not provided in any other user partition.
+*/
+#define ELYSIAN_FS_WS_VRT_ROOT						"/fs_ws"
+#define ELYSIAN_FS_WS_ABS_ROOT						""
 
 
 /*
@@ -94,7 +92,7 @@
 **	 index.html is located to ROM, and will be requested as {ELYSIAN_FSROM_ABS_ROOT}index.html from elysian_port_fsrom_fopen()
 **
 ** - ELYSIAN_FS_INDEX_HTML_VRT_ROOT == ELYSIAN_FS_EXT_VRT_ROOT : 
-**	 index.html is located to DISK, and will be requested as {ELYSIAN_FSDISK_ABS_ROOT}index.html from elysian_port_fsdisk_fopen()
+**	 index.html is located to EXT, and will be requested as {ELYSIAN_FSDISK_ABS_ROOT}index.html from elysian_port_fsext_fopen()
 */
 #define ELYSIAN_FS_INDEX_HTML_VRT_ROOT				ELYSIAN_FS_ROM_VRT_ROOT
 
@@ -329,8 +327,8 @@ struct elysian_file_rom_t{
     uint32_t size;
 };
 
-typedef struct elysian_file_disk_t elysian_file_disk_t;
-struct elysian_file_disk_t{
+typedef struct elysian_file_ext_t elysian_file_ext_t;
+struct elysian_file_ext_t{
 #if defined(ELYSIAN_FS_ENV_UNIX)
     FILE* fd;
 #elif defined(ELYSIAN_ENV_WINDOWS)
@@ -342,6 +340,24 @@ struct elysian_file_disk_t{
 #endif
 };
 
+#if 0
+typedef enum {
+	ELYSISIAN_FILE_VRT_ACTION_OPEN = 0,
+	ELYSISIAN_FILE_VRT_ACTION_READ,
+	ELYSISIAN_FILE_VRT_ACTION_CLOSE,
+}
+
+typedef int (*elysian_elysian_file_vrt_handler_t)(elysian_t* server, void* args, elysian_file_vrt_action_e action,  uint32_t byte_index, uint8_t buf, uint32_t buf_size);
+
+typedef struct elysian_file_vrt_t elysian_file_vrt_t;
+struct elysian_file_vrt_t{
+	char* name;
+    void* args;
+    uint32_t pos;
+    uint32_t size;
+	elysian_elysian_file_vrt_handler_t handler;
+};
+#endif
 
 typedef struct elysian_fs_partition_t elysian_fs_partition_t;
 
@@ -354,7 +370,7 @@ struct elysian_file_t{
     union{
         elysian_file_ram_t ram;
         elysian_file_rom_t rom;
-        elysian_file_disk_t disk;
+        elysian_file_ext_t ext;
     }descriptor;
 };
 
