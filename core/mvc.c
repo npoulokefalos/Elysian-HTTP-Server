@@ -172,12 +172,12 @@ elysian_err_t elysian_mvc_view_set(elysian_t* server, char* view){
         elysian_mem_free(server, client->mvc.view);
         client->mvc.view = NULL;
     }
-    
+
 	if(view == NULL){
 		/* Special case for an empty-bodied file */
 		view = ELYSIAN_FS_EMPTY_FILE_VRT_ROOT ELYSIAN_FS_EMPTY_FILE_NAME;
 	}
-	
+
     if(strcmp(view, "/") == 0){
 		/* Special case for index.html page */
         view = ELYSIAN_FS_INDEX_HTML_VRT_ROOT"/index.html";
@@ -237,7 +237,7 @@ elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url){
 	
 	char status_code_page_name[32];
 
-	elysian_sprintf(status_code_page_name, ELYSIAN_FS_WS_VRT_ROOT"/%u.html", elysian_http_get_status_code_num(ELYSIAN_HTTP_STATUS_CODE_302));
+	elysian_sprintf(status_code_page_name, ELYSIAN_FS_ROM_VRT_ROOT"/%u.html", elysian_http_get_status_code_num(ELYSIAN_HTTP_STATUS_CODE_302));
 	err = elysian_mvc_view_set(server, status_code_page_name);
 	if(err != ELYSIAN_ERR_OK){
 		return err;
@@ -268,6 +268,7 @@ elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url){
 /* --------------------------------------------------------------------------------------------------------------------------------
 | Controllers
 -------------------------------------------------------------------------------------------------------------------------------- */
+#if 0
 elysian_err_t elysian_mvc_controller(elysian_t* server, const char* url, elysian_mvc_controller_handler_t handler, elysian_mvc_controller_flag_e flags){
     elysian_mvc_controller_t* controller;
     
@@ -289,28 +290,31 @@ elysian_err_t elysian_mvc_controller(elysian_t* server, const char* url, elysian
     
     return ELYSIAN_ERR_OK;
 }
-
+#endif
 
 
 elysian_mvc_controller_t* elysian_mvc_controller_get(elysian_t* server, char* url, elysian_http_method_e method_id){
-    elysian_mvc_controller_t* controller = server->controllers;
+    int i;
     ELYSIAN_LOG("Searching user defined controller for url '%s' and method '%s'", url, elysian_http_get_method_name(method_id));
-    while(controller){
-		ELYSIAN_LOG("Trying to match with controller %s", controller->url);
-        if (strcmp(controller->url, url) == 0) {
-			ELYSIAN_LOG("flag = %u, method id = %u", controller->flags, method_id);
-			if ( (controller->flags & ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET) && ((method_id == ELYSIAN_HTTP_METHOD_GET) || (method_id == ELYSIAN_HTTP_METHOD_HEAD))) {
-				return controller;
-			} else if ((controller->flags & ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST) && (method_id == ELYSIAN_HTTP_METHOD_POST)) {
-				return controller;
-			} else if ((controller->flags & ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT) && (method_id == ELYSIAN_HTTP_METHOD_PUT)) {
-				return controller;
-			}else {
-				return NULL;
+	
+	if (server->controllers) {
+		for(i = 0; (server->controllers[i].url != NULL) && (server->controllers[i].handler != NULL); i++){
+			ELYSIAN_LOG("Trying to match with controller %s", server->controllers[i].url);
+			if (strcmp(server->controllers[i].url, url) == 0) {
+				ELYSIAN_LOG("flag = %u, method id = %u", server->controllers[i].flags, method_id);
+				if ( (server->controllers[i].flags & ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET) && ((method_id == ELYSIAN_HTTP_METHOD_GET) || (method_id == ELYSIAN_HTTP_METHOD_HEAD))) {
+					return &server->controllers[i];
+				} else if ((server->controllers[i].flags & ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST) && (method_id == ELYSIAN_HTTP_METHOD_POST)) {
+					return &server->controllers[i];
+				} else if ((server->controllers[i].flags & ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT) && (method_id == ELYSIAN_HTTP_METHOD_PUT)) {
+					return &server->controllers[i];
+				}else {
+					return NULL;
+				}
 			}
-        }
-        controller = controller->next;
-    }
+		}
+	}
+	
     return NULL;
 }
 
@@ -399,10 +403,10 @@ elysian_err_t elysian_mvc_add_alloc(elysian_t* server, void* data) {
 /* --------------------------------------------------------------------------------------------------------------------------------
 | Callbacks
 -------------------------------------------------------------------------------------------------------------------------------- */
-elysian_err_t elysian_mvc_httpreq_served_handler(elysian_t* server, elysian_reqserved_cb_t cb, void* data){
+elysian_err_t elysian_mvc_httpreq_onservice_handler(elysian_t* server, elysian_httpreq_onservice_handler_t handler, void* data){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    client->reqserved_cb = cb;
-    client->reqserved_cb_data = data;
+    client->httpreq_onservice_handler = handler;
+    client->httpreq_onservice_handler_data = data;
     return ELYSIAN_ERR_OK;
 }
 

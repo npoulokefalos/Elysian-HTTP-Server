@@ -308,6 +308,7 @@ elysian_err_t elysian_fs_ram_fremove(elysian_t* server, char* abs_path){
  ROM filesystem
 ----------------------------------------------------------------------------------------------------------- */
 elysian_err_t elysian_fs_rom_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file){
+	char status_code_page[32];
 	int i;
 	
     ELYSIAN_LOG("Opening file <%s>..", abs_path);
@@ -328,6 +329,28 @@ elysian_err_t elysian_fs_rom_fopen(elysian_t* server, char* abs_path, elysian_fi
 		}
 	}
 	
+	/*
+	** Zero-sized file for messages without body
+	*/
+	if(strcmp(abs_path, ELYSIAN_FS_EMPTY_FILE_NAME) == 0){
+		(file)->descriptor.rom.ptr = (uint8_t*) "";
+		(file)->descriptor.rom.size = strlen((char*) (file)->descriptor.rom.ptr);
+		(file)->descriptor.rom.pos = 0;
+		return ELYSIAN_ERR_OK;
+	}
+	
+	/*
+	** If this is a status code page, send the default user-friendly message
+	*/
+	for(i = 0; i < ELYSIAN_HTTP_STATUS_CODE_MAX; i++){
+		elysian_sprintf(status_code_page, ELYSIAN_FS_ROM_ABS_ROOT"/%u.html", elysian_http_get_status_code_num(i));
+		if(strcmp(abs_path, status_code_page) == 0){
+			(file)->descriptor.rom.ptr = (uint8_t*) elysian_http_get_status_code_body(i);
+			(file)->descriptor.rom.size = strlen((char*) (file)->descriptor.rom.ptr);
+			(file)->descriptor.rom.pos = 0;
+			return ELYSIAN_ERR_OK;
+		}
+	}
 	
 	return ELYSIAN_ERR_NOTFOUND;
 }
@@ -381,11 +404,9 @@ elysian_err_t elysian_fs_rom_fremove(elysian_t* server, char* abs_path){
 /* -----------------------------------------------------------------------------------------------------------
  Web Server internal filesystem
 ----------------------------------------------------------------------------------------------------------- */
-const uint8_t ELYSIAN_FS_HUGE_FILE_DATA[1];
-
-elysian_err_t elysian_fs_ws_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file){
+elysian_err_t elysian_fs_hdl_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file) {
+	int ret;
     uint32_t i;
-    char status_code_page[32];
     
     ELYSIAN_LOG("Opening file <%s>..", abs_path);
     
@@ -393,86 +414,76 @@ elysian_err_t elysian_fs_ws_fopen(elysian_t* server, char* abs_path, elysian_fil
 		return ELYSIAN_ERR_FATAL;
 	}
 
-	/*
-	** Zero-sized file for messages without body
-	*/
-	if(strcmp(abs_path, ELYSIAN_FS_EMPTY_FILE_NAME) == 0){
-		(file)->descriptor.rom.ptr = (uint8_t*) "";
-		(file)->descriptor.rom.size = strlen((char*) (file)->descriptor.rom.ptr);
-		(file)->descriptor.rom.pos = 0;
-		return ELYSIAN_ERR_OK;
-	}
-	
-	/*
-	** Huge-sized file for testing
-	*/
-	if(strcmp(abs_path, ELYSIAN_FS_HUGE_FILE_NAME) == 0){
-		(file)->descriptor.rom.ptr = (uint8_t*) ELYSIAN_FS_HUGE_FILE_DATA;
-		(file)->descriptor.rom.size = 250 * 1024 * 1024;
-		(file)->descriptor.rom.pos = 0;
-		return ELYSIAN_ERR_OK;
-	}
-	
-	/*
-	** If this is a status code page, send the default user-friendly message
-	*/
-	for(i = 0; i < ELYSIAN_HTTP_STATUS_CODE_MAX; i++){
-		elysian_sprintf(status_code_page, ELYSIAN_FS_WS_ABS_ROOT"/%u.html", elysian_http_get_status_code_num(i));
-		if(strcmp(abs_path, status_code_page) == 0){
-			(file)->descriptor.rom.ptr = (uint8_t*) elysian_http_get_status_code_body(i);
-			(file)->descriptor.rom.size = strlen((char*) (file)->descriptor.rom.ptr);
-			(file)->descriptor.rom.pos = 0;
-			return ELYSIAN_ERR_OK;
+	if (server->hdl_fs) {
+		for(i = 0; server->hdl_fs[i].name != NULL; i++){
+			printf("checking with %s --------- %s\r\n",  abs_path, server->hdl_fs[i].name);
+			if(strcmp(abs_path, server->hdl_fs[i].name) == 0){
+				(file)->descriptor.hdl.handler = server->hdl_fs[i].handler;
+				(file)->descriptor.hdl.pos = 0;
+				ret = (file)->descriptor.hdl.handler(server, ELYSISIAN_FILE_HDL_ACTION_FOPEN, NULL, 0);
+				if(ret == 0) {
+					return ELYSIAN_ERR_OK;
+				} else {
+					return ELYSIAN_ERR_FATAL;
+				}
+			}
 		}
 	}
-	
+
 	return ELYSIAN_ERR_NOTFOUND;
 }
 
-elysian_err_t elysian_fs_ws_fsize(elysian_t* server, elysian_file_t* file, uint32_t* filesize){
-    elysian_file_rom_t* file_rom = &file->descriptor.rom;
-	*filesize = file_rom->size;
+elysian_err_t elysian_fs_hdl_fsize(elysian_t* server, elysian_file_t* file, uint32_t* filesize){
+    elysian_file_hdl_t* file_hdl = &file->descriptor.hdl;
+	*filesize = file_hdl->handler(server, ELYSISIAN_FILE_HDL_ACTION_FSIZE, NULL, 0);
 	return ELYSIAN_ERR_OK;
 }
 
-elysian_err_t elysian_fs_ws_fseek(elysian_t* server, elysian_file_t* file, uint32_t seekpos){
-    elysian_file_rom_t* file_rom = &file->descriptor.rom;
-	file_rom->pos = seekpos;
-	return ELYSIAN_ERR_OK;
-}
-
-elysian_err_t elysian_fs_ws_ftell(elysian_t* server, elysian_file_t* file, uint32_t* seekpos){
-    elysian_file_rom_t* file_rom = &file->descriptor.rom;
-	*seekpos = file_rom->pos;
-	return ELYSIAN_ERR_OK;
-}
-
-int elysian_fs_ws_fread(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size){
-	uint32_t read_size;
-    elysian_file_rom_t* file_rom = &file->descriptor.rom;
-
-	read_size = (buf_size > file_rom->size - file_rom->pos) ? file_rom->size - file_rom->pos : buf_size;
+elysian_err_t elysian_fs_hdl_fseek(elysian_t* server, elysian_file_t* file, uint32_t seekpos){
+    elysian_file_hdl_t* file_hdl = &file->descriptor.hdl;
+	//file_hdl->handler(server, ELYSISIAN_FILE_HDL_ACTION_FSEEK, NULL, 0);
+	if (seekpos != file_hdl.pos) {
+		ELYSIAN_ASSERT(0);
+		return ELYSIAN_ERR_FATAL;
+	} 
 	
-	if (file->descriptor.rom.ptr == (uint8_t*) ELYSIAN_FS_HUGE_FILE_DATA) {
-		memset(buf, 0, read_size);
-	} else {
-		memcpy(buf, &file->descriptor.rom.ptr[file_rom->pos], read_size);
-	}
+	return ELYSIAN_ERR_OK;
+}
 
-	file_rom->pos += read_size;
+elysian_err_t elysian_fs_hdl_ftell(elysian_t* server, elysian_file_t* file, uint32_t* seekpos){
+    elysian_file_hdl_t* file_hdl = &file->descriptor.hdl;
+	*seekpos = file_hdl->pos;
+	//file_hdl->handler(server, ELYSISIAN_FILE_HDL_ACTION_FTELL, NULL, 0);
+	return ELYSIAN_ERR_OK;
+}
+
+int elysian_fs_hdl_fread(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size){
+	//uint32_t read_size;
+	int read_size;
+    elysian_file_hdl_t* file_hdl = &file->descriptor.hdl;
+
+	//read_size = (buf_size > file_rom->size - file_hdl->pos) ? file_rom->size - file_rom->pos : buf_size;
+	read_size = file_hdl->handler(server, ELYSISIAN_FILE_HDL_ACTION_FREAD, buf, buf_size);
+	if (read_size > 0) {
+		file_hdl->pos += read_size;
+	}
 	return read_size;
 }
 
-int elysian_fs_ws_fwrite(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size){
+int elysian_fs_hdl_fwrite(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size){
 	ELYSIAN_ASSERT(0);
 	return -1;
 }
 
-elysian_err_t elysian_fs_ws_fclose(elysian_t* server, elysian_file_t* file){
+elysian_err_t elysian_fs_hdl_fclose(elysian_t* server, elysian_file_t* file){
+	elysian_file_hdl_t* file_hdl = &file->descriptor.hdl;
+	
+	file_hdl->handler(server, ELYSISIAN_FILE_HDL_ACTION_FCLOSE, NULL, 0);
+	
     return ELYSIAN_ERR_OK;
 }
 
-elysian_err_t elysian_fs_ws_fremove(elysian_t* server, char* abs_path){
+elysian_err_t elysian_fs_hdl_fremove(elysian_t* server, char* abs_path){
 	ELYSIAN_ASSERT(0);
 	return ELYSIAN_ERR_FATAL;
 }

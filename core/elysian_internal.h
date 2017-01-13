@@ -77,8 +77,8 @@
 ** Web Server's internal partition for sending default content, for example default error pages (404, 500, ..)
 ** when user-defined error pages are not provided in any other user partition.
 */
-#define ELYSIAN_FS_WS_VRT_ROOT						"/fs_ws"
-#define ELYSIAN_FS_WS_ABS_ROOT						""
+#define ELYSIAN_FS_HDL_VRT_ROOT						"/fs_hdl"
+#define ELYSIAN_FS_HDL_ABS_ROOT						""
 
 
 /*
@@ -102,17 +102,7 @@
 **			the specified partition.
 */
 #define ELYSIAN_FS_EMPTY_FILE_NAME 					"/empty.file"
-#define ELYSIAN_FS_EMPTY_FILE_VRT_ROOT 				ELYSIAN_FS_WS_VRT_ROOT
-
-/*
-** Special file that may be used for testing. It is located to the ELYSIAN_FS_WS_VRT_ROOT partition.
-** CAUTION: Do not change the partition of this file, unless it is guaranteed that it be always existing to
-**			the specified partition.
-*/
-#define ELYSIAN_FS_HUGE_FILE_NAME 					"/huge.file"
-#define ELYSIAN_FS_HUGE_FILE_VRT_ROOT 				ELYSIAN_FS_WS_VRT_ROOT
-
-
+#define ELYSIAN_FS_EMPTY_FILE_VRT_ROOT 				ELYSIAN_FS_ROM_VRT_ROOT
 
 
 #define ELYSIAN_CBUF_LEN (256)
@@ -340,22 +330,26 @@ struct elysian_file_ext_t{
 #endif
 };
 
-#if 0
+#if 1
 typedef enum {
-	ELYSISIAN_FILE_VRT_ACTION_OPEN = 0,
-	ELYSISIAN_FILE_VRT_ACTION_READ,
-	ELYSISIAN_FILE_VRT_ACTION_CLOSE,
-}
+	ELYSISIAN_FILE_HDL_ACTION_FOPEN = 0,
+	ELYSISIAN_FILE_HDL_ACTION_FSIZE,
+	ELYSISIAN_FILE_HDL_ACTION_FREAD,
+	//ELYSISIAN_FILE_HDL_ACTION_FSEEK,
+	//ELYSISIAN_FILE_HDL_ACTION_FTELL,
+	ELYSISIAN_FILE_HDL_ACTION_FCLOSE,
+} elysian_file_hdl_action_e;
 
-typedef int (*elysian_elysian_file_vrt_handler_t)(elysian_t* server, void* args, elysian_file_vrt_action_e action,  uint32_t byte_index, uint8_t buf, uint32_t buf_size);
+//typedef int (*elysian_fs_vrt_file_handler_t)(elysian_t* server, void* args, elysian_file_hdl_action_e action,  uint8_t* buf, uint32_t buf_size);
 
-typedef struct elysian_file_vrt_t elysian_file_vrt_t;
-struct elysian_file_vrt_t{
+typedef struct elysian_file_hdl_t elysian_file_hdl_t;
+struct elysian_file_hdl_t{
 	char* name;
-    void* args;
+    //void* args;
     uint32_t pos;
-    uint32_t size;
-	elysian_elysian_file_vrt_handler_t handler;
+    //uint32_t size;
+	//elysian_fs_vrt_file_handler_t handler;
+	int (*handler)(elysian_t* server, elysian_file_hdl_action_e action,  uint8_t* buf, uint32_t buf_size);
 };
 #endif
 
@@ -371,6 +365,7 @@ struct elysian_file_t{
         elysian_file_ram_t ram;
         elysian_file_rom_t rom;
         elysian_file_ext_t ext;
+		elysian_file_hdl_t hdl;
     }descriptor;
 };
 
@@ -407,14 +402,14 @@ int elysian_fs_ram_fwrite(elysian_t* server, elysian_file_t* file, uint8_t* buf,
 elysian_err_t elysian_fs_ram_fclose(elysian_t* server, elysian_file_t* file);
 elysian_err_t elysian_fs_ram_fremove(elysian_t* server, char* vrt_path);
 
-elysian_err_t elysian_fs_ws_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file);
-elysian_err_t elysian_fs_ws_fsize(elysian_t* server, elysian_file_t* file, uint32_t* filesize);
-elysian_err_t elysian_fs_ws_fseek(elysian_t* server, elysian_file_t* file, uint32_t seekpos);
-elysian_err_t elysian_fs_ws_ftell(elysian_t* server, elysian_file_t* file, uint32_t* seekpos);
-int elysian_fs_ws_fread(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size);
-int elysian_fs_ws_fwrite(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size);
-elysian_err_t elysian_fs_ws_fclose(elysian_t* server, elysian_file_t* file);
-elysian_err_t elysian_fs_ws_fremove(elysian_t* server, char* vrt_path);
+elysian_err_t elysian_fs_hdl_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file);
+elysian_err_t elysian_fs_hdl_fsize(elysian_t* server, elysian_file_t* file, uint32_t* filesize);
+elysian_err_t elysian_fs_hdl_fseek(elysian_t* server, elysian_file_t* file, uint32_t seekpos);
+elysian_err_t elysian_fs_hdl_ftell(elysian_t* server, elysian_file_t* file, uint32_t* seekpos);
+int elysian_fs_hdl_fread(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size);
+int elysian_fs_hdl_fwrite(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size);
+elysian_err_t elysian_fs_hdl_fclose(elysian_t* server, elysian_file_t* file);
+elysian_err_t elysian_fs_hdl_fremove(elysian_t* server, char* vrt_path);
 
 
 
@@ -519,6 +514,7 @@ struct elysian_mvc_attribute_t{
  */
 typedef elysian_err_t (*elysian_mvc_controller_handler_t)(elysian_t* server);
 	
+
 typedef struct elysian_mvc_controller_t elysian_mvc_controller_t;
 struct elysian_mvc_controller_t{
     const char* url;
@@ -526,8 +522,9 @@ struct elysian_mvc_controller_t{
     //uint8_t http_methods_mask;
 	elysian_mvc_controller_flag_e flags;
 
-    elysian_mvc_controller_t* next;
+    //elysian_mvc_controller_t* next;
 };
+
 
 typedef struct elysian_mvc_alloc_t elysian_mvc_alloc_t;
 struct elysian_mvc_alloc_t{
@@ -544,7 +541,7 @@ struct elysian_mvc_t{
 	elysian_mvc_alloc_t* allocs;
 };
 
-typedef void (*elysian_reqserved_cb_t)(elysian_t* server, void* ptr);
+typedef void (*elysian_httpreq_onservice_handler_t)(elysian_t* server, void* ptr);
 
 void elysian_mvc_init(elysian_t* server);
 elysian_err_t elysian_mvc_configure(elysian_t* server);
@@ -922,8 +919,8 @@ struct elysian_client_t{
 	** request using controllers, for example to remove any files that where created
 	** from the controller to serve the particular request.
 	*/
-	elysian_reqserved_cb_t reqserved_cb;
-    void* reqserved_cb_data;
+	elysian_httpreq_onservice_handler_t httpreq_onservice_handler;
+    void* httpreq_onservice_handler_data;
 };
 
 

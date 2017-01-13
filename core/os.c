@@ -95,6 +95,12 @@ void* elysian_mem_malloc(elysian_t* server, uint32_t size, elysian_mem_malloc_pr
 	//elysian_schdlr_task_t* task = elysian_schdlr_current_task_get(server);
     void* ptr;
 
+#if 1
+	if (rand() % 6 == 0) {
+		return NULL;
+	}
+#endif
+	
 	if(elysian_mem_usage_bytes + size > elysian_mem_threshold(prio)){
 		return NULL;
 	}
@@ -270,16 +276,16 @@ const elysian_fs_partition_t fs_partitions[] = {
 		.fremove = elysian_port_fs_ext_fremove
 	},
 	{
-		.vrt_root = ELYSIAN_FS_WS_VRT_ROOT,
-		.abs_root = ELYSIAN_FS_WS_ABS_ROOT,
-		.fopen = elysian_fs_ws_fopen, 
-		.fsize = elysian_fs_ws_fsize,
-		.fseek = elysian_fs_ws_fseek,
-        .ftell = elysian_fs_ws_ftell,
-		.fread = elysian_fs_ws_fread,
-		.fwrite = elysian_fs_ws_fwrite,
-		.fclose = elysian_fs_ws_fclose,
-		.fremove = elysian_fs_ws_fremove
+		.vrt_root = ELYSIAN_FS_HDL_VRT_ROOT,
+		.abs_root = ELYSIAN_FS_HDL_ABS_ROOT,
+		.fopen = elysian_fs_hdl_fopen, 
+		.fsize = elysian_fs_hdl_fsize,
+		.fseek = elysian_fs_hdl_fseek,
+        .ftell = elysian_fs_hdl_ftell,
+		.fread = elysian_fs_hdl_fread,
+		.fwrite = elysian_fs_hdl_fwrite,
+		.fclose = elysian_fs_hdl_fclose,
+		.fremove = elysian_fs_hdl_fremove
 	}
 };
 

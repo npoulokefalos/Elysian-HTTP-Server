@@ -329,8 +329,8 @@ void elysian_state_http_request_headers_receive(elysian_t* server, elysian_schdl
 			client->httpresp.attempts = 0;
 			
             client->httpresp.keep_alive = 1;
-            client->reqserved_cb = NULL;
-			client->reqserved_cb_data = NULL;
+            client->httpreq_onservice_handler = NULL;
+			client->httpreq_onservice_handler_data = NULL;
 			
 			memset(&client->isp, 0, sizeof(client->isp));
 			
@@ -779,7 +779,7 @@ void elysian_state_configure_mvc(elysian_t* server, elysian_schdlr_ev_t ev){
 				** Status code is available, no need to query application layer
 				*/
 				ELYSIAN_LOG("Trying to open error page %u", elysian_http_get_status_code_num(client->httpresp.status_code));
-				elysian_sprintf(status_code_page_name, ELYSIAN_FS_WS_VRT_ROOT"/%u.html", elysian_http_get_status_code_num(client->httpresp.status_code));
+				elysian_sprintf(status_code_page_name, ELYSIAN_FS_ROM_VRT_ROOT"/%u.html", elysian_http_get_status_code_num(client->httpresp.status_code));
 				err = elysian_mvc_view_set(server, status_code_page_name);
 			} else {
 				/*
@@ -1243,8 +1243,8 @@ void elysian_state_http_keepalive(elysian_t* server, elysian_schdlr_ev_t ev){
             ** that the web server has closed any file handles and so any files 
             ** created from within controllre can be now safely removed by the application.
             */
-            if(client->reqserved_cb){
-                client->reqserved_cb(server, client->reqserved_cb_data);
+            if(client->httpreq_onservice_handler){
+                client->httpreq_onservice_handler(server, client->httpreq_onservice_handler_data);
             }
 
             elysian_schdlr_state_set(server, elysian_state_http_request_headers_receive);
@@ -1295,8 +1295,8 @@ void elysian_state_http_disconnect(elysian_t* server, elysian_schdlr_ev_t ev){
             ** that the web server has closed any file handles and so any files 
             ** created from within controllre can be now safely removed by the application.
             */
-            if(client->reqserved_cb){
-                client->reqserved_cb(server, client->reqserved_cb_data);
+            if(client->httpreq_onservice_handler){
+                client->httpreq_onservice_handler(server, client->httpreq_onservice_handler_data);
             }
             
             if(client->rcv_cbuf_list){
@@ -1428,11 +1428,12 @@ elysian_t* elysian_new(){
     
     server->controllers = NULL;
 	server->rom_fs = NULL;
+	server->hdl_fs = NULL;
 
     return server;
 }
 
-elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_file_rom_t rom_fs[], elysian_authentication_cb_t authentication_cb) {
+elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_mvc_controller_t controllers[], const elysian_file_rom_t rom_fs[], const elysian_file_hdl_t hdl_fs[], elysian_authentication_cb_t authentication_cb) {
     elysian_err_t err;
 	
 #if defined(ELYSIAN_OS_ENV_UNIX)
@@ -1440,9 +1441,12 @@ elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_file
 		ELYSIAN_LOG("Could not ignore the SIGPIPE signal!")
 	}
 #endif
-	server->rom_fs = rom_fs;
+	server->controllers = (elysian_mvc_controller_t*) controllers;
+	server->rom_fs = (elysian_file_rom_t*) rom_fs;
+	server->hdl_fs = (elysian_file_hdl_t*) hdl_fs;
 	server->listening_port = port;
 	server->authentication_cb = authentication_cb;
+	
 	
     err = elysian_schdlr_init(server, port, elysian_state_http_connection_accepted);
     

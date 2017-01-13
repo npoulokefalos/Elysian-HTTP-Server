@@ -22,6 +22,8 @@
 
 #include "fs_rom/fsdata.c"
 
+
+
 uint8_t authentication_cb(elysian_t* server, char* url, char* username, char* password){
 
 	ELYSIAN_LOG("[[ authentication_cb ]]");
@@ -231,6 +233,8 @@ elysian_err_t controller_form_post_html(elysian_t* server){
 
     return ELYSIAN_ERR_OK;
 }
+
+
 
 elysian_err_t controller_file_upload(elysian_t* server){
 	//elysian_client_t* client = elysian_mvc_client(server);
@@ -589,7 +593,7 @@ elysian_err_t controller_ajax(elysian_t* server){
         return err;
     }
 	
-	elysian_mvc_httpreq_served_handler(server, controller_ajax_example_served, ajax_file_name);
+	elysian_mvc_httpreq_onservice_handler(server, controller_ajax_example_served, ajax_file_name);
 	return ELYSIAN_ERR_OK;
 }
 
@@ -602,7 +606,7 @@ elysian_err_t controller_file_download_html(elysian_t* server){
     ELYSIAN_LOG("[[ %s ]]", __func__);
     
 	elysian_sprintf(attr_value, "%u", elysian_time_now());
-	err = elysian_mvc_attribute_set(server, "attr_huge_file_path", ELYSIAN_FS_HUGE_FILE_VRT_ROOT "" ELYSIAN_FS_HUGE_FILE_NAME);
+	err = elysian_mvc_attribute_set(server, "attr_huge_file_path", "/fs_hdl/huge.file");
     if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
@@ -652,65 +656,97 @@ elysian_err_t controller_dynamic_page_disk_html(elysian_t* server){
     return ELYSIAN_ERR_OK;
 }
 
+int huge_file_handler(elysian_t* server, elysian_file_hdl_action_e action,  uint8_t* buf, uint32_t buf_size){
+	
+	switch(action) {
+		case ELYSISIAN_FILE_HDL_ACTION_FOPEN:
+		{
+			ELYSIAN_LOG("ELYSISIAN_FILE_HDL_ACTION_FOPEN");
+			return 0;
+		}break;
+		case ELYSISIAN_FILE_HDL_ACTION_FSIZE:
+		{
+			ELYSIAN_LOG("ELYSISIAN_FILE_HDL_ACTION_FSIZE");
+			return 128 * 1024 * 1024;
+		}break;	
+		case ELYSISIAN_FILE_HDL_ACTION_FREAD:
+		{
+			return buf_size;
+		}break;	
+		case ELYSISIAN_FILE_HDL_ACTION_FCLOSE:
+		{
+			return 0;
+		}break;	
+		{
+			return -1;
+		}break;	
+	};
+
+	return 0;
+}
+
+const elysian_file_hdl_t hdl_fs[] = {
+	{.name = (char*) "/huge.file", .handler = huge_file_handler},
+	{.name = NULL, .handler = NULL},
+};
+
+const elysian_mvc_controller_t mvc_controllers[] = {
+	/*
+	** Controllers for files stored to ROM memory device
+	*/
+	{.url = "/fs_rom/dynamic_page.html", .handler = controller_dynamic_page_html, 
+		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
+	{.url = "/fs_rom/form_get.html", .handler = controller_form_get_html, 
+		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
+	{.url = "/fs_rom/form_get_controller", .handler = controller_form_get, 
+		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
+	{.url = "/fs_rom/form_post.html", .handler = controller_form_post_html, 
+		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
+	{.url = "/fs_rom/form_post_controller", .handler = controller_form_post, 
+		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST},
+	{.url = "/fs_rom/file_upload.html", .handler = controller_file_upload_html, 
+		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
+	{.url = "/fs_rom/file_upload_controller", .handler = controller_file_upload, 
+		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT},
+	{.url = "/fs_rom/http_request_exposure.html", .handler = controller_http_request_exposure_html, 
+		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
+	{.url = "/fs_rom/http_request_exposure_controller", .handler = controller_http_request_exposure, 
+		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT},
+	{.url = "/fs_rom/redirected_page0.html", .handler = controller_redirected_page0_html, 
+		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST},
+	{.url = "/fs_rom/redirected_page1.html", .handler = controller_redirected_page1_html, 
+		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
+	{.url = "/fs_rom/ajax_controller", .handler = controller_ajax, 
+		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
+	{.url = "/fs_rom/file_download.html", .handler = controller_file_download_html, 
+		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
+	
+	/*
+	** Controllers for files stored to the EXT(ernal) memory device
+	*/
+	{.url = "/fs_ext/dynamic_page_disk.html", .handler = controller_dynamic_page_disk_html, 
+		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
+	{.url = "/fs_ext/file_upload_disk.html", .handler = controller_file_upload_html, 
+		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
+	{.url = "/fs_ext/file_upload_disk_controller", .handler = controller_file_upload, 
+		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT | ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS},
+
+	/*
+	* End of list
+	*/
+	{.url = NULL, .handler = NULL,  
+		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_NONE},
+};
+
 
 int main(){
 	uint8_t stop = 0;
     elysian_t* server;
-    
 	ELYSIAN_LOG("Starting web server. SERVER %u, CLIENT %u, RESOURCE %u, TOTAL %u", (unsigned int) sizeof(elysian_t), (unsigned int) sizeof(elysian_client_t), (unsigned int) sizeof(elysian_resource_t), (unsigned int) (sizeof(elysian_t) + sizeof(elysian_client_t) + sizeof(elysian_resource_t)));
 	
     server = elysian_new();
-    
-	/*
-	** Controllers for files stored in ROM
-	*/
-	elysian_mvc_controller(server, "/fs_rom/dynamic_page.html", 
-											controller_dynamic_page_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
-	
-	elysian_mvc_controller(server, "/fs_rom/form_get.html", 
-											controller_form_get_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
-	elysian_mvc_controller(server, "/fs_rom/form_get_controller", 
-											controller_form_get, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
-	
-	elysian_mvc_controller(server, "/fs_rom/form_post.html", 
-											controller_form_post_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
-	elysian_mvc_controller(server, "/fs_rom/form_post_controller", 
-											controller_form_post, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST);
-	
-	elysian_mvc_controller(server, "/fs_rom/file_upload.html", 
-											controller_file_upload_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
-	elysian_mvc_controller(server, "/fs_rom/file_upload_controller", 
-											controller_file_upload, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT);
-	
-	elysian_mvc_controller(server, "/fs_rom/http_request_exposure.html", 
-							   controller_http_request_exposure_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
-	elysian_mvc_controller(server, "/fs_rom/http_request_exposure_controller", 
-							   controller_http_request_exposure, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT);
-	
-	elysian_mvc_controller(server, "/fs_rom/redirected_page0.html", 
-											controller_redirected_page0_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST);
-	elysian_mvc_controller(server, "/fs_rom/redirected_page1.html", 
-											controller_redirected_page1_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
-	
-	elysian_mvc_controller(server, "/fs_rom/ajax_controller", 
-											controller_ajax, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
-	
-	elysian_mvc_controller(server, "/fs_rom/file_download.html", 
-											controller_file_download_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
-	
-	/*
-	** Controllers for files stored in external memory
-	*/
-	elysian_mvc_controller(server, "/fs_ext/dynamic_page_disk.html", 
-											controller_dynamic_page_disk_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
-	
-	// Hits the same controller with the ROM alternative
-	elysian_mvc_controller(server, "/fs_ext/file_upload_disk.html", 
-											controller_file_upload_html, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET);
-	elysian_mvc_controller(server, "/fs_ext/file_upload_disk_controller", 
-											controller_file_upload, ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT | ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS);
-		   
-    elysian_start(server, 9000, rom_fs, authentication_cb);
+
+    elysian_start(server, 9000, mvc_controllers, rom_fs, hdl_fs, authentication_cb);
     
     while(!stop){
         elysian_poll(server, 4000);

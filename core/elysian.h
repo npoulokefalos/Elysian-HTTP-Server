@@ -58,8 +58,9 @@ struct elysian_t{
 	uint16_t listening_port;
     elysian_schdlr_t scheduler;
     elysian_mvc_controller_t* controllers;
+    elysian_file_rom_t* rom_fs;
+	elysian_file_hdl_t* hdl_fs;
 	elysian_authentication_cb_t authentication_cb;
-	const elysian_file_rom_t* rom_fs;
 	uint32_t starvation_detection_t0;
 };
 
@@ -86,7 +87,7 @@ elysian_t* elysian_new(void);
 ** @retval  	ELYSIAN_ERR_OK		On success
 ** @retval  	ELYSIAN_ERR_FATAL	On failure
  */
-elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_file_rom_t rom_fs[], elysian_authentication_cb_t authentication_cb);
+elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_mvc_controller_t controllers[], const elysian_file_rom_t rom_fs[], const elysian_file_hdl_t hdl_fs[], elysian_authentication_cb_t authentication_cb);
 
 /* 
 ** @brief 		Executes the server shceduler for the particular interval.
@@ -151,7 +152,7 @@ elysian_err_t elysian_mvc_param_get_int(elysian_t* server, char* param_name, int
 elysian_err_t elysian_mvc_view_set(elysian_t* server, char* view);
 elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url);
 
-elysian_err_t elysian_mvc_httpreq_served_handler(elysian_t* server, elysian_reqserved_cb_t cb, void* data);
+elysian_err_t elysian_mvc_httpreq_onservice_handler(elysian_t* server, elysian_httpreq_onservice_handler_t handler, void* data);
 
 /*======================================================================================================================================
  Memory Management API                                          															
