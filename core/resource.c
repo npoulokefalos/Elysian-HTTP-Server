@@ -137,55 +137,6 @@ elysian_err_t elysian_resource_open_dynamic(elysian_t* server) {
         return err;
     }
 	
-#if 0
-	if (client->mvc.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY) {
-		/*
-		** Request a seek at pos 0
-		*/
-		((elysian_resource_dynamic_priv_t*)client->resource->priv)->reset = 1;
-
-		/*
-		** Get file size
-		*/
-		resource_size = 0;
-		do{
-			read_size = 1024;
-			ELYSIAN_LOG("Trying to read 1024..");
-			err = client->resource->read(server, NULL, read_size, &read_size_actual);
-			if(err != ELYSIAN_ERR_OK){
-				elysian_mem_free(server, client->resource->priv);
-				elysian_fs_fclose(server, &client->resource->file);
-				return err;
-			}
-			resource_size += read_size_actual;
-		}while(read_size_actual != 0);
-
-		client->resource->size = resource_size;
-		
-		/*
-		** Request a seek at pos 0
-		*/
-		((elysian_resource_dynamic_priv_t*)client->resource->priv)->reset = 1;
- 
-		/*
-		** Set seek pos
-		*/
-		if (client->mvc.range_start > 0) {
-			seekpos_actual = 0;
-			while(client->mvc.range_start > seekpos_actual){
-				read_size = client->mvc.range_start - seekpos_actual > 1024 ? 1024 : client->mvc.range_start - seekpos_actual;
-				err = client->resource->read(server, NULL, read_size, &read_size_actual);
-				if(err != ELYSIAN_ERR_OK){
-					elysian_mem_free(server, client->resource->priv);
-					elysian_fs_fclose(server, &client->resource->file);
-					return err;
-				}
-				seekpos_actual += read_size_actual;
-			};
-		}
-	}
-#endif
-	
     return ELYSIAN_ERR_OK;
 }
 
@@ -473,58 +424,7 @@ elysian_err_t elysian_resource_open(elysian_t* server){
             return ELYSIAN_ERR_FATAL;
 		}break;
     };
-	
-#if 0
-	if (client->mvc.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY) {
-		/*
-		** When transfer encoding is identity, we need to know the resource size and also seek
-		** to the requested range index. Size calculation does not need to be calculated here,
-		** but we do so to speed up the process (requires less fseek ops for dynamic content)
-		*/
-		uint32_t resource_size;
-		ELYSIAN_LOG("CALCULATING FILE SIZE START ------------------------------");
-		err = client->resource->size(server, &resource_size);
-		if(err != ELYSIAN_ERR_OK){
-			goto handle_error;
-		}
-		ELYSIAN_LOG("CALCULATING FILE SIZE END ------------------------------");
-		if (client->mvc.status_code == ELYSIAN_HTTP_STATUS_CODE_206) {
-			/*
-			** Partial request handling
-			*/
-			if (client->mvc.range_end == ELYSIAN_HTTP_RANGE_EOF) {
-				client->mvc.range_end = resource_size;
-				if (client->mvc.range_end) {
-					client->mvc.range_end--;
-				}
-			}
-			
-			if (client->mvc.range_end >= resource_size){
-				err = ELYSIAN_ERR_FATAL;
-				elysian_set_fatal_http_status_code(server, ELYSIAN_HTTP_STATUS_CODE_400);
-				goto handle_error;
-			}
-			
-			if (client->mvc.range_start > client->mvc.range_end){
-				err = ELYSIAN_ERR_FATAL;
-				elysian_set_fatal_http_status_code(server, ELYSIAN_HTTP_STATUS_CODE_400);
-				goto handle_error;
-			}
-			
-			if (client->mvc.range_start > 0) {
-				err = client->resource->seek(server, client->mvc.range_start);
-				if(err != ELYSIAN_ERR_OK){
-					goto handle_error;
-				}
-			}
-		}
 
-	} else if (client->mvc.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED) {
-		/*
-		** Special handling for chunked transfer encoding
-		*/
-	}
-#endif
 	return ELYSIAN_ERR_OK;
 	
 }

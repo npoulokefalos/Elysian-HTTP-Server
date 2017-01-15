@@ -656,6 +656,7 @@ elysian_err_t controller_dynamic_page_disk_html(elysian_t* server){
     return ELYSIAN_ERR_OK;
 }
 
+#if 0
 typedef struct{
 	uint32_t counter;
 	char data[64];
@@ -722,6 +723,72 @@ int huge_file_handler(elysian_t* server, elysian_file_hdl_action_e action,  void
 
 	return 0;
 }
+#endif
+
+typedef struct{
+	uint32_t size;
+	uint32_t read_cursor;
+} example_hdl_file_t;
+
+int huge_file_handler(elysian_t* server, elysian_file_hdl_action_e action,  void** varg, uint8_t* buf, uint32_t buf_size){
+	example_hdl_file_t* file_args = (example_hdl_file_t*) *varg;
+	uint32_t read_size;
+	
+	switch(action) {
+		case ELYSISIAN_FILE_HDL_ACTION_FOPEN:
+		{
+			ELYSIAN_LOG("ELYSIAN_FILE_HDL_ACTION_FOPEN");
+			file_args = elysian_mem_malloc(server, sizeof(example_hdl_file_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+			if (file_args) {
+				/*
+				** Create a 5 mb virtual file
+				*/
+				*varg = file_args;
+				file_args->read_cursor = 0;
+				file_args->size = 5 * 1024 * 1024;
+			}
+			
+			return 0;
+		}break;
+		case ELYSISIAN_FILE_HDL_ACTION_FSEEK0:
+		{
+			/*
+			** Reset the current read cursor
+			*/
+			file_args->read_cursor = 0;
+			
+			return 0;
+		}break;	
+		case ELYSISIAN_FILE_HDL_ACTION_FREAD:
+		{
+			/*
+			** Copy the requested amount of bytes. If EOF reached, copy zero bytes to indicate it.
+			*/
+			read_size = file_args->size - file_args->read_cursor;
+			if (read_size > buf_size) {
+				read_size = buf_size;
+			}
+
+			/*
+			** Increase the current read cursor
+			*/
+			file_args->read_cursor += read_size;
+
+			memset (buf, 0, read_size);
+			
+			return read_size;
+		}break;	
+		case ELYSISIAN_FILE_HDL_ACTION_FCLOSE:
+		{
+			ELYSIAN_LOG("ELYSISIAN_FILE_HDL_ACTION_FCLOSE");
+			elysian_mem_free(server, file_args);
+			return 0;
+		}break;
+	};
+
+	return 0;
+}
+
 
 const elysian_file_hdl_t hdl_fs[] = {
 	{.name = (char*) "/huge.file", .handler = huge_file_handler},

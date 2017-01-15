@@ -457,14 +457,13 @@ elysian_err_t elysian_fs_hdl_fsize(elysian_t* server, elysian_file_t* file, uint
 	** Get file size
 	*/
 	do {
-		//read_size = (sizeof(buf) > (seekpos - file_hdl->pos)) ? (seekpos - file_hdl->pos) : sizeof(buf);
 		read_size_actual = elysian_fs_hdl_fread(server, file, buf, sizeof(buf));
 		if (read_size_actual < 0) {
 			return ELYSIAN_ERR_FATAL;
 		} else {
 			*filesize += read_size_actual;
 		}
-	} while (read_size_actual == sizeof(buf));
+	} while (read_size_actual != 0);
 
 	if (file_hdl->pos) {
 		ret = file_hdl->handler(server, ELYSISIAN_FILE_HDL_ACTION_FSEEK0, &file->descriptor.hdl.varg, NULL, 0);

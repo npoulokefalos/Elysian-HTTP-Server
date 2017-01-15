@@ -693,7 +693,7 @@ elysian_err_t elysian_port_fs_ext_ftell(elysian_t* server, elysian_file_t* file,
 ** @param[out] buf The buffer that is going to store the retrieved data
 ** @param[in] buf_size The size of buf
 
-** @retval >=0  The number of bytes succesfully read. If the value is less than buf_size, EOF is indicated.
+** @retval >=0  The number of bytes succesfully read. If the value is 0, EOF is indicated.
 ** @retval -1 	There was a fatal error. The upper layer should avoid using the particular file descriptor 
 **				for fread/fwrite/fseek/ftell as the operation be always failing. elysian_port_fs_ext_fclose() 
 **				is the only file operation that could use the particular file descriptor.

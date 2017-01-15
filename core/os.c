@@ -409,20 +409,38 @@ elysian_err_t elysian_fs_ftell(elysian_t* server, elysian_file_t* file, uint32_t
 
 elysian_err_t elysian_fs_fread(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size, uint32_t* actualreadsize){
     int result;
-    
+    uint32_t buf_index = 0;
+	
 	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED);
 	ELYSIAN_ASSERT(file->mode == ELYSIAN_FILE_MODE_READ);
 	ELYSIAN_ASSERT(file->partition);
 	
+	/*
+	** We could just 'buf_size' bytes and get EOF when actualreadsize < buf_size.
+	** This would require from the underlying memory devices to read exactly 'buf_size'
+	** bytes to not indicate EOF. This could be a bit tricky to handle in the application layer
+	** when HDL memory device is used. Therefore, we loop until get actualreadsize == 0, and
+	** is the only indication that EOF has been reached. HDL memory device can return < buf_size
+	** bytes without indicating EOF.
+	*/
 	*actualreadsize = 0;
-	result = file->partition->fread(server, file, buf, buf_size);
-	if(result >= 0){
-		*actualreadsize = result;
-		return ELYSIAN_ERR_OK;
-	}else{
-		*actualreadsize = 0;
-		return ELYSIAN_ERR_FATAL;
+	
+	while (buf_size - buf_index) {
+		result = file->partition->fread(server, file, &buf[buf_index], buf_size - buf_index);
+		if (result >= 0){
+			ELYSIAN_ASSERT(result <= buf_size - buf_index);
+			buf_index += result;
+			if (result == 0) {
+				break;
+			}
+		}else{
+			*actualreadsize = 0;
+			return ELYSIAN_ERR_FATAL;
+		}
 	}
+	
+	*actualreadsize = buf_index;
+	return ELYSIAN_ERR_OK;
 }
 
 /*

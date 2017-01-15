@@ -249,18 +249,6 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 		}
 	}
 	
-#if 0
-	if (client->mvc.status_code != ELYSIAN_HTTP_STATUS_CODE_206) {
-		if((client->httpreq.range_start != ELYSIAN_HTTP_RANGE_WF) || (client->httpreq.range_end != ELYSIAN_HTTP_RANGE_WF))) {
-			/*
-			** Ranges are only applied when HTTP 206 status code is set 
-			*/
-			client->httpreq.range_start = ELYSIAN_HTTP_RANGE_WF;
-			client->httpreq.range_end = ELYSIAN_HTTP_RANGE_WF;
-		}
-	}
-#endif
-	
 	ELYSIAN_LOG("MVC configured with view '%s' and HTTP status code %u", client->mvc.view, elysian_http_get_status_code_num(client->mvc.status_code));
 	
     return ELYSIAN_ERR_OK;
@@ -470,31 +458,6 @@ elysian_err_t elysian_mvc_resource_created(elysian_t* server, char* resource_loc
 /* --------------------------------------------------------------------------------------------------------------------------------
 | Controllers
 -------------------------------------------------------------------------------------------------------------------------------- */
-#if 0
-elysian_err_t elysian_mvc_controller(elysian_t* server, const char* url, elysian_mvc_controller_handler_t handler, elysian_mvc_controller_flag_e flags){
-    elysian_mvc_controller_t* controller;
-    
-    ELYSIAN_ASSERT(server != NULL);
-    ELYSIAN_ASSERT(url != NULL);
-    ELYSIAN_ASSERT(handler != NULL);
-    ELYSIAN_ASSERT(flags != ELYSIAN_MVC_CONTROLLER_FLAG_NONE);
-	
-    controller = elysian_mem_malloc(server, sizeof(elysian_mvc_controller_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
-    if(!controller){
-        return ELYSIAN_ERR_POLL;
-    }
-    
-    controller->url = url;
-    controller->handler = handler;
-	controller->flags = flags;
-    controller->next = server->controllers;
-    server->controllers = controller;
-    
-    return ELYSIAN_ERR_OK;
-}
-#endif
-
-
 elysian_mvc_controller_t* elysian_mvc_controller_get(elysian_t* server, char* url, elysian_http_method_e method_id){
     int i;
     ELYSIAN_LOG("Searching user defined controller for url '%s' and method '%s'", url, elysian_http_get_method_name(method_id));
