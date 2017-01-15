@@ -160,7 +160,7 @@ elysian_err_t elysian_mvc_httpreq_onservice_handler(elysian_t* server, elysian_h
 /*======================================================================================================================================
  Memory Management API                                          															
  ======================================================================================================================================*/
-void* elysian_mem_malloc(elysian_t* server, uint32_t size, elysian_mem_malloc_prio_t prio);
+void* elysian_mem_malloc(elysian_t* server, uint32_t size);
 void elysian_mem_free(elysian_t* server, void* ptr);
 uint32_t elysian_mem_usage(void);
 

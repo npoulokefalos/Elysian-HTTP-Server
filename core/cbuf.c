@@ -21,7 +21,7 @@
 #include "elysian.h"
 
 elysian_cbuf_t* elysian_cbuf_alloc(elysian_t* server, uint8_t* data, uint32_t len){
-	elysian_cbuf_t* cbuf = elysian_mem_malloc(server, sizeof(elysian_cbuf_t) + len + 1 /* '\0' */, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	elysian_cbuf_t* cbuf = elysian_mem_malloc(server, sizeof(elysian_cbuf_t) + len + 1 /* '\0' */);
 	if(cbuf){
 		cbuf->next = NULL;
 		cbuf->len = len;

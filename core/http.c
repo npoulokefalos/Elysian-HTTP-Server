@@ -255,7 +255,7 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 				goto handle_error;
 			}
 			
-			client->httpreq.multipart_boundary = elysian_mem_malloc(server, strlen(multipart_boundary) + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+			client->httpreq.multipart_boundary = elysian_mem_malloc(server, strlen(multipart_boundary) + 1);
 			if(!client->httpreq.multipart_boundary){
 				err = ELYSIAN_ERR_POLL;
 				goto handle_error;
@@ -365,7 +365,7 @@ elysian_err_t elysian_http_request_get_uri(elysian_t* server, char** uri){
 	}
 	index1--;
     ELYSIAN_LOG("URI indexes [%u,%u]", index0, index1);
-    *uri = elysian_mem_malloc(server, (index1 - index0 + 1) + 1 /* '\0' */ + strlen(ELYSIAN_FS_INDEX_HTML_VRT_ROOT) + 10 /* index.html */, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+    *uri = elysian_mem_malloc(server, (index1 - index0 + 1) + 1 /* '\0' */ + strlen(ELYSIAN_FS_INDEX_HTML_VRT_ROOT) + 10 /* index.html */);
     if(*uri == NULL){
         return ELYSIAN_ERR_POLL;
     }
@@ -388,7 +388,7 @@ elysian_err_t elysian_http_request_get_header(elysian_t* server, char* header_na
     elysian_err_t err;
     
     *header_value = NULL;
-	expanded_header_name = elysian_mem_malloc(server, 2 /* \r\n */ + strlen(header_name) + 1 /* '\0' */, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	expanded_header_name = elysian_mem_malloc(server, 2 /* \r\n */ + strlen(header_name) + 1 /* '\0' */);
     if(!expanded_header_name){
         return ELYSIAN_ERR_POLL;
     }
@@ -404,7 +404,7 @@ elysian_err_t elysian_http_request_get_header(elysian_t* server, char* header_na
     }
     index0 += 2 + strlen(header_name);
     index1 -= 1;
-    *header_value = elysian_mem_malloc(server, (index1 - index0 + 1) + 1 /* '\0' */, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+    *header_value = elysian_mem_malloc(server, (index1 - index0 + 1) + 1 /* '\0' */);
     if(*header_value == NULL){
         return ELYSIAN_ERR_POLL;
     }
@@ -445,7 +445,7 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 	/*
 	** HTTP headers parameter
 	*/
-	param = elysian_mem_malloc(server, sizeof(elysian_req_param_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	param = elysian_mem_malloc(server, sizeof(elysian_req_param_t));
 	if (!param) {
 		err = ELYSIAN_ERR_POLL;
 		goto handle_error;
@@ -456,7 +456,7 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 	param->filename = NULL; // initialize before trying malloc param->name else we may free unallocated memory..
 	param->data_index = 0;
 	param->file = &client->httpreq.headers_file;
-	param->name = elysian_mem_malloc(server, strlen(ELYSIAN_MVC_PARAM_HTTP_HEADERS) + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	param->name = elysian_mem_malloc(server, strlen(ELYSIAN_MVC_PARAM_HTTP_HEADERS) + 1);
 	if (!param->name) {
 		err = ELYSIAN_ERR_POLL;
 		goto handle_error;
@@ -472,7 +472,7 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 	/*
 	** HTTP body parameter
 	*/
-	param = elysian_mem_malloc(server, sizeof(elysian_req_param_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	param = elysian_mem_malloc(server, sizeof(elysian_req_param_t));
 	if (!param) {
 		err = ELYSIAN_ERR_POLL;
 		goto handle_error;
@@ -483,7 +483,7 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 	param->filename = NULL;
 	param->data_index = 0;
 	param->file = &client->httpreq.body_file;
-	param->name = elysian_mem_malloc(server, strlen(ELYSIAN_MVC_PARAM_HTTP_BODY) + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	param->name = elysian_mem_malloc(server, strlen(ELYSIAN_MVC_PARAM_HTTP_BODY) + 1);
 	if (!param->name) {
 		err = ELYSIAN_ERR_POLL;
 		goto handle_error;
@@ -679,7 +679,7 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 		/*
 		** Proces new param
 		*/
-		param = elysian_mem_malloc(server, sizeof(elysian_req_param_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+		param = elysian_mem_malloc(server, sizeof(elysian_req_param_t));
 		if (!param) {
 			err = ELYSIAN_ERR_POLL;
 			goto handle_error;
@@ -703,7 +703,7 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 		/*
 		** Read the header block 
 		*/
-		param_header = elysian_mem_malloc(server, param_header_len + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+		param_header = elysian_mem_malloc(server, param_header_len + 1);
 		if(!param_header){
 			err = ELYSIAN_ERR_POLL;
 			goto handle_error;
@@ -716,7 +716,7 @@ elysian_err_t elysian_http_request_get_params(elysian_t* server){
 		/*
 		** Retrieve any usefull info
 		*/
-		param->name = elysian_mem_malloc(server, strlen(param_header) + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+		param->name = elysian_mem_malloc(server, strlen(param_header) + 1);
 		if(!param->name){
 			err = ELYSIAN_ERR_POLL;
 			goto handle_error;
@@ -1137,7 +1137,7 @@ char* elysian_http_base64_encode(char *data) {
 	
 	input_length = strlen(data);
     output_length = 4 * ((input_length + 2) / 3);
-    char *encoded_data = elysian_mem_malloc(server, output_length + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+    char *encoded_data = elysian_mem_malloc(server, output_length + 1);
     if (encoded_data == NULL){
 		return NULL;
 	}
@@ -1205,7 +1205,7 @@ elysian_err_t base64_decode(elysian_t* server, const char *encoded, char** decod
     if (encoded[input_length - 1] == '=') {output_length--;}
     if (encoded[input_length - 2] == '=') {output_length--;}
 
-    decoded_data = elysian_mem_malloc(server, output_length + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+    decoded_data = elysian_mem_malloc(server, output_length + 1);
     if (decoded_data == NULL) {
 		return ELYSIAN_ERR_POLL;
 	}
@@ -1232,65 +1232,6 @@ elysian_err_t base64_decode(elysian_t* server, const char *encoded, char** decod
 }
 
 elysian_err_t elysian_http_authenticate(elysian_t* server){
-#if 0
-	elysian_err_t err;
-	char* header_value;
-	char user_pass[64 + 1 + 1 + 1];
-	char* user_pass_encoded;
-	char* user_pass_encoded_recved;
-	
-
-	/*
-	** user:pass
-	*/
-	strcpy(user_pass, "");
-	strcpy(&user_pass[strlen(user_pass)], username);
-	strcpy(&user_pass[strlen(user_pass)], ":");
-	strcpy(&user_pass[strlen(user_pass)], password);
-	ELYSIAN_ASSERT(strlen(user_pass) < sizeof(user_pass));
-	if(strcmp(user_pass, ":") == 0){
-		return ELYSIAN_ERR_OK;
-	}
-		
-	user_pass_encoded = elysian_http_base64_encode(user_pass);
-	if(!user_pass_encoded){
-		return ELYSIAN_ERR_POLL;
-	}
-    ELYSIAN_LOG("computed auth value = '%s'", user_pass_encoded);
-    
-	err = elysian_http_request_get_header(client, "Authorization" , &header_value);
-	if(err != ELYSIAN_ERR_OK){
-		elysian_mem_free(server,user_pass_encoded);
-        return err;
-    }
-    ELYSIAN_LOG("header value = '%s'", header_value);
-	if(!header_value){
-		elysian_mem_free(server, user_pass_encoded);
-		return ELYSIAN_ERR_AUTH;
-    }else{
-		if(strncmp(header_value, "Basic ", 6) != 0){ /* Todo: case insesitive */
-			elysian_mem_free(server, header_value);
-			elysian_mem_free(server, user_pass_encoded);
-			return ELYSIAN_ERR_AUTH;
-		}
-	}
-	
-	user_pass_encoded_recved = header_value + 6;
-	while(*user_pass_encoded_recved == ' ' && *user_pass_encoded_recved != '\0'){
-		user_pass_encoded_recved++;
-	}
-	ELYSIAN_LOG("recved auth value = '%s'", user_pass_encoded_recved);
-    
-	if(strcmp(user_pass_encoded, user_pass_encoded_recved) == 0){
-		elysian_mem_free(server, header_value);
-		elysian_mem_free(server, user_pass_encoded);
-		return ELYSIAN_ERR_OK;
-	}else{
-		elysian_mem_free(server, header_value);
-		elysian_mem_free(server, user_pass_encoded);
-		return ELYSIAN_ERR_AUTH;
-	}
-#else
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	elysian_err_t err;
 	char* username;
@@ -1354,7 +1295,6 @@ elysian_err_t elysian_http_authenticate(elysian_t* server){
 		elysian_mem_free(server, user_pass_decoded);
 		return ELYSIAN_ERR_AUTH;
 	}
-#endif
 }
 
 /* --------------------------------------------------------------------------------------------------------------------------------

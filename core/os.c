@@ -62,36 +62,7 @@ uint32_t elysian_mem_usage(){
     return elysian_mem_usage_bytes;
 }
 
-uint32_t elysian_mem_threshold(elysian_mem_malloc_prio_t prio){
-	uint32_t mem_threshold = (ELYSIAN_MAX_MEMORY_USAGE_KB * 1024);
-	switch(prio){
-		case ELYSIAN_MEM_MALLOC_PRIO_HIGH:
-			break;
-		case ELYSIAN_MEM_MALLOC_PRIO_NORMAL:
-			/*
-			** At worst case high prio allocation should be able to allocate
-			** a transmition packet, so newly added tasks will not block the
-			** transfer status of already started downloads.
-			*/
-			mem_threshold -= ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MIN;
-			break;
-		default:
-			ELYSIAN_ASSERT(0);
-			break;
-	}
-	return mem_threshold;
-}
-
-uint32_t elysian_mem_available(elysian_mem_malloc_prio_t prio){
-	uint32_t mem_threshold = elysian_mem_threshold(prio);
-	if(elysian_mem_usage_bytes >= mem_threshold){
-		return 0;
-	}else{
-		return mem_threshold - elysian_mem_usage_bytes;
-	}
-}
-
-void* elysian_mem_malloc(elysian_t* server, uint32_t size, elysian_mem_malloc_prio_t prio){
+void* elysian_mem_malloc(elysian_t* server, uint32_t size){
 	//elysian_schdlr_task_t* task = elysian_schdlr_current_task_get(server);
     void* ptr;
 
@@ -101,9 +72,10 @@ void* elysian_mem_malloc(elysian_t* server, uint32_t size, elysian_mem_malloc_pr
 	}
 #endif
 	
-	if(elysian_mem_usage_bytes + size > elysian_mem_threshold(prio)){
-		return NULL;
+	if (elysian_mem_usage_bytes + size > (ELYSIAN_MAX_MEMORY_USAGE_KB * 1024)) {
+		  return NULL;
 	}
+
 	
     ptr = elysian_port_mem_malloc(sizeof(elysian_mem_block_t) + size);
     if(!ptr){

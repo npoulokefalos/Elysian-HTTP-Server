@@ -952,7 +952,7 @@ void elysian_state_build_http_response(elysian_t* server, elysian_schdlr_ev_t ev
             /*
             ** Build HTTP response headers
             */
-			client->httpresp.buf = elysian_mem_malloc(server, client->httpresp.buf_size, ELYSIAN_MEM_MALLOC_PRIO_HIGH);
+			client->httpresp.buf = elysian_mem_malloc(server, client->httpresp.buf_size);
 			if(!client->httpresp.buf){
 				elysian_schdlr_state_poll_backoff(server);
 				return;
@@ -1041,21 +1041,26 @@ void elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev)
 				** the servicing of the existing ones by not allowing them to allocate the response buffer.
 				*/
 				client->httpresp.buf_size = ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX;
-				if(client->httpresp.buf_size > elysian_mem_available(ELYSIAN_MEM_MALLOC_PRIO_HIGH)){
-					client->httpresp.buf_size = elysian_mem_available(ELYSIAN_MEM_MALLOC_PRIO_HIGH);
-				}
-				if(client->httpresp.buf_size < (ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MIN)){
-					elysian_schdlr_state_poll_backoff(server);
-					return;
-				}
-				client->httpresp.buf = elysian_mem_malloc(server, client->httpresp.buf_size, ELYSIAN_MEM_MALLOC_PRIO_HIGH);
-				ELYSIAN_ASSERT(client->httpresp.buf);
-				if(!client->httpresp.buf){
-					elysian_schdlr_state_poll_backoff(server);
-					return;
-				}
-				client->httpresp.buf_index = 0;
-				client->httpresp.buf_len = 0;
+				while (1) {
+					client->httpresp.buf = elysian_mem_malloc(server, client->httpresp.buf_size);
+					if (!client->httpresp.buf) {
+						/*
+						** HTTP response buffer allocation failed, try allocating a smaller buffer
+						*/
+						client->httpresp.buf_size = (client->httpresp.buf_size > 128) ? client->httpresp.buf_size - 128 : 0;
+						if (client->httpresp.buf_size < 128) {
+							elysian_schdlr_state_poll_backoff(server);
+							return;
+						}
+					} else {
+						/*
+						** HTTP response buffer allocated
+						*/
+						client->httpresp.buf_index = 0;
+						client->httpresp.buf_len = 0;
+						break;
+					}
+				};
             }
 
 			packet_count = 0;
@@ -1395,7 +1400,7 @@ elysian_err_t elysian_client_cleanup(elysian_t* server){
 elysian_t* elysian_new(){
     elysian_t* server;
     
-    if(!(server = elysian_mem_malloc(NULL, sizeof(elysian_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL))){
+    if(!(server = elysian_mem_malloc(NULL, sizeof(elysian_t)))){
         return NULL;
     }
     

@@ -100,12 +100,12 @@ elysian_err_t elysian_fs_ram_fopen(elysian_t* server, char* abs_path, elysian_fi
 		}
 		
         ELYSIAN_LOG("allocating new ram file..");
-		fs_ram_file = elysian_mem_malloc(server, sizeof(elysian_fs_ram_file_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+		fs_ram_file = elysian_mem_malloc(server, sizeof(elysian_fs_ram_file_t));
 		if(!fs_ram_file){
 			return ELYSIAN_ERR_POLL;
 		}
 		
-		fs_ram_file->name = elysian_mem_malloc(server, strlen(abs_path) + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+		fs_ram_file->name = elysian_mem_malloc(server, strlen(abs_path) + 1);
 		if(!fs_ram_file->name){
 			elysian_mem_free(server, fs_ram_file);
 			return ELYSIAN_ERR_POLL;

@@ -574,7 +574,7 @@ elysian_err_t controller_ajax(elysian_t* server){
 
     ELYSIAN_LOG("[[ %s ]]", __func__);
     
-	ajax_file_name = elysian_mem_malloc(server, 64, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	ajax_file_name = elysian_mem_malloc(server, 64);
 	if(!ajax_file_name) {
 		return ELYSIAN_ERR_POLL;
 	}
@@ -674,75 +674,6 @@ elysian_err_t controller_dynamic_page_disk_html(elysian_t* server){
     return ELYSIAN_ERR_OK;
 }
 
-#if 0
-typedef struct{
-	uint32_t counter;
-	char data[64];
-	uint32_t data_cp_size;
-	uint32_t data_cp_index;
-}hdl_file_args_t;
-
-int huge_file_handler(elysian_t* server, elysian_file_hdl_action_e action,  void** varg, uint8_t* buf, uint32_t buf_size){
-	hdl_file_args_t* file_args;
-	
-	switch(action) {
-		case ELYSISIAN_FILE_HDL_ACTION_FOPEN:
-		{
-			ELYSIAN_LOG("ELYSIAN_FILE_HDL_ACTION_FOPEN");
-			file_args = elysian_mem_malloc(server, sizeof(hdl_file_args_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
-			if (file_args) {
-				*varg = file_args;
-				file_args->counter = 0;
-				file_args->data_cp_index = 0;
-				file_args->data_cp_size = 0;
-			}
-			return 0;
-		}break;
-		case ELYSISIAN_FILE_HDL_ACTION_FSEEK0:
-		{
-			file_args = (hdl_file_args_t*) *varg;
-			file_args->counter = 0;
-			file_args->data_cp_index = 0;
-			file_args->data_cp_size = 0;
-			
-			return 0;
-		}break;	
-		case ELYSISIAN_FILE_HDL_ACTION_FREAD:
-		{
-			file_args = (hdl_file_args_t*) *varg;
-			int copied_size = 0;
-			int cpy_size;
-			while (buf_size > copied_size) {
-				if (file_args->data_cp_index == file_args->data_cp_size) {
-					file_args->counter++;
-					elysian_sprintf(file_args->data, "Counter value is %u..\r\n", file_args->counter);
-					file_args->data_cp_size = strlen(file_args->data);
-					file_args->data_cp_index = 0;
-				}
-				
-				//elysian_sprintf(txt, "Counter value is %u..\r\n", *counter);
-				cpy_size = (file_args->data_cp_size - file_args->data_cp_index > buf_size - copied_size) ? buf_size - copied_size : file_args->data_cp_size - file_args->data_cp_index;
-				memcpy(&buf[copied_size], &file_args->data[ file_args->data_cp_index], cpy_size);
-				copied_size += cpy_size;
-				file_args->data_cp_index += cpy_size;
-				if (file_args->counter == 1000) {
-					break;
-				}
-			};
-
-			return copied_size;
-		}break;	
-		case ELYSISIAN_FILE_HDL_ACTION_FCLOSE:
-		{
-			elysian_mem_free(server, *varg);
-			return 0;
-		}break;
-	};
-
-	return 0;
-}
-#endif
-
 typedef struct{
 	uint32_t size;
 	uint32_t read_cursor;
@@ -756,7 +687,7 @@ int huge_file_handler(elysian_t* server, elysian_file_hdl_action_e action,  void
 		case ELYSISIAN_FILE_HDL_ACTION_FOPEN:
 		{
 			ELYSIAN_LOG("ELYSIAN_FILE_HDL_ACTION_FOPEN");
-			file_args = elysian_mem_malloc(server, sizeof(example_hdl_file_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+			file_args = elysian_mem_malloc(server, sizeof(example_hdl_file_t));
 			if (file_args) {
 				/*
 				** Create a 5 mb virtual file

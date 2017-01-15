@@ -339,7 +339,7 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 					/* 
 					* New part follows 
 					*/
-					param = elysian_mem_malloc(server, sizeof(elysian_req_param_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+					param = elysian_mem_malloc(server, sizeof(elysian_req_param_t));
 					if (!param) {
 						err = ELYSIAN_ERR_POLL;
 						goto handle_error;
@@ -458,7 +458,7 @@ elysian_err_t elysian_isp_http_body_multipart(elysian_t* server, elysian_cbuf_t*
 							err = ELYSIAN_ERR_FATAL;
 							goto handle_error;
 						} else {
-							char* search_value = elysian_mem_malloc(server, index1 - (index0 + strlen(search_strs[i])) + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+							char* search_value = elysian_mem_malloc(server, index1 - (index0 + strlen(search_strs[i])) + 1);
 							if (!search_value) {
 								//elysian_cbuf_list_append(cbuf_list_in, cbuf_list_out_tmp);
 								if(args->params->name){

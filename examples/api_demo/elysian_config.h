@@ -83,11 +83,9 @@
 #define ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK	    		(5 * 1024)
 
 /*
-** The size of buffer that will be allocated to send the HTTP body
-** part of the message message. 
+** The size of buffer that will be allocated to send the HTTP Response.
 */
 #define ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX   	(1400)
-#define ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MIN  		(ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX/8)
 
 /*
 ** Define the maximum path len supported. Files we fail to open/remove if the path is longer than the maximum allowed.

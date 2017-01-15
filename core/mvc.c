@@ -348,7 +348,7 @@ elysian_err_t elysian_mvc_view_set(elysian_t* server, char* view){
         view = ELYSIAN_FS_INDEX_HTML_VRT_ROOT"/index.html";
     }
     
-    client->mvc.view = elysian_mem_malloc(server, strlen(view) + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+    client->mvc.view = elysian_mem_malloc(server, strlen(view) + 1);
     if(!client->mvc.view){
         return ELYSIAN_ERR_POLL;
     }
@@ -403,12 +403,12 @@ elysian_err_t elysian_mvc_httpresp_header_add(elysian_t* server, char* header_na
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	elysian_mvc_httpresp_header_t* httpresp_header;
 
-	httpresp_header = elysian_mem_malloc(server, sizeof(elysian_mvc_httpresp_header_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	httpresp_header = elysian_mem_malloc(server, sizeof(elysian_mvc_httpresp_header_t));
 	if (!httpresp_header->header) {
 		return ELYSIAN_ERR_POLL;
 	}
 	
-	httpresp_header->header = elysian_mem_malloc(server, strlen(header_name) + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	httpresp_header->header = elysian_mem_malloc(server, strlen(header_name) + 1);
 	if (!httpresp_header->header) {
 		elysian_mem_free(server, httpresp_header);
 		return ELYSIAN_ERR_POLL;
@@ -416,7 +416,7 @@ elysian_err_t elysian_mvc_httpresp_header_add(elysian_t* server, char* header_na
 	
 	strcpy(httpresp_header->header, header_name);
 	
-	httpresp_header->value = elysian_mem_malloc(server,strlen(header_value) + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	httpresp_header->value = elysian_mem_malloc(server,strlen(header_value) + 1);
 	if (!httpresp_header->value) {
 		elysian_mem_free(server, httpresp_header->header);
 		elysian_mem_free(server, httpresp_header);
@@ -484,12 +484,12 @@ elysian_err_t elysian_mvc_attribute_set(elysian_t* server, char* name, char* val
     ELYSIAN_ASSERT(name != NULL);
     ELYSIAN_ASSERT(strlen(name) > 0);
     
-    attribute = elysian_mem_malloc(server, sizeof(elysian_mvc_attribute_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+    attribute = elysian_mem_malloc(server, sizeof(elysian_mvc_attribute_t));
     if(!attribute){
         return ELYSIAN_ERR_POLL;
     }
     
-    attribute->name = elysian_mem_malloc(server, strlen(name) + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+    attribute->name = elysian_mem_malloc(server, strlen(name) + 1);
     if(!attribute->name){
         elysian_mem_free(server, attribute);
         return ELYSIAN_ERR_POLL;
@@ -497,7 +497,7 @@ elysian_err_t elysian_mvc_attribute_set(elysian_t* server, char* name, char* val
     
     strcpy(attribute->name, name);
     
-    attribute->value = elysian_mem_malloc(server, strlen(value) + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+    attribute->value = elysian_mem_malloc(server, strlen(value) + 1);
     if(!attribute->value){
         elysian_mem_free(server, attribute->name);
         elysian_mem_free(server, attribute);
@@ -543,7 +543,7 @@ elysian_err_t elysian_mvc_add_alloc(elysian_t* server, void* data) {
     ELYSIAN_ASSERT(client != NULL);
     ELYSIAN_ASSERT(data != NULL);
 
-	alloc = elysian_mem_malloc(server, sizeof(elysian_mvc_alloc_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	alloc = elysian_mem_malloc(server, sizeof(elysian_mvc_alloc_t));
     if(!alloc){
         return ELYSIAN_ERR_POLL;
     }
@@ -720,7 +720,7 @@ elysian_err_t elysian_mvc_param_get_raw(elysian_t* server, char* param_name, uin
 	/*
 	** Allocate size +1 so it can be used as raw bytes or string
 	*/
-	buf = elysian_mem_malloc(server, param.data_size + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	buf = elysian_mem_malloc(server, param.data_size + 1);
 	if(buf == NULL){
 		return ELYSIAN_ERR_POLL;
 	}

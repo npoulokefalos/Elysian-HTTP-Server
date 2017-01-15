@@ -135,7 +135,7 @@ elysian_err_t elysian_strstr_file(elysian_t* server, elysian_file_t* file, uint3
 	*/
 	buf_sz = 8 * 512;
 	while(1){
-		buf = elysian_mem_malloc(server, buf_sz + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+		buf = elysian_mem_malloc(server, buf_sz + 1);
 		if(!buf){
 			buf_sz = (buf_sz > 512) ? buf_sz - 512 : 0;
 			if(buf_sz <= sizeof(tmp_buf)){

@@ -105,7 +105,7 @@
 #define ELYSIAN_FS_EMPTY_FILE_VRT_ROOT 				ELYSIAN_FS_ROM_VRT_ROOT
 
 
-#define ELYSIAN_CBUF_LEN (256)
+#define ELYSIAN_CBUF_LEN (384)
 
 
 #define ELYSIAN_TIME_INFINITE  (uint32_t)(-1)
@@ -132,11 +132,6 @@ typedef struct elysian_schdlr_t elysian_schdlr_t;
 ** @retval 0 	Credentials not valid, deny access to the requested resource
  */
 typedef uint8_t (*elysian_authentication_cb_t)(elysian_t* server, char* url, char* username, char* password);
-
-typedef enum {
-	ELYSIAN_MEM_MALLOC_PRIO_NORMAL = 0,
-	ELYSIAN_MEM_MALLOC_PRIO_HIGH,
-}elysian_mem_malloc_prio_t;
 
 /* 
 ** cbuf
@@ -261,8 +256,6 @@ void elysian_thread_yield(void);
 ** Memory
 ****************************************************************************************************************************
 */
-uint32_t elysian_mem_available(elysian_mem_malloc_prio_t prio);
-
 elysian_err_t elysian_os_hostname_get(char hostname[64]);
 
 /*
@@ -499,7 +492,7 @@ struct elysian_mvc_httpresp_header_t {
 										uint8_t param_found;
 										char* buf;
 										
-										buf = elysian_mem_malloc(server, 512, ELYSIAN_MEM_MALLOC_PRIO_NORMAL); // user allocated memory block
+										buf = elysian_mem_malloc(server, 512); // user allocated memory block
 										if (!buf) {
 											return ELYSIAN_ERR_POLL;
 										}

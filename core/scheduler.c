@@ -161,8 +161,8 @@ void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 		fdset_size = 0;
 		socket_events = 0;
 		
-		new_client = elysian_mem_malloc(server, sizeof(elysian_client_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
-		new_task = elysian_mem_malloc(server, sizeof(elysian_schdlr_task_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+		new_client = elysian_mem_malloc(server, sizeof(elysian_client_t));
+		new_task = elysian_mem_malloc(server, sizeof(elysian_schdlr_task_t));
 		new_cbuf = elysian_cbuf_alloc(server, NULL, ELYSIAN_CBUF_LEN);
 		if(!new_cbuf){
 			/*

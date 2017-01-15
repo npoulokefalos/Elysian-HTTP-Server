@@ -122,7 +122,7 @@ elysian_err_t elysian_resource_open_dynamic(elysian_t* server) {
         return err;
     }
 
-    if (!(priv = elysian_mem_malloc(server, sizeof(elysian_resource_dynamic_priv_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL))) {
+    if (!(priv = elysian_mem_malloc(server, sizeof(elysian_resource_dynamic_priv_t)))) {
         elysian_fs_fclose(server, &client->resource->file);
         return ELYSIAN_ERR_POLL;
     }
@@ -382,7 +382,7 @@ elysian_err_t elysian_resource_open(elysian_t* server){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_err_t err;
     
-    if(!(client->resource = elysian_mem_malloc(server, sizeof(elysian_resource_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL))){
+    if(!(client->resource = elysian_mem_malloc(server, sizeof(elysian_resource_t)))){
         return ELYSIAN_ERR_POLL;
     }
     
