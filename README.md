@@ -17,8 +17,8 @@ Supported features include:
 - Small footprint: requires ~50kb FLASH and ~5kb RAM
 - Much emphasis on ease of use, easy integration and power consumption
 - Support for dynamic content using the model-view-controller (MVC) design pattern
-- Single thread / multiple client implementation
-- Extremely robust: Εxponential backoff mechanism bypasses temporary memory or network unavailability issues. 
+- Single thread / Μultiple client implementation
+- Extremely robust: Εxponential backoff mechanism resolves any temporarυ memory or network unavailability issues. 
 - Support for GET/HEAD/POST/PUT HTTP requests
 - Support for multipart HTTP requests for file uploading.
 - Chunked tranfer encoding and decoding
