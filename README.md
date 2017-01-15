@@ -14,24 +14,22 @@ server side scripting languages (PHP, LUA) will not be supported. Dynamic conten
 by adopting the MVC design pattern, using C handler function as controllers.
 
 Supported features include:
-- Small footprint: requires ~90kb FLASH and ~5kb RAM
-- Ported OS enviroments: FreeRTOS, ChibiOS, Unix, Windows
-- Ported TCP\IP enviroments: LwIP, Unix,Windows
-- Ported filesystems: FatFS, Unix, Windows
+- Small footprint: requires ~50kb FLASH and ~5kb RAM
+- Much emphasis on ease of use, easy integration and power consumption
 - Support for dynamic content using the model-view-controller (MVC) design pattern
-- Single thread implementation
-- Extremely robust: all temporary failed operations (due to memory or network unavailability)
-   are executed again with exponential backoff. Other clients are serviced normally in parallel
+- Single thread / multiple client implementation
+- Extremely robust: Εxponential backoff mechanism bypasses temporary memory or network unavailability issues. 
 - Support for GET/HEAD/POST/PUT HTTP requests
 - Support for multipart HTTP requests for file uploading.
-- Multiple client support
+- Chunked tranfer encoding and decoding
 - HTTP pipelining and keep-alive connections
-- Multi-partition scheme for file storage: Seperate partitions for files in ROM and external DISK (etc SD Card) are used
+- Support for HTTP requests with expectation
+- Support for multiple memory devices: Files can be stored to ROM, RAM, or External memory device (etc SD-Card, USB, Hard Disk)
 - Bounded memory usage
 - Single demo application demonstrating the whole API.
-- On-the-fly chunked tranfer decoding
-- Much emphasis on ease of use, easy integration and power consumption
-
+- Ported OS enviroments: FreeRTOS, ChibiOS, Unix, Windows
+- Ported TCP\IP enviroments: LwIP, Unix, Windows
+- Ported filesystems: FatFS, Unix, Windows
 
 # Give it a try under Linux or Windows:
 
