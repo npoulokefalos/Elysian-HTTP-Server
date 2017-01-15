@@ -109,9 +109,9 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 			client->httpreq.transfer_encoding = ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED;
 		} else {
 			/*
-			** Unknown encoding
+			** Unknown encoding. Normally we should respond with status 501 and close the connection
 			*/
-			client->httpreq.transfer_encoding = ELYSIAN_HTTP_TRANSFER_ENCODING_NA;
+			client->httpreq.transfer_encoding = ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY;
 		}
 		elysian_mem_free(server, header_value);
 	}
@@ -847,6 +847,7 @@ elysian_err_t elysian_http_response_build(elysian_t* server){
 		
 #endif
 	
+#if 0
 	if(client->mvc.status_code == ELYSIAN_HTTP_STATUS_CODE_302){
 		ELYSIAN_ASSERT(client->mvc.redirection_url);
 		err = elysian_http_add_response_header_line(server, "Location", client->mvc.redirection_url);
@@ -854,6 +855,20 @@ elysian_err_t elysian_http_response_build(elysian_t* server){
 			return err;
 		}
 	}
+#endif
+	
+	/*
+	** Set the HTTP headers set by the application layer
+	*/
+	elysian_mvc_httpresp_header_t* httpresp_header;
+	httpresp_header = client->mvc.httpresp_headers;
+	while (httpresp_header) {
+		err = elysian_http_add_response_header_line(server, httpresp_header->header, httpresp_header->value);
+		if(err != ELYSIAN_ERR_OK){
+			return err;
+		}
+		httpresp_header = httpresp_header->next;
+	};
 	
 	/*
 	** Terminate HTTP Response

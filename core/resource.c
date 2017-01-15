@@ -405,10 +405,15 @@ elysian_err_t elysian_resource_open(elysian_t* server){
     }
     
 	err = client->resource->open(server);
+	if (err != ELYSIAN_ERR_OK) {
+		elysian_mem_free(server, client->resource);
+		client->resource = NULL;
+	}
+	
     switch (err) {
         case ELYSIAN_ERR_OK:
 		{
-
+			return ELYSIAN_ERR_OK;
 		}break;
         case ELYSIAN_ERR_NOTFOUND:
 		{

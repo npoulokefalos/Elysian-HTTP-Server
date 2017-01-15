@@ -136,6 +136,9 @@ elysian_err_t elysian_mvc_controller(elysian_t* server, const char* url, elysian
 elysian_client_t* elysian_mvc_client(elysian_t* server);
 
 elysian_err_t elysian_mvc_attribute_set(elysian_t* server, char* name, char* value);
+elysian_err_t elysian_mvc_httpresp_header_add(elysian_t* server, char* header_name, char* header_value);
+elysian_err_t elysian_mvc_status_code_set(elysian_t* server, elysian_http_status_code_e status_code);
+elysian_err_t elysian_mvc_transfer_encoding_set(elysian_t* server, elysian_http_transfer_encoding_t transfer_encoding);
 
 elysian_err_t elysian_mvc_httpreq_url_get(elysian_t* server, char** url);
 elysian_err_t elysian_mvc_httpreq_header_get(elysian_t* server, char* header_name, char** header_value);

@@ -522,12 +522,37 @@ elysian_err_t controller_redirected_page1_html(elysian_t* server){
 
 elysian_err_t controller_redirected_page0_html(elysian_t* server){
 	//elysian_client_t* client = elysian_mvc_client(server);
+	char httpresp_header_value[256];
+	char hostname[64];
     elysian_err_t err;
 
     ELYSIAN_LOG("[[ %s ]]", __func__);
     
+#if 0
 	err = elysian_mvc_redirect(server, "/fs_rom/redirected_page1.html?redirection_message=this+is+a+custom+redirection+message");
 	if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+#endif
+	
+	err = elysian_os_hostname_get(hostname);
+	if(err != ELYSIAN_ERR_OK){
+		return err;
+	}
+	
+	elysian_sprintf(httpresp_header_value, "http://%s:%u%s", hostname, server->listening_port, "/fs_rom/redirected_page1.html?redirection_message=this+is+a+custom+redirection+message");
+	err = elysian_mvc_httpresp_header_add(server, "Location", httpresp_header_value);
+	if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+	
+	elysian_mvc_status_code_set(server, ELYSIAN_HTTP_STATUS_CODE_302);
+	
+	/*
+	** Empty HTTP body
+	*/
+	err = elysian_mvc_view_set(server, NULL);
+    if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
 	

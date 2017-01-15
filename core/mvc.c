@@ -24,16 +24,12 @@ elysian_err_t elysian_mvc_read_req_params(elysian_t* server);
 elysian_err_t elysian_mvc_add_alloc(elysian_t* server, void* data);
 
 
-elysian_err_t elysian_mvc_status_code_set(elysian_t* server, elysian_http_status_code_e status_code);
-elysian_err_t elysian_mvc_content_range_set(elysian_t* server, uint32_t range_start, uint32_t range_end);
-elysian_err_t elysian_mvc_transfer_encoding_set(elysian_t* server, elysian_http_transfer_encoding_t transfer_encoding);
-
-
 void elysian_mvc_init(elysian_t* server){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     client->mvc.view = NULL;
 	client->mvc.transfer_encoding = ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY;
-	client->mvc.redirection_url = NULL;
+	//client->mvc.redirection_url = NULL;
+	client->mvc.httpresp_headers = NULL;
 	
 	client->mvc.attributes = NULL;
 	client->mvc.allocs = NULL;
@@ -52,18 +48,29 @@ elysian_err_t elysian_mvc_clear(elysian_t* server){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_mvc_attribute_t* attribute_next;
     elysian_mvc_alloc_t* alloc_next;
+	elysian_mvc_httpresp_header_t* httpresp_header_next;
 	
-    if(client->mvc.view){
+    if (client->mvc.view) {
         elysian_mem_free(server, client->mvc.view);
         client->mvc.view = NULL;
     }
     
-	if (client->mvc.redirection_url){
+#if 0
+	if (client->mvc.redirection_url) {
 		elysian_mem_free(server, client->mvc.redirection_url);
 		client->mvc.redirection_url = NULL;
 	}
+#endif
 	
-    while(client->mvc.attributes){
+	while (client->mvc.httpresp_headers) {
+		httpresp_header_next = client->mvc.httpresp_headers->next;
+		elysian_mem_free(server, client->mvc.httpresp_headers->header);
+		elysian_mem_free(server, client->mvc.httpresp_headers->value);
+		elysian_mem_free(server, client->mvc.httpresp_headers);
+		client->mvc.httpresp_headers = httpresp_header_next;
+	};
+	
+    while (client->mvc.attributes) {
         attribute_next = client->mvc.attributes->next;
         if(client->mvc.attributes->name){
             elysian_mem_free(server, client->mvc.attributes->name);
@@ -75,7 +82,7 @@ elysian_err_t elysian_mvc_clear(elysian_t* server){
         client->mvc.attributes = attribute_next;
     };
 
-	while(client->mvc.allocs){
+	while (client->mvc.allocs) {
         alloc_next = client->mvc.allocs->next;
 		elysian_mem_free(server, client->mvc.allocs->data);
         elysian_mem_free(server, client->mvc.allocs);
@@ -130,8 +137,8 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 		
 		elysian_mvc_transfer_encoding_set(server, ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY);
 		elysian_mvc_status_code_set(server, client->httpresp.current_status_code);
-		elysian_mvc_content_range_set(server, ELYSIAN_HTTP_RANGE_WF, ELYSIAN_HTTP_RANGE_WF);
-		
+		client->mvc.range_start = ELYSIAN_HTTP_RANGE_WF;
+		client->mvc.range_end = ELYSIAN_HTTP_RANGE_WF;
 		ELYSIAN_LOG("MVC configured automatically with view '%s' and HTTP status code %u", client->mvc.view, elysian_http_get_status_code_num(client->mvc.status_code));
 		
 		return ELYSIAN_ERR_OK;
@@ -166,13 +173,15 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 			** None-partial HTTP request
 			*/
 			elysian_mvc_status_code_set(server, ELYSIAN_HTTP_STATUS_CODE_200);
-			elysian_mvc_content_range_set(server, ELYSIAN_HTTP_RANGE_WF, ELYSIAN_HTTP_RANGE_WF);
+			client->mvc.range_start = ELYSIAN_HTTP_RANGE_WF;
+			client->mvc.range_end = ELYSIAN_HTTP_RANGE_WF;
 		} else {
 			/*
 			** Partial HTTP request
 			*/
 			elysian_mvc_status_code_set(server, ELYSIAN_HTTP_STATUS_CODE_206);
-			elysian_mvc_content_range_set(server, client->httpreq.range_start, client->httpreq.range_end);
+			client->mvc.range_start = client->httpreq.range_start;
+			client->mvc.range_end = client->httpreq.range_end;
 		}
 		
 		ELYSIAN_LOG("MVC initialized with view '%s' and HTTP status code %u", client->mvc.view, elysian_http_get_status_code_num(client->mvc.status_code));
@@ -365,13 +374,6 @@ elysian_err_t elysian_mvc_transfer_encoding_set(elysian_t* server, elysian_http_
 	return ELYSIAN_ERR_OK;
 }
 
-elysian_err_t elysian_mvc_content_range_set(elysian_t* server, uint32_t range_start, uint32_t range_end) {
-	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-	client->mvc.range_start = range_start;
-	client->mvc.range_end = range_end;
-	return ELYSIAN_ERR_OK;
-}
-
 elysian_err_t elysian_mvc_httpreq_url_get(elysian_t* server, char** url) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	*url = client->httpreq.url;
@@ -396,6 +398,41 @@ elysian_err_t elysian_mvc_httpreq_header_get(elysian_t* server, char* header_nam
 /* --------------------------------------------------------------------------------------------------------------------------------
 | Redirection
 -------------------------------------------------------------------------------------------------------------------------------- */
+
+elysian_err_t elysian_mvc_httpresp_header_add(elysian_t* server, char* header_name, char* header_value) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_mvc_httpresp_header_t* httpresp_header;
+
+	httpresp_header = elysian_mem_malloc(server, sizeof(elysian_mvc_httpresp_header_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	if (!httpresp_header->header) {
+		return ELYSIAN_ERR_POLL;
+	}
+	
+	httpresp_header->header = elysian_mem_malloc(server, strlen(header_name) + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	if (!httpresp_header->header) {
+		elysian_mem_free(server, httpresp_header);
+		return ELYSIAN_ERR_POLL;
+	}
+	
+	strcpy(httpresp_header->header, header_name);
+	
+	httpresp_header->value = elysian_mem_malloc(server,strlen(header_value) + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	if (!httpresp_header->value) {
+		elysian_mem_free(server, httpresp_header->header);
+		elysian_mem_free(server, httpresp_header);
+		return ELYSIAN_ERR_POLL;
+	}
+
+	strcpy(httpresp_header->value, header_value);
+	
+	httpresp_header->next = client->mvc.httpresp_headers;
+	client->mvc.httpresp_headers = httpresp_header;
+
+	return ELYSIAN_ERR_OK;
+}
+
+
+#if 0
 elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_err_t err;
@@ -440,6 +477,7 @@ elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url) {
     
     return ELYSIAN_ERR_OK;
 }
+#endif
 
 /*
 HTTP/1.1 201 Created

@@ -215,7 +215,6 @@ typedef enum{
 typedef enum{
 	ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY = 0,
     ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED,
-    ELYSIAN_HTTP_TRANSFER_ENCODING_NA
 }elysian_http_transfer_encoding_t;
 
 elysian_err_t elysian_http_request_headers_received(elysian_t* server);
@@ -458,6 +457,13 @@ struct elysian_mvc_attribute_t{
     elysian_mvc_attribute_t* next;
 };
 
+typedef struct elysian_mvc_httpresp_header_t elysian_mvc_httpresp_header_t;
+struct elysian_mvc_httpresp_header_t {
+    char* header;
+	char* value;
+    elysian_mvc_httpresp_header_t* next;
+};
+
 /* 
 ** @brief 		Registers a MVC handler (callback)
 **
@@ -578,7 +584,9 @@ struct elysian_mvc_t{
 	/*
 	** Holds the redirection URL specified from a controller
 	*/
-    char* redirection_url;
+    //char* redirection_url;
+	
+	elysian_mvc_httpresp_header_t* httpresp_headers;
 	
     elysian_mvc_attribute_t* attributes;
 	elysian_mvc_alloc_t* allocs;
