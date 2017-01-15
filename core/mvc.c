@@ -431,54 +431,6 @@ elysian_err_t elysian_mvc_httpresp_header_add(elysian_t* server, char* header_na
 	return ELYSIAN_ERR_OK;
 }
 
-
-#if 0
-elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url) {
-	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    elysian_err_t err;
-    char hostname[64];
-	
-	if (client->mvc.redirection_url){
-		elysian_mem_free(server, client->mvc.redirection_url);
-		client->mvc.redirection_url = NULL;
-	}
-	
-	if (client->mvc.view) {
-        elysian_mem_free(server, client->mvc.view);
-        client->mvc.view = NULL;
-    }
-	
-	char status_code_page_name[32];
-
-	elysian_sprintf(status_code_page_name, ELYSIAN_FS_ROM_VRT_ROOT"/%u.html", elysian_http_get_status_code_num(ELYSIAN_HTTP_STATUS_CODE_302));
-	err = elysian_mvc_view_set(server, status_code_page_name);
-	if(err != ELYSIAN_ERR_OK){
-		return err;
-	}
-	
-	err = elysian_os_hostname_get(hostname);
-	if(err != ELYSIAN_ERR_OK){
-		return err;
-	}
-	
-	/*
-	** http://www.example.org/index.asp
-	*/
-	client->mvc.redirection_url = elysian_mem_malloc(server, strlen(redirection_url) + strlen(hostname) + 16 /* http:// */ + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
-	if(!client->mvc.redirection_url){
-		 return ELYSIAN_ERR_POLL;
-	}
-	
-	elysian_sprintf(client->mvc.redirection_url, "http://%s:%u%s", hostname, server->listening_port, redirection_url);
-
-	elysian_mvc_status_code_set(server, ELYSIAN_HTTP_STATUS_CODE_302);
-	
-    ELYSIAN_LOG("Redirection URL set to '%s'", client->mvc.redirection_url);
-    
-    return ELYSIAN_ERR_OK;
-}
-#endif
-
 /*
 HTTP/1.1 201 Created
 Date: Fri, 7 Oct 2005 17:17:11 GMT

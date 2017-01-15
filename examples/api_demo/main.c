@@ -522,19 +522,12 @@ elysian_err_t controller_redirected_page1_html(elysian_t* server){
 
 elysian_err_t controller_redirected_page0_html(elysian_t* server){
 	//elysian_client_t* client = elysian_mvc_client(server);
-	char httpresp_header_value[256];
+	char httpresp_header_value[150];
 	char hostname[64];
     elysian_err_t err;
 
     ELYSIAN_LOG("[[ %s ]]", __func__);
     
-#if 0
-	err = elysian_mvc_redirect(server, "/fs_rom/redirected_page1.html?redirection_message=this+is+a+custom+redirection+message");
-	if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
-#endif
-	
 	err = elysian_os_hostname_get(hostname);
 	if(err != ELYSIAN_ERR_OK){
 		return err;
