@@ -796,30 +796,24 @@ elysian_err_t elysian_http_response_build(elysian_t* server){
 			return err;
 		}
 		
-		err = elysian_resource_size(server, &resource_size);
-		if(err != ELYSIAN_ERR_OK){
-			return err;
-		}
-		
 		if (client->mvc.status_code == ELYSIAN_HTTP_STATUS_CODE_206) {
+			err = elysian_resource_size(server, &resource_size);
+			if(err != ELYSIAN_ERR_OK){
+				return err;
+			}
+			
 			/* Content-Range: bytes 0-64657026/64657027 */
 			elysian_sprintf(header_value, "bytes %u-%u/%u", client->mvc.range_start, client->mvc.range_end, resource_size);
 			err = elysian_http_add_response_header_line(server, "Content-Range", header_value);
 			if(err != ELYSIAN_ERR_OK){
 				return err;
 			}
-			
-			elysian_sprintf(header_value, "%u", client->mvc.range_end - client->mvc.range_start + 1);
-			err = elysian_http_add_response_header_line(server, "Content-Length", header_value);
-			if(err != ELYSIAN_ERR_OK){
-				return err;
-			}
-		} else {
-			elysian_sprintf(header_value, "%u", resource_size);
-			err = elysian_http_add_response_header_line(server, "Content-Length", header_value);
-			if(err != ELYSIAN_ERR_OK){
-				return err;
-			}
+		} 
+		
+		elysian_sprintf(header_value, "%u", client->mvc.content_length);
+		err = elysian_http_add_response_header_line(server, "Content-Length", header_value);
+		if(err != ELYSIAN_ERR_OK){
+			return err;
 		}
 	} else if (client->mvc.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED) {
 		err = elysian_http_add_response_header_line(server, "Transfer-Encoding", "chunked");

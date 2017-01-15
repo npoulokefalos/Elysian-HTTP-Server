@@ -47,7 +47,8 @@ void elysian_state_http_request_authenticate(elysian_t* server, elysian_schdlr_e
 void elysian_state_http_request_params_get(elysian_t* server, elysian_schdlr_ev_t ev);
 void elysian_state_fatal_error_entry(elysian_t* server, elysian_schdlr_ev_t ev);
 void elysian_state_http_response_entry(elysian_t* server, elysian_schdlr_ev_t ev);
-void elysian_state_configure_mvc(elysian_t* server, elysian_schdlr_ev_t ev);
+void elysian_state_mvc_pre_configuration(elysian_t* server, elysian_schdlr_ev_t ev);
+void elysian_state_mvc_post_configuration(elysian_t* server, elysian_schdlr_ev_t ev);
 void elysian_state_prepare_http_response(elysian_t* server, elysian_schdlr_ev_t ev);
 void elysian_state_build_http_response(elysian_t* server, elysian_schdlr_ev_t ev);
 void elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev);
@@ -731,7 +732,7 @@ void elysian_state_http_response_entry(elysian_t* server, elysian_schdlr_ev_t ev
 				}
 				
 				
-				elysian_schdlr_state_set(server, elysian_state_configure_mvc);
+				elysian_schdlr_state_set(server, elysian_state_mvc_pre_configuration);
 				return;
 			}
         }break;
@@ -755,7 +756,7 @@ void elysian_state_http_response_entry(elysian_t* server, elysian_schdlr_ev_t ev
     };
 }
 
-void elysian_state_configure_mvc(elysian_t* server, elysian_schdlr_ev_t ev){
+void elysian_state_mvc_pre_configuration(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	elysian_err_t err;
 
@@ -795,7 +796,7 @@ void elysian_state_configure_mvc(elysian_t* server, elysian_schdlr_ev_t ev){
 				err = elysian_mvc_configure(server);
 			}
 #else
-			err = elysian_mvc_configure(server);
+			err = elysian_mvc_pre_configure(server);
 #endif
 			switch(err){
 				case ELYSIAN_ERR_OK:
@@ -965,8 +966,9 @@ void elysian_state_prepare_http_response(elysian_t* server, elysian_schdlr_ev_t 
 			switch(err){
 				case ELYSIAN_ERR_OK:
 				{
+#if 0
 					//client->httpresp.body_size = client->httpresp.resource_size;
-					if (client->httpreq.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED) {
+					if (client->mvc.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED) {
 						client->httpresp.body_size = -1; // Tranfer size is unknown, send until EOF.
 					} else {
 						if (client->mvc.status_code == ELYSIAN_HTTP_STATUS_CODE_206) {
@@ -982,8 +984,8 @@ void elysian_state_prepare_http_response(elysian_t* server, elysian_schdlr_ev_t 
 							client->httpresp.body_size = resource_size;
 						}
 					}
-					
-					elysian_schdlr_state_set(server, elysian_state_build_http_response);
+#endif
+					elysian_schdlr_state_set(server, elysian_state_mvc_post_configuration);
 					return;
 				} break;
 				case ELYSIAN_ERR_POLL:
@@ -1014,6 +1016,57 @@ void elysian_state_prepare_http_response(elysian_t* server, elysian_schdlr_ev_t 
 				} break;
 			};	
 #endif
+        }break;
+        case elysian_schdlr_EV_ABORT:
+        {
+			elysian_schdlr_state_set(server, elysian_state_http_disconnect);
+			return;
+        }break;
+        default:
+        {
+            ELYSIAN_ASSERT(0);
+        }break;
+    };
+}
+
+/*
+** MVC configuration after the resource is opened
+*/
+void elysian_state_mvc_post_configuration(elysian_t* server, elysian_schdlr_ev_t ev) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_err_t err;
+	
+    ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
+    
+	
+    switch(ev){
+        case elysian_schdlr_EV_ENTRY:
+        {
+            elysian_schdlr_state_timeout_set(server, 5000);
+            elysian_schdlr_state_poll_enable(server);
+			
+        }break;
+        case elysian_schdlr_EV_READ:
+        {
+			
+        }break;
+        case elysian_schdlr_EV_POLL:
+        {
+			err = elysian_mvc_post_configure(server);
+			if (err != ELYSIAN_ERR_OK) {
+				elysian_resource_close(server);
+				elysian_schdlr_state_set(server, elysian_state_fatal_error_entry);
+				return;
+			}
+			
+			if (client->mvc.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED) {
+				client->httpresp.body_size = -1; // Tranfer size is unknown, send until EOF.
+			} else {
+				client->httpresp.body_size = client->mvc.content_length;
+			}
+			
+			elysian_schdlr_state_set(server, elysian_state_build_http_response);
+			return;
         }break;
         case elysian_schdlr_EV_ABORT:
         {

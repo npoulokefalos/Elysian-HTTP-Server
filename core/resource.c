@@ -474,6 +474,7 @@ elysian_err_t elysian_resource_open(elysian_t* server){
 		}break;
     };
 	
+#if 0
 	if (client->mvc.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY) {
 		/*
 		** When transfer encoding is identity, we need to know the resource size and also seek
@@ -523,14 +524,9 @@ elysian_err_t elysian_resource_open(elysian_t* server){
 		** Special handling for chunked transfer encoding
 		*/
 	}
-	
+#endif
 	return ELYSIAN_ERR_OK;
 	
-	handle_error:
-		client->resource->close(server);
-		elysian_mem_free(server, client->resource);
-		client->resource = NULL;
-		return err;
 }
 
 uint8_t elysian_resource_isopened(elysian_t* server){
@@ -545,6 +541,17 @@ elysian_err_t elysian_resource_size(elysian_t* server, uint32_t * resource_size)
 	ELYSIAN_ASSERT(client->resource != NULL);
 	
 	err = client->resource->size(server, resource_size);
+	return err;
+}
+
+elysian_err_t elysian_resource_seek(elysian_t* server, uint32_t seekpos) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_err_t err;
+	
+	ELYSIAN_ASSERT(client->resource != NULL);
+	
+	err = client->resource->seek(server, seekpos);
+	
 	return err;
 }
 

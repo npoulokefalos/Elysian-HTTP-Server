@@ -573,6 +573,8 @@ struct elysian_mvc_t{
 	*/
     uint8_t keep_alive;
 	
+	uint32_t content_length;
+	
 	/*
 	** Holds the redirection URL specified from a controller
 	*/
@@ -585,7 +587,9 @@ struct elysian_mvc_t{
 typedef void (*elysian_httpreq_onservice_handler_t)(elysian_t* server, void* ptr);
 
 void elysian_mvc_init(elysian_t* server);
-elysian_err_t elysian_mvc_configure(elysian_t* server);
+elysian_err_t elysian_mvc_pre_configure(elysian_t* server);
+elysian_err_t elysian_mvc_post_configure(elysian_t* server);
+
 uint8_t elysian_mvc_isconfigured(elysian_t* server);
 elysian_err_t elysian_mvc_clear(elysian_t* server);
 
@@ -639,6 +643,7 @@ void elysian_resource_init(elysian_t* server);
 elysian_err_t elysian_resource_open(elysian_t* server);
 uint8_t elysian_resource_isopened(elysian_t* server);
 elysian_err_t elysian_resource_size(elysian_t* server, uint32_t * resource_size);
+elysian_err_t elysian_resource_seek(elysian_t* server, uint32_t seekpos);
 elysian_err_t elysian_resource_read(elysian_t* server, uint8_t* readbuf, uint32_t readbufsz, uint32_t* readbufszactual);
 elysian_err_t elysian_resource_close(elysian_t* server);
     

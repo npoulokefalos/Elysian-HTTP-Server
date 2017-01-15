@@ -85,7 +85,7 @@ elysian_err_t elysian_mvc_clear(elysian_t* server){
     return ELYSIAN_ERR_OK;
 }
 
-elysian_err_t elysian_mvc_configure(elysian_t* server){
+elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_err_t err;
 	elysian_mvc_alloc_t* alloc_next;
@@ -265,6 +265,70 @@ elysian_err_t elysian_mvc_configure(elysian_t* server){
 	
     return ELYSIAN_ERR_OK;
 }
+
+/*
+** Resoource has been opened succesfully, continue configuration
+*/
+elysian_err_t elysian_mvc_post_configure(elysian_t* server) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	uint32_t resource_size;
+    elysian_err_t err;
+	
+	if (client->mvc.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY) {
+		/*
+		** When transfer encoding is identity, we need to know the resource size and also seek
+		** to the requested range index. Size calculation does not need to be calculated here,
+		** but we do so to speed up the process (requires less fseek ops for dynamic content)
+		*/
+		ELYSIAN_LOG("CALCULATING FILE SIZE START ------------------------------");
+		err = elysian_resource_size(server, &resource_size);
+		if (err != ELYSIAN_ERR_OK){
+			return err;
+		}
+		ELYSIAN_LOG("CALCULATING FILE SIZE END ------------------------------");
+		if (client->mvc.status_code == ELYSIAN_HTTP_STATUS_CODE_206) {
+			/*
+			** Partial request handling
+			*/
+			if (client->mvc.range_end == ELYSIAN_HTTP_RANGE_EOF) {
+				client->mvc.range_end = resource_size;
+				if (client->mvc.range_end) {
+					client->mvc.range_end--;
+				}
+			}
+			
+			if (client->mvc.range_end >= resource_size){
+				elysian_set_fatal_http_status_code(server, ELYSIAN_HTTP_STATUS_CODE_400);
+				return ELYSIAN_ERR_FATAL;
+			}
+			
+			if (client->mvc.range_start > client->mvc.range_end){
+				elysian_set_fatal_http_status_code(server, ELYSIAN_HTTP_STATUS_CODE_400);
+				return ELYSIAN_ERR_FATAL;
+			}
+			
+			if (client->mvc.range_start > 0) {
+				err = elysian_resource_seek(server, client->mvc.range_start);
+				if(err != ELYSIAN_ERR_OK){
+					return ELYSIAN_ERR_FATAL;
+				}
+			}
+			
+			client->mvc.content_length = client->mvc.range_end - client->mvc.range_start + 1;
+		} else {
+			client->mvc.content_length = resource_size;
+		}
+		
+	} else if (client->mvc.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED) {
+		/*
+		** Special handling for chunked transfer encoding
+		*/
+		client->mvc.content_length = -1; // Don't care for the actuall value
+	}
+	
+	return ELYSIAN_ERR_OK;
+}
+
 
 elysian_client_t* elysian_mvc_client(elysian_t* server) {
 	return elysian_current_client(server);
