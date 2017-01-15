@@ -95,7 +95,7 @@ void* elysian_mem_malloc(elysian_t* server, uint32_t size, elysian_mem_malloc_pr
 	//elysian_schdlr_task_t* task = elysian_schdlr_current_task_get(server);
     void* ptr;
 
-#if 1
+#if 0
 	if (rand() % 6 == 0) {
 		return NULL;
 	}

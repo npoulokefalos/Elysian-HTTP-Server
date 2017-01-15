@@ -615,7 +615,7 @@ elysian_err_t controller_file_download_html(elysian_t* server){
     if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
-	
+
     return ELYSIAN_ERR_OK;
 }
 
@@ -656,30 +656,68 @@ elysian_err_t controller_dynamic_page_disk_html(elysian_t* server){
     return ELYSIAN_ERR_OK;
 }
 
-int huge_file_handler(elysian_t* server, elysian_file_hdl_action_e action,  uint8_t* buf, uint32_t buf_size){
+typedef struct{
+	uint32_t counter;
+	char data[64];
+	uint32_t data_cp_size;
+	uint32_t data_cp_index;
+}hdl_file_args_t;
+
+int huge_file_handler(elysian_t* server, elysian_file_hdl_action_e action,  void** varg, uint8_t* buf, uint32_t buf_size){
+	hdl_file_args_t* file_args;
 	
 	switch(action) {
 		case ELYSISIAN_FILE_HDL_ACTION_FOPEN:
 		{
-			ELYSIAN_LOG("ELYSISIAN_FILE_HDL_ACTION_FOPEN");
+			ELYSIAN_LOG("ELYSIAN_FILE_HDL_ACTION_FOPEN");
+			file_args = elysian_mem_malloc(server, sizeof(hdl_file_args_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+			if (file_args) {
+				*varg = file_args;
+				file_args->counter = 0;
+				file_args->data_cp_index = 0;
+				file_args->data_cp_size = 0;
+			}
 			return 0;
 		}break;
-		case ELYSISIAN_FILE_HDL_ACTION_FSIZE:
+		case ELYSISIAN_FILE_HDL_ACTION_FSEEK0:
 		{
-			ELYSIAN_LOG("ELYSISIAN_FILE_HDL_ACTION_FSIZE");
-			return 128 * 1024 * 1024;
+			file_args = (hdl_file_args_t*) *varg;
+			file_args->counter = 0;
+			file_args->data_cp_index = 0;
+			file_args->data_cp_size = 0;
+			
+			return 0;
 		}break;	
 		case ELYSISIAN_FILE_HDL_ACTION_FREAD:
 		{
-			return buf_size;
+			file_args = (hdl_file_args_t*) *varg;
+			int copied_size = 0;
+			int cpy_size;
+			while (buf_size > copied_size) {
+				if (file_args->data_cp_index == file_args->data_cp_size) {
+					file_args->counter++;
+					elysian_sprintf(file_args->data, "Counter value is %u..\r\n", file_args->counter);
+					file_args->data_cp_size = strlen(file_args->data);
+					file_args->data_cp_index = 0;
+				}
+				
+				//elysian_sprintf(txt, "Counter value is %u..\r\n", *counter);
+				cpy_size = (file_args->data_cp_size - file_args->data_cp_index > buf_size - copied_size) ? buf_size - copied_size : file_args->data_cp_size - file_args->data_cp_index;
+				memcpy(&buf[copied_size], &file_args->data[ file_args->data_cp_index], cpy_size);
+				copied_size += cpy_size;
+				file_args->data_cp_index += cpy_size;
+				if (file_args->counter == 1000) {
+					break;
+				}
+			};
+
+			return copied_size;
 		}break;	
 		case ELYSISIAN_FILE_HDL_ACTION_FCLOSE:
 		{
+			elysian_mem_free(server, *varg);
 			return 0;
-		}break;	
-		{
-			return -1;
-		}break;	
+		}break;
 	};
 
 	return 0;

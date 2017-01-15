@@ -102,7 +102,7 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
         goto handle_error;
     }
 	if(!header_value){
-		client->httpreq.transfer_encoding = ELYSIAN_HTTP_TRANSFER_ENCODING_RAW;
+		client->httpreq.transfer_encoding = ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY;
     }else{
 		if(strcmp(header_value, "chunked") == 0){
 			ELYSIAN_LOG("Chunked Request!");
@@ -758,6 +758,7 @@ elysian_err_t elysian_http_response_build(elysian_t* server){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_err_t err;
     char header_value[64];
+	uint32_t resource_size;
 	
 	client->httpresp.buf_index = 0;
 	client->httpresp.buf_len = 0;
@@ -775,17 +776,12 @@ elysian_err_t elysian_http_response_build(elysian_t* server){
 		return err;
 	}
 	
-	err = elysian_http_add_response_header_line(server, "Accept-Ranges", "bytes");
-	if(err != ELYSIAN_ERR_OK){
-		return err;
-	}
-	
-	err = elysian_http_add_response_header_line(server, "Connection", (client->httpresp.keep_alive == 1) ? "keep-alive" : "close");
+	err = elysian_http_add_response_header_line(server, "Connection", (client->mvc.keep_alive == 1) ? "keep-alive" : "close");
 	if(err != ELYSIAN_ERR_OK){
 		return err;
 	}
 
-	if(client->httpresp.status_code == ELYSIAN_HTTP_STATUS_CODE_401){
+	if(client->mvc.status_code == ELYSIAN_HTTP_STATUS_CODE_401){
 		/* WWW-Authenticate: Basic realm="My Server" */
 		elysian_sprintf(header_value, "Basic realm=\"%s\"", ELYSIAN_SERVER_NAME);
 		err = elysian_http_add_response_header_line(server, "WWW-Authenticate", header_value);
@@ -794,27 +790,52 @@ elysian_err_t elysian_http_response_build(elysian_t* server){
 		}
 	}
 	
-	if(client->httpresp.status_code == ELYSIAN_HTTP_STATUS_CODE_206){
-		/* Content-Range: bytes 0-64657026/64657027 */
-		elysian_sprintf(header_value, "bytes %u-%u/%u", client->httpreq.range_start, client->httpreq.range_end, client->httpresp.resource_size);
-		err = elysian_http_add_response_header_line(server, "Content-Range", header_value);
+	if (client->mvc.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY) {
+		err = elysian_http_add_response_header_line(server, "Accept-Ranges", "bytes");
 		if(err != ELYSIAN_ERR_OK){
 			return err;
 		}
+		
+		err = elysian_resource_size(server, &resource_size);
+		if(err != ELYSIAN_ERR_OK){
+			return err;
+		}
+		
+		if (client->mvc.status_code == ELYSIAN_HTTP_STATUS_CODE_206) {
+			/* Content-Range: bytes 0-64657026/64657027 */
+			elysian_sprintf(header_value, "bytes %u-%u/%u", client->mvc.range_start, client->mvc.range_end, resource_size);
+			err = elysian_http_add_response_header_line(server, "Content-Range", header_value);
+			if(err != ELYSIAN_ERR_OK){
+				return err;
+			}
+			
+			elysian_sprintf(header_value, "%u", client->mvc.range_end - client->mvc.range_start + 1);
+			err = elysian_http_add_response_header_line(server, "Content-Length", header_value);
+			if(err != ELYSIAN_ERR_OK){
+				return err;
+			}
+		} else {
+			elysian_sprintf(header_value, "%u", resource_size);
+			err = elysian_http_add_response_header_line(server, "Content-Length", header_value);
+			if(err != ELYSIAN_ERR_OK){
+				return err;
+			}
+		}
+	} else if (client->mvc.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED) {
+		err = elysian_http_add_response_header_line(server, "Transfer-Encoding", "chunked");
+		if(err != ELYSIAN_ERR_OK){
+			return err;
+		}
+	} else {
+		return ELYSIAN_ERR_FATAL;
 	}
 	
-	if(client->httpresp.body_size > 0){
+	//if(client->httpresp.body_size > 0){
 		err = elysian_http_add_response_header_line(server, "Content-Type", elysian_http_get_mime_type(client->mvc.view));
 		if(err != ELYSIAN_ERR_OK){
 			return err;
 		}
-	}
-	
-	elysian_sprintf(header_value, "%u", client->httpresp.body_size);
-	err = elysian_http_add_response_header_line(server, "Content-Length", header_value);
-	if(err != ELYSIAN_ERR_OK){
-		return err;
-	}
+	//}
 	
 #if 1 //#ifdef ELYSIAN_HTTP_CACHE_DISABLED
     /*
@@ -822,19 +843,19 @@ elysian_err_t elysian_http_response_build(elysian_t* server){
     ** no-cache : don't cache, use ETAG for revalidation
     ** max-age  : in seconds, for how long the resource can be cached
     */
-	if(client->httpresp.body_size > 0){
+	//if(client->httpresp.body_size > 0){
 		err = elysian_http_add_response_header_line(server, "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
 		if(err != ELYSIAN_ERR_OK){
 			return err;
 		}
-	}
+	//}
 #else
 		
 #endif
 	
-	if(client->httpresp.status_code == ELYSIAN_HTTP_STATUS_CODE_302){
-		ELYSIAN_ASSERT(client->httpresp.redirection_url);
-		err = elysian_http_add_response_header_line(server, "Location", client->httpresp.redirection_url);
+	if(client->mvc.status_code == ELYSIAN_HTTP_STATUS_CODE_302){
+		ELYSIAN_ASSERT(client->mvc.redirection_url);
+		err = elysian_http_add_response_header_line(server, "Location", client->mvc.redirection_url);
 		if(err != ELYSIAN_ERR_OK){
 			return err;
 		}
@@ -855,9 +876,9 @@ elysian_err_t elysian_http_response_build(elysian_t* server){
 
 elysian_err_t elysian_http_add_response_status_line(elysian_t* server){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-	uint16_t status_line_len = strlen("HTTP/1.1 ") + 3 /* Status code */ + 1 /* Space */ + strlen(elysian_http_get_status_code_msg(client->httpresp.status_code)) + 2 /* \r\n */;
+	uint16_t status_line_len = strlen("HTTP/1.1 ") + 3 /* Status code */ + 1 /* Space */ + strlen(elysian_http_get_status_code_msg(client->mvc.status_code)) + 2 /* \r\n */;
 	if(client->httpresp.buf_len + status_line_len + 1 /* '\0' */ < client->httpresp.buf_size){
-		elysian_sprintf((char*)client->httpresp.buf, "HTTP/1.1 %u %s\r\n", elysian_http_get_status_code_num(client->httpresp.status_code), elysian_http_get_status_code_msg(client->httpresp.status_code));
+		elysian_sprintf((char*)client->httpresp.buf, "HTTP/1.1 %u %s\r\n", elysian_http_get_status_code_num(client->mvc.status_code), elysian_http_get_status_code_msg(client->mvc.status_code));
 		client->httpresp.buf_len = strlen((char*)client->httpresp.buf);
 		return ELYSIAN_ERR_OK;
 	}else{
@@ -1003,6 +1024,11 @@ const elysian_http_status_code_t elysian_http_status_codes[] = {
 		.code_num = 200,
 		.code_msg = "OK",
 		.code_body = ""
+		},
+	[ELYSIAN_HTTP_STATUS_CODE_201] = {
+			.code_num = 201,
+			.code_msg = "Created",
+			.code_body = ""
 		},
 	[ELYSIAN_HTTP_STATUS_CODE_206] = {
 		.code_num = 206,

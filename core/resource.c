@@ -20,11 +20,11 @@
 
 #include "elysian.h"
 
-elysian_err_t elysian_resource_open_static(elysian_t* server, uint32_t seekpos, uint32_t* filesz){
+elysian_err_t elysian_resource_open_static(elysian_t* server) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_err_t err;
     char* file_name;
-    
+	
     /*
     ** Discard the first '/' if it does exist
     */
@@ -35,22 +35,33 @@ elysian_err_t elysian_resource_open_static(elysian_t* server, uint32_t seekpos, 
     if(err != ELYSIAN_ERR_OK){
         return err;
     }
-    
-    err = elysian_fs_fsize(server, &client->resource->file, filesz);
-    if(err != ELYSIAN_ERR_OK){
-        elysian_fs_fclose(server, &client->resource->file);
-        return err;
-    }
-    
-    if(!seekpos){
-        err = elysian_fs_fseek(server, &client->resource->file, seekpos);
-        if(err != ELYSIAN_ERR_OK){
-            elysian_fs_fclose(server, &client->resource->file);
-            return err;
-        }
-    }
-    
     return ELYSIAN_ERR_OK;
+}
+
+elysian_err_t elysian_resource_size_static(elysian_t* server, uint32_t* resource_size) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_err_t err;
+	
+	err = elysian_fs_fsize(server, &client->resource->file, resource_size);
+	if(err != ELYSIAN_ERR_OK){
+		return err;
+	}
+	
+	client->resource->calculated_size = *resource_size;
+	
+	return ELYSIAN_ERR_OK;
+}
+
+elysian_err_t elysian_resource_seek_static(elysian_t* server, uint32_t seekpos) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_err_t err;
+	
+	err = elysian_fs_fseek(server, &client->resource->file, client->mvc.range_start);
+	if(err != ELYSIAN_ERR_OK){
+		return err;
+	}
+	
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_resource_read_static(elysian_t* server, uint8_t* readbuf, uint32_t readbufsz, uint32_t* readbufszactual){
@@ -76,13 +87,16 @@ elysian_err_t elysian_resource_close_static(elysian_t* server){
 
 
 /* -------------------------------------------------------------------------------------------------------------------------- */
-elysian_err_t elysian_resource_open_dynamic(elysian_t* server, uint32_t seekpos, uint32_t* filesz);
+elysian_err_t elysian_resource_open_dynamic(elysian_t* server);
+elysian_err_t elysian_resource_size_dynamic(elysian_t* server, uint32_t* size);
+elysian_err_t elysian_resource_seek_dynamic (elysian_t* server, uint32_t seekpos);
 elysian_err_t elysian_resource_read_dynamic(elysian_t* server, uint8_t* read_buf, uint32_t read_buf_sz, uint32_t* read_buf_sz_actual);
 elysian_err_t elysian_resource_close_dynamic(elysian_t* server);
 
 
 typedef struct elysian_resource_dynamic_priv_t elysian_resource_dynamic_priv_t;
-struct elysian_resource_dynamic_priv_t{
+struct elysian_resource_dynamic_priv_t {
+	uint32_t seekpos;
     uint8_t* wbuf;
     
     uint8_t sbuf[128]; /* Search buffer */
@@ -95,68 +109,185 @@ struct elysian_resource_dynamic_priv_t{
 	uint8_t shadow_buf_size;
 	
     uint8_t eof;
-    uint8_t reset;
+    //uint8_t reset;
 };
 
-elysian_err_t elysian_resource_open_dynamic(elysian_t* server, uint32_t seekpos, uint32_t* filesz){
+elysian_err_t elysian_resource_open_dynamic(elysian_t* server) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    uint32_t read_size;
-    uint32_t read_size_actual;
-    uint32_t seekpos_actual;
+	elysian_resource_dynamic_priv_t* priv;
     elysian_err_t err;
-    
+	
     err = elysian_fs_fopen(server, client->mvc.view, ELYSIAN_FILE_MODE_READ, &client->resource->file);
-    if(err != ELYSIAN_ERR_OK){
+    if (err != ELYSIAN_ERR_OK) {
         return err;
     }
 
-    if(!(client->resource->priv = elysian_mem_malloc(server, sizeof(elysian_resource_dynamic_priv_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL))){
+    if (!(priv = elysian_mem_malloc(server, sizeof(elysian_resource_dynamic_priv_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL))) {
         elysian_fs_fclose(server, &client->resource->file);
         return ELYSIAN_ERR_POLL;
     }
     
-    /*
-    ** Request a seek at pos 0
-    */
-    ((elysian_resource_dynamic_priv_t*)client->resource->priv)->reset = 1;
+	priv->seekpos = 0;
+	//priv->reset = 1;
+	client->resource->priv = priv;
+	
+	err = elysian_resource_seek_dynamic(server, 0);
+	if (err != ELYSIAN_ERR_OK) {
+		elysian_fs_fclose(server, &client->resource->file);
+        return err;
+    }
+	
+#if 0
+	if (client->mvc.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY) {
+		/*
+		** Request a seek at pos 0
+		*/
+		((elysian_resource_dynamic_priv_t*)client->resource->priv)->reset = 1;
 
-    /*
-    ** Get file size
-    */
-    *filesz = 0;
-    do{
-        read_size = 1024;
-        ELYSIAN_LOG("Trying to read 1024..");
-        err = client->resource->read(server, NULL, read_size, &read_size_actual);
-        if(err != ELYSIAN_ERR_OK){
-            elysian_mem_free(server, client->resource->priv);
-            elysian_fs_fclose(server, &client->resource->file);
-            return err;
-        }
-        *filesz += read_size_actual;
-    }while(read_size_actual != 0);
+		/*
+		** Get file size
+		*/
+		resource_size = 0;
+		do{
+			read_size = 1024;
+			ELYSIAN_LOG("Trying to read 1024..");
+			err = client->resource->read(server, NULL, read_size, &read_size_actual);
+			if(err != ELYSIAN_ERR_OK){
+				elysian_mem_free(server, client->resource->priv);
+				elysian_fs_fclose(server, &client->resource->file);
+				return err;
+			}
+			resource_size += read_size_actual;
+		}while(read_size_actual != 0);
 
-    /*
-    ** Request a seek at pos 0
-    */
-    ((elysian_resource_dynamic_priv_t*)client->resource->priv)->reset = 1;
-    
-    /*
-    ** Set seek pos
-    */
-    seekpos_actual = 0;
-    while(seekpos > seekpos_actual){
-        read_size = seekpos - seekpos_actual > 1024 ? 1024 : seekpos - seekpos_actual;
-        err = client->resource->read(server, NULL, read_size, &read_size_actual);
-        if(err != ELYSIAN_ERR_OK){
-            elysian_mem_free(server, client->resource->priv);
-            elysian_fs_fclose(server, &client->resource->file);
-            return err;
-        }
-        seekpos_actual += read_size_actual;
-    };
-
+		client->resource->size = resource_size;
+		
+		/*
+		** Request a seek at pos 0
+		*/
+		((elysian_resource_dynamic_priv_t*)client->resource->priv)->reset = 1;
+ 
+		/*
+		** Set seek pos
+		*/
+		if (client->mvc.range_start > 0) {
+			seekpos_actual = 0;
+			while(client->mvc.range_start > seekpos_actual){
+				read_size = client->mvc.range_start - seekpos_actual > 1024 ? 1024 : client->mvc.range_start - seekpos_actual;
+				err = client->resource->read(server, NULL, read_size, &read_size_actual);
+				if(err != ELYSIAN_ERR_OK){
+					elysian_mem_free(server, client->resource->priv);
+					elysian_fs_fclose(server, &client->resource->file);
+					return err;
+				}
+				seekpos_actual += read_size_actual;
+			};
+		}
+	}
+#endif
+	
     return ELYSIAN_ERR_OK;
+}
+
+elysian_err_t elysian_resource_size_dynamic(elysian_t* server, uint32_t* resource_size) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_err_t err;
+	uint32_t initial_pos;
+	elysian_resource_dynamic_priv_t* priv = (elysian_resource_dynamic_priv_t*)client->resource->priv;
+	*resource_size = 0;
+
+	if (client->resource->calculated_size == -1) {
+		initial_pos = priv->seekpos;
+		
+		err = elysian_resource_seek_dynamic(server, ELYSIAN_FILE_SEEK_END);
+		if(err != ELYSIAN_ERR_OK){
+			ELYSIAN_LOG("FAIL!");
+			return err;
+		}
+		
+		client->resource->calculated_size = priv->seekpos;
+		*resource_size = client->resource->calculated_size;
+		
+		if (priv->seekpos != initial_pos) {
+			err = elysian_resource_seek_dynamic(server, initial_pos);
+			if(err != ELYSIAN_ERR_OK){
+				ELYSIAN_LOG("FAIL!");
+				return err;
+			}
+		}
+	} else {
+		/*
+		** Size alrady calculated
+		*/
+		*resource_size = client->resource->calculated_size;
+	}
+	
+	return ELYSIAN_ERR_OK;
+}
+
+elysian_err_t elysian_resource_seek_dynamic (elysian_t* server, uint32_t seekpos) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_resource_dynamic_priv_t* priv = (elysian_resource_dynamic_priv_t*)client->resource->priv;
+	uint32_t read_size_actual;
+	uint32_t read_size;
+	elysian_err_t err;
+	uint32_t resource_size;
+	
+	ELYSIAN_LOG("seeking to pos %u, current = %u ++++++++++++++++++++++++++", seekpos, priv->seekpos);
+	
+	/*
+	** Always seek if seekpos is 0 (resource_open requires proper initialization -- priv->seekpos is not init)
+	*/
+	if ((seekpos == 0) || (priv->seekpos > seekpos)) {
+		
+        err = elysian_fs_fseek(server, &client->resource->file, 0);
+        if(err != ELYSIAN_ERR_OK){
+            return err;
+        }
+
+		priv->seekpos = 0;
+		
+        priv->wbuf = priv->sbuf;
+        priv->sbuf_index0 = 1;
+        priv->sbuf_index1 = 1;
+		priv->shadow_buf_size = 0;
+		
+        priv->eof = 0;
+
+		ELYSIAN_LOG("??????????????????????????????? SEEK RESET!");
+    }
+	
+	/*
+	** Seek to desired position
+	*/
+	resource_size = 0;
+	while (seekpos - priv->seekpos) {
+		read_size = seekpos - priv->seekpos;
+		if (read_size > 1024) {
+			read_size = 1024;
+		}
+		ELYSIAN_LOG("Trying to read %u bytes..", read_size);
+		err = client->resource->read(server, NULL, read_size, &read_size_actual);
+		if(err != ELYSIAN_ERR_OK){
+			ELYSIAN_LOG("FAIL!");
+			return err;
+		}
+		resource_size += read_size_actual;
+		if (read_size_actual != read_size) {
+			break;
+		}
+	};
+	
+	if (seekpos == ELYSIAN_FILE_SEEK_END) {
+		return ELYSIAN_ERR_OK;
+	} else {
+		if (priv->seekpos != seekpos) {
+			ELYSIAN_LOG("FAIL! priv->seekpos = %u, seekpos = %u", priv->seekpos , seekpos);
+			return ELYSIAN_ERR_FATAL;
+		} else {
+			return ELYSIAN_ERR_OK;
+		}
+	}
 }
 
 elysian_err_t elysian_resource_read_dynamic(elysian_t* server, uint8_t* read_buf, uint32_t read_buf_sz, uint32_t* read_buf_sz_actual){
@@ -173,19 +304,6 @@ elysian_err_t elysian_resource_read_dynamic(elysian_t* server, uint8_t* read_buf
 	uint32_t index;
 	elysian_err_t err;
 	
-    if(priv->reset){
-        err = elysian_fs_fseek(server, &client->resource->file, 0);
-        if(err != ELYSIAN_ERR_OK){
-            return err;
-        }
-        priv->wbuf = priv->sbuf;
-        priv->sbuf_index0 = 1;
-        priv->sbuf_index1 = 1;
-		priv->shadow_buf_size = 0;
-		
-        priv->eof = 0;
-        priv->reset = 0;
-    }
 
 #define shift_and_fill_sbuf(server, file, priv) \
 { \
@@ -218,14 +336,14 @@ elysian_err_t elysian_resource_read_dynamic(elysian_t* server, uint8_t* read_buf
 		
 	*read_buf_sz_actual = 0;
 	read_buf_index = 0;
-	while(read_buf_index < read_buf_sz){
+	while (read_buf_index < read_buf_sz){
 		if(priv->wbuf != priv->sbuf){
 			/*
 			** Replace {prefix}{attribute_name}{suffix} with attribute's value
 			*/
             ELYSIAN_LOG("Replacing..");
 			copy_sz = read_buf_sz - read_buf_index > priv->rbuf_index1 - priv->rbuf_index0 ? priv->rbuf_index1 - priv->rbuf_index0 : read_buf_sz - read_buf_index;
-			if(read_buf){
+			if (read_buf){
 				memcpy(&read_buf[read_buf_index], (uint8_t*) &priv->wbuf[priv->rbuf_index0], copy_sz);
 			}
 			read_buf_index += copy_sz;
@@ -239,7 +357,7 @@ elysian_err_t elysian_resource_read_dynamic(elysian_t* server, uint8_t* read_buf
 			** Copy input to output until {prefix}{attribute_name}{suffix} is detected.
 			*/
             //ELYSIAN_LOG("Searching..");
-			if(priv->sbuf_index0 && priv->sbuf_index0 == priv->sbuf_index1){
+			if (priv->sbuf_index0 && priv->sbuf_index0 == priv->sbuf_index1){
 				shift_and_fill_sbuf(server, file, priv);
                 ELYSIAN_LOG("index0=%u, index1=%u", priv->sbuf_index0, priv->sbuf_index1);
 				if(priv->sbuf_index0 == priv->sbuf_index1){break;}
@@ -286,6 +404,8 @@ elysian_err_t elysian_resource_read_dynamic(elysian_t* server, uint8_t* read_buf
 		}
     }
 	*read_buf_sz_actual = read_buf_index;
+	priv->seekpos += read_buf_index;
+	
 	return ELYSIAN_ERR_OK;
 #undef shift_and_fill_sbuf
 }
@@ -307,46 +427,110 @@ void elysian_resource_init(elysian_t* server){
 	client->resource = NULL;
 }
 
-elysian_err_t elysian_resource_open(elysian_t* server, uint32_t seekpos, uint32_t* filesz){
+elysian_err_t elysian_resource_open(elysian_t* server){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_err_t err;
-    
-    *filesz = 0;
     
     if(!(client->resource = elysian_mem_malloc(server, sizeof(elysian_resource_t), ELYSIAN_MEM_MALLOC_PRIO_NORMAL))){
         return ELYSIAN_ERR_POLL;
     }
     
+	client->resource->priv = NULL;
+	client->resource->calculated_size = -1;
+	
     if(client->mvc.attributes){
         ELYSIAN_LOG("Dynamic file!");
         client->resource->open = elysian_resource_open_dynamic;
+		client->resource->size = elysian_resource_size_dynamic;
+		client->resource->seek = elysian_resource_seek_dynamic;
         client->resource->read = elysian_resource_read_dynamic;
         client->resource->close = elysian_resource_close_dynamic;
-        client->resource->priv = NULL;
     }else{
         client->resource->open = elysian_resource_open_static;
+		client->resource->size = elysian_resource_size_static;
+		client->resource->seek = elysian_resource_seek_static;
         client->resource->read = elysian_resource_read_static;
         client->resource->close = elysian_resource_close_static;
-        client->resource->priv = NULL;
     }
     
-    err = client->resource->open(server, seekpos, filesz);
-    switch(err){
+	err = client->resource->open(server);
+    switch (err) {
         case ELYSIAN_ERR_OK:
-            return ELYSIAN_ERR_OK;
-            break;
-        case ELYSIAN_ERR_NOTFOUND:
-            break;
-        case ELYSIAN_ERR_POLL:
-            break;
-        default:
-            err = ELYSIAN_ERR_FATAL;
-            break;
-    };
+		{
 
-    elysian_mem_free(server, client->resource);
-    client->resource = NULL;
-    return err;
+		}break;
+        case ELYSIAN_ERR_NOTFOUND:
+		{
+            return ELYSIAN_ERR_NOTFOUND;
+		}break;
+        case ELYSIAN_ERR_POLL:
+		{
+            return ELYSIAN_ERR_POLL;
+		}break;
+        default:
+		{
+			ELYSIAN_ASSERT(0);
+            return ELYSIAN_ERR_FATAL;
+		}break;
+    };
+	
+	if (client->mvc.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY) {
+		/*
+		** When transfer encoding is identity, we need to know the resource size and also seek
+		** to the requested range index. Size calculation does not need to be calculated here,
+		** but we do so to speed up the process (requires less fseek ops for dynamic content)
+		*/
+		uint32_t resource_size;
+		ELYSIAN_LOG("CALCULATING FILE SIZE START ------------------------------");
+		err = client->resource->size(server, &resource_size);
+		if(err != ELYSIAN_ERR_OK){
+			goto handle_error;
+		}
+		ELYSIAN_LOG("CALCULATING FILE SIZE END ------------------------------");
+		if (client->mvc.status_code == ELYSIAN_HTTP_STATUS_CODE_206) {
+			/*
+			** Partial request handling
+			*/
+			if (client->mvc.range_end == ELYSIAN_HTTP_RANGE_EOF) {
+				client->mvc.range_end = resource_size;
+				if (client->mvc.range_end) {
+					client->mvc.range_end--;
+				}
+			}
+			
+			if (client->mvc.range_end >= resource_size){
+				err = ELYSIAN_ERR_FATAL;
+				elysian_set_fatal_http_status_code(server, ELYSIAN_HTTP_STATUS_CODE_400);
+				goto handle_error;
+			}
+			
+			if (client->mvc.range_start > client->mvc.range_end){
+				err = ELYSIAN_ERR_FATAL;
+				elysian_set_fatal_http_status_code(server, ELYSIAN_HTTP_STATUS_CODE_400);
+				goto handle_error;
+			}
+			
+			if (client->mvc.range_start > 0) {
+				err = client->resource->seek(server, client->mvc.range_start);
+				if(err != ELYSIAN_ERR_OK){
+					goto handle_error;
+				}
+			}
+		}
+
+	} else if (client->mvc.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED) {
+		/*
+		** Special handling for chunked transfer encoding
+		*/
+	}
+	
+	return ELYSIAN_ERR_OK;
+	
+	handle_error:
+		client->resource->close(server);
+		elysian_mem_free(server, client->resource);
+		client->resource = NULL;
+		return err;
 }
 
 uint8_t elysian_resource_isopened(elysian_t* server){
@@ -354,15 +538,35 @@ uint8_t elysian_resource_isopened(elysian_t* server){
 	return (client->resource != NULL);
 }
 
+elysian_err_t elysian_resource_size(elysian_t* server, uint32_t * resource_size) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_err_t err;
+	
+	ELYSIAN_ASSERT(client->resource != NULL);
+	
+	err = client->resource->size(server, resource_size);
+	return err;
+}
+
 elysian_err_t elysian_resource_read(elysian_t* server, uint8_t* readbuf, uint32_t readbufsz, uint32_t* readbufszactual){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_err_t err;
+	
     ELYSIAN_ASSERT(client->resource != NULL);
-    err = client->resource->read(server, readbuf, readbufsz, readbufszactual);
+    
+	if (client->mvc.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY) {
+		err = client->resource->read(server, readbuf, readbufsz, readbufszactual);
+	} else if (client->mvc.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED) {
+		err = client->resource->read(server, readbuf, readbufsz, readbufszactual);
+	} else {
+		ELYSIAN_ASSERT(0);
+		err = ELYSIAN_ERR_FATAL;
+	}
+
     return err;
 }
 
-elysian_err_t elysian_resource_close(elysian_t* server){
+elysian_err_t elysian_resource_close(elysian_t* server) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_err_t err;
     ELYSIAN_ASSERT(client->resource != NULL);

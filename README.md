@@ -11,7 +11,7 @@ enabled appliances.
 Elysian is not intended to be used as a feature-packed server; since it focuses strictly on 
 embedded microcontrollers (typically equipped with some tens of KB of RAM), high level 
 server side scripting languages (PHP, LUA) will not be supported. Dynamic content is supported
-using C controllers, following the standards of MVC.
+by adopting the MVC design pattern, using C handler function as controllers.
 
 Supported features include:
 - Small footprint: requires ~90kb FLASH and ~5kb RAM

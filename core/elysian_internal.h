@@ -182,6 +182,7 @@ typedef enum{
 typedef enum{
 	ELYSIAN_HTTP_STATUS_CODE_100 = 0,
 	ELYSIAN_HTTP_STATUS_CODE_200,
+	ELYSIAN_HTTP_STATUS_CODE_201,
 	ELYSIAN_HTTP_STATUS_CODE_206,
 	ELYSIAN_HTTP_STATUS_CODE_302,
 	ELYSIAN_HTTP_STATUS_CODE_400,
@@ -195,6 +196,27 @@ typedef enum{
 	ELYSIAN_HTTP_STATUS_CODE_MAX,
     ELYSIAN_HTTP_STATUS_CODE_NA,
 }elysian_http_status_code_e;
+
+/* 
+** HTTP Request
+*/
+typedef enum{
+    ELYSIAN_HTTP_RANGE_SOF = 0, /* Start of file */
+    ELYSIAN_HTTP_RANGE_EOF = 0xfffffffe, /* End of file */
+    ELYSIAN_HTTP_RANGE_WF = 0xffffffff, /* Whole file */
+}elysian_httpreq_range_t;
+
+typedef enum{
+    ELYSIAN_HTTP_CONTENT_TYPE_APPLICATION__X_WWW_FORM_URLENCODED = 0,
+    ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA,
+    ELYSIAN_HTTP_CONTENT_TYPE_NA,
+}elysian_http_content_type_t;
+
+typedef enum{
+	ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY = 0,
+    ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED,
+    ELYSIAN_HTTP_TRANSFER_ENCODING_NA
+}elysian_http_transfer_encoding_t;
 
 elysian_err_t elysian_http_request_headers_received(elysian_t* server);
 elysian_err_t elysian_http_request_headers_parse(elysian_t* server);
@@ -278,6 +300,9 @@ elysian_err_t elysian_socket_select(elysian_socket_t* socket_readset[], uint32_t
 ** Filesystem
 ****************************************************************************************************************************
 */
+#define ELYSIAN_FILE_SEEK_START	(0)
+#define ELYSIAN_FILE_SEEK_END	(0xFFFFFFFF)
+
 typedef enum{
 	ELYSIAN_FILE_STATUS_OPENED = 0,
 	ELYSIAN_FILE_STATUS_CLOSED,
@@ -333,9 +358,9 @@ struct elysian_file_ext_t{
 #if 1
 typedef enum {
 	ELYSISIAN_FILE_HDL_ACTION_FOPEN = 0,
-	ELYSISIAN_FILE_HDL_ACTION_FSIZE,
+	//ELYSISIAN_FILE_HDL_ACTION_FSIZE,
 	ELYSISIAN_FILE_HDL_ACTION_FREAD,
-	//ELYSISIAN_FILE_HDL_ACTION_FSEEK,
+	ELYSISIAN_FILE_HDL_ACTION_FSEEK0,
 	//ELYSISIAN_FILE_HDL_ACTION_FTELL,
 	ELYSISIAN_FILE_HDL_ACTION_FCLOSE,
 } elysian_file_hdl_action_e;
@@ -345,11 +370,11 @@ typedef enum {
 typedef struct elysian_file_hdl_t elysian_file_hdl_t;
 struct elysian_file_hdl_t{
 	char* name;
-    //void* args;
+    void* varg;
     uint32_t pos;
     //uint32_t size;
 	//elysian_fs_vrt_file_handler_t handler;
-	int (*handler)(elysian_t* server, elysian_file_hdl_action_e action,  uint8_t* buf, uint32_t buf_size);
+	int (*handler)(elysian_t* server, elysian_file_hdl_action_e action,  void** varg, uint8_t* buf, uint32_t buf_size);
 };
 #endif
 
@@ -537,6 +562,22 @@ typedef struct elysian_req_param_t elysian_req_param_t;
 typedef struct elysian_mvc_t elysian_mvc_t;
 struct elysian_mvc_t{
 	char* view;
+	elysian_http_status_code_e status_code;
+	elysian_http_transfer_encoding_t transfer_encoding;
+	uint32_t range_start;
+	uint32_t range_end;
+	
+	/*
+	** Flag indicating if connection will be kept alive or closed after
+	** the current HTTP response is sent.
+	*/
+    uint8_t keep_alive;
+	
+	/*
+	** Holds the redirection URL specified from a controller
+	*/
+    char* redirection_url;
+	
     elysian_mvc_attribute_t* attributes;
 	elysian_mvc_alloc_t* allocs;
 };
@@ -582,16 +623,22 @@ struct elysian_req_param_t{
 typedef struct elysian_resource_t elysian_resource_t;
 struct elysian_resource_t{
     uint8_t openned;
-	elysian_err_t (*open)(elysian_t* server, uint32_t seekpos, uint32_t* filesz);
+	elysian_err_t (*open)(elysian_t* server);
+	elysian_err_t (*size)(elysian_t* server, uint32_t* size);
+	elysian_err_t (*seek)(elysian_t* server, uint32_t seekpos);
     elysian_err_t (*read)(elysian_t* server, uint8_t* readbuf, uint32_t readbufsz, uint32_t* readbufszactual);
     elysian_err_t (*close)(elysian_t* server);
     elysian_file_t file;
+	//uint32_t pos;
+	uint32_t calculated_size;
     void* priv;
+	//uint8_t err;
 };
 
 void elysian_resource_init(elysian_t* server);
-elysian_err_t elysian_resource_open(elysian_t* server, uint32_t seekpos, uint32_t* filesz);
+elysian_err_t elysian_resource_open(elysian_t* server);
 uint8_t elysian_resource_isopened(elysian_t* server);
+elysian_err_t elysian_resource_size(elysian_t* server, uint32_t * resource_size);
 elysian_err_t elysian_resource_read(elysian_t* server, uint8_t* readbuf, uint32_t readbufsz, uint32_t* readbufszactual);
 elysian_err_t elysian_resource_close(elysian_t* server);
     
@@ -714,26 +761,7 @@ void elysian_stats_get(elysian_stats_res_t recource_id);
 
 
 
-/* 
-** HTTP Request
-*/
-typedef enum{
-    ELYSIAN_HTTP_RANGE_SOF = 0, /* Start of file */
-    ELYSIAN_HTTP_RANGE_EOF = 0xfffffffe, /* End of file */
-    ELYSIAN_HTTP_RANGE_WF = 0xffffffff, /* Whole file */
-}elysian_httpreq_range_t;
 
-typedef enum{
-    ELYSIAN_HTTP_CONTENT_TYPE_APPLICATION__X_WWW_FORM_URLENCODED,
-    ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA,
-    ELYSIAN_HTTP_CONTENT_TYPE_NA,
-}elysian_http_content_type_t;
-
-typedef enum{
-	ELYSIAN_HTTP_TRANSFER_ENCODING_RAW,
-    ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED,
-    ELYSIAN_HTTP_TRANSFER_ENCODING_NA
-}elysian_http_transfer_encoding_t;
 
 #if 0
 typedef struct elysian_httpreq_param_t elysian_httpreq_param_t;
@@ -788,11 +816,12 @@ struct elysian_httpresp_t{
 	** Flag indicating if connection will be kept alive or closed after
 	** the current HTTP response is sent.
 	*/
-    uint8_t keep_alive;
+    //uint8_t keep_alive;
+	
 	/*
 	** Status code used for the HTTP response
 	*/
-    elysian_http_status_code_e status_code;
+    elysian_http_status_code_e current_status_code;
 	
 	elysian_http_status_code_e fatal_status_code;
 	
@@ -801,12 +830,12 @@ struct elysian_httpresp_t{
 	/*
 	** Holds the redirection URL specified from a controller
 	*/
-    char* redirection_url;
+    //char* redirection_url;
 	/* 
 	** The size of the whole resource that requested by the HTTP Client or specified by the Controller.
 	** This size or part of it (Partial or HEAD HTTP request) will be transmitted in the HTTP body.
 	*/
-	uint32_t resource_size; 
+	//uint32_t resource_size; 
 	/* 
 	** Size of the HTTP headers to be transmitted. 
 	*/
@@ -818,6 +847,7 @@ struct elysian_httpresp_t{
 	** - In case of an HTTP Partial request it will be set to the desired value specified by the client.
 	*/
 	uint32_t body_size;
+	
 	/* 
 	** The size of the already transmitted part of the HTTP Header and HTTP Body.
 	** When sent_size == headers_size + body_size the whole HTTP response will

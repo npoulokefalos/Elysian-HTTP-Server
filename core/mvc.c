@@ -23,10 +23,19 @@
 elysian_err_t elysian_mvc_read_req_params(elysian_t* server);
 elysian_err_t elysian_mvc_add_alloc(elysian_t* server, void* data);
 
+
+elysian_err_t elysian_mvc_status_code_set(elysian_t* server, elysian_http_status_code_e status_code);
+elysian_err_t elysian_mvc_content_range_set(elysian_t* server, uint32_t range_start, uint32_t range_end);
+elysian_err_t elysian_mvc_transfer_encoding_set(elysian_t* server, elysian_http_transfer_encoding_t transfer_encoding);
+
+
 void elysian_mvc_init(elysian_t* server){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     client->mvc.view = NULL;
-    client->mvc.attributes = NULL;
+	client->mvc.transfer_encoding = ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY;
+	client->mvc.redirection_url = NULL;
+	
+	client->mvc.attributes = NULL;
 	client->mvc.allocs = NULL;
 }
 
@@ -49,6 +58,11 @@ elysian_err_t elysian_mvc_clear(elysian_t* server){
         client->mvc.view = NULL;
     }
     
+	if (client->mvc.redirection_url){
+		elysian_mem_free(server, client->mvc.redirection_url);
+		client->mvc.redirection_url = NULL;
+	}
+	
     while(client->mvc.attributes){
         attribute_next = client->mvc.attributes->next;
         if(client->mvc.attributes->name){
@@ -80,17 +94,103 @@ elysian_err_t elysian_mvc_configure(elysian_t* server){
 	
 	ELYSIAN_ASSERT(client->mvc.view == NULL);
 	ELYSIAN_ASSERT(client->mvc.attributes == NULL);
+	ELYSIAN_ASSERT(client->httpreq.url != NULL);
+	
+	/* -----------------------------------------------------------------------------------------------------
+	** Initialize MVC
+	----------------------------------------------------------------------------------------------------- */
+	client->mvc.keep_alive = 1;
+	if (client->httpresp.current_status_code != ELYSIAN_HTTP_STATUS_CODE_NA) {
+		/*
+		** Status code has been decided automatically by the Web Server (for example due to internal error).
+		** Don't query applcation layer for extra information.
+		*/
+		char status_code_page_name[32];
+		elysian_sprintf(status_code_page_name, ELYSIAN_FS_ROM_VRT_ROOT"/%u.html", elysian_http_get_status_code_num(client->httpresp.current_status_code));
+		err = elysian_mvc_view_set(server, status_code_page_name);
+		switch (err) {
+			case ELYSIAN_ERR_OK:
+			{
+				// Move on
+			}break;
+			case ELYSIAN_ERR_POLL:
+			{
+				return err;
+			}break;
+			case ELYSIAN_ERR_FATAL:
+			{
+				return err;
+			}break;
+			default:
+			{
+				ELYSIAN_ASSERT(0);
+				return ELYSIAN_ERR_FATAL;
+			}break;
+		};
 		
+		elysian_mvc_transfer_encoding_set(server, ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY);
+		elysian_mvc_status_code_set(server, client->httpresp.current_status_code);
+		elysian_mvc_content_range_set(server, ELYSIAN_HTTP_RANGE_WF, ELYSIAN_HTTP_RANGE_WF);
+		
+		ELYSIAN_LOG("MVC configured automatically with view '%s' and HTTP status code %u", client->mvc.view, elysian_http_get_status_code_num(client->mvc.status_code));
+		
+		return ELYSIAN_ERR_OK;
+	} else {
+		/*
+		** Initialize MVC according to HTTP request. Let user bypass it according to preference.
+		*/
+		err = elysian_mvc_view_set(server, client->httpreq.url);
+		switch (err) {
+			case ELYSIAN_ERR_OK:
+			{
+				// Move on
+			}break;
+			case ELYSIAN_ERR_POLL:
+			{
+				return err;
+			}break;
+			case ELYSIAN_ERR_FATAL:
+			{
+				return err;
+			}break;
+			default:
+			{
+				ELYSIAN_ASSERT(0);
+				return ELYSIAN_ERR_FATAL;
+			}break;
+		};
+		
+		elysian_mvc_transfer_encoding_set(server, ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY);
+		if((client->httpreq.range_start == ELYSIAN_HTTP_RANGE_WF) && (client->httpreq.range_end == ELYSIAN_HTTP_RANGE_WF)) {
+			/*
+			** None-partial HTTP request
+			*/
+			elysian_mvc_status_code_set(server, ELYSIAN_HTTP_STATUS_CODE_200);
+			elysian_mvc_content_range_set(server, ELYSIAN_HTTP_RANGE_WF, ELYSIAN_HTTP_RANGE_WF);
+		} else {
+			/*
+			** Partial HTTP request
+			*/
+			elysian_mvc_status_code_set(server, ELYSIAN_HTTP_STATUS_CODE_206);
+			elysian_mvc_content_range_set(server, client->httpreq.range_start, client->httpreq.range_end);
+		}
+		
+		ELYSIAN_LOG("MVC initialized with view '%s' and HTTP status code %u", client->mvc.view, elysian_http_get_status_code_num(client->mvc.status_code));
+	}
+	
+	/* -----------------------------------------------------------------------------------------------------
+	** Alter MVC according to user preferences
+	----------------------------------------------------------------------------------------------------- */
 	controller = elysian_mvc_controller_get(server, client->httpreq.url, client->httpreq.method);
-	if(controller){
+	if (controller) {
 		ELYSIAN_LOG("Calling user defined controller..");
 
 		err = controller->handler(server);
-		//ELYSIAN_ASSERT(err == ELYSIAN_ERR_OK || err == ELYSIAN_ERR_POLL || err == ELYSIAN_ERR_FATAL, "");
 		if((err != ELYSIAN_ERR_OK) && (err != ELYSIAN_ERR_POLL) && (err != ELYSIAN_ERR_FATAL)) {
 			/*
-			** Any none permitted errors are converted to ELYSIAN_ERR_FATAL (etc ELYSIAN_ERR_NOTFOUND)
+			** Any not permitted errors are converted to ELYSIAN_ERR_FATAL.
 			*/
+			ELYSIAN_ASSERT(0);
 			err = ELYSIAN_ERR_FATAL;
 		}
 		
@@ -102,7 +202,7 @@ elysian_err_t elysian_mvc_configure(elysian_t* server){
 		/*
 		** Release HTTP request parameters
 		*/
-		while(client->httpreq.params){
+		while (client->httpreq.params) {
 			param_next = client->httpreq.params->next;
 			if(client->httpreq.params->name){
 				elysian_mem_free(server, client->httpreq.params->name);
@@ -115,50 +215,54 @@ elysian_err_t elysian_mvc_configure(elysian_t* server){
 		};
 		
 		/*
-		** Remove any hidden user allocations
+		** Remove any background user allocations
 		*/
-		while(client->mvc.allocs){
+		while (client->mvc.allocs) {
 			alloc_next = client->mvc.allocs->next;
 			elysian_mem_free(server, client->mvc.allocs->data);
 			elysian_mem_free(server, client->mvc.allocs);
 			client->mvc.allocs = alloc_next;
 		};
 		
-		if(client->mvc.view){
-			/*
-			** User set a new view during controller cb execution
-			*/
-			if(strcmp(client->httpreq.url, client->mvc.view) == 0){
-				/*
-				** User controller set the same view as the one requested by the HTTP client
-				*/
-				elysian_mem_free(server, client->mvc.view);
-				client->mvc.view = NULL;
-			}else{
-				/*
-				** User controller set a view different than the one requested by the HTTP client
-				*/
-				elysian_mem_free(server, client->httpreq.url);
-				client->httpreq.url = client->mvc.view;
-				client->mvc.view = NULL;
-			}
-		}else{
-			/*
-			** No view set from user controller, use the one requested by the HTTP client
-			*/
-		}
 	}else{
 		/*
 		** No controller has been assigned for the specific URL
 		*/
 	}
 
-	ELYSIAN_ASSERT(client->mvc.view == NULL);
-	ELYSIAN_ASSERT(client->httpreq.url != NULL);
+	ELYSIAN_ASSERT(client->mvc.view != NULL);
 	
-	client->mvc.view = client->httpreq.url;
-	client->httpreq.url = NULL;
+	// don't free http reqest as as we might reconfigure with different status
+	// and therefore httpreq will be null..
+	//elysian_mem_free(server, client->httpreq.url);
+	//client->httpreq.url = NULL;
 
+	/* -----------------------------------------------------------------------------------------------------
+	** Resolve any configuration issues
+	----------------------------------------------------------------------------------------------------- */
+	if (client->mvc.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED) {
+		/*
+		** Ignore partial request if it is not supported by the resource (A server MAY ignore the Range header)
+		*/
+		if (client->mvc.status_code == ELYSIAN_HTTP_STATUS_CODE_206) {
+				elysian_mvc_status_code_set(server, ELYSIAN_HTTP_STATUS_CODE_200);
+		}
+	}
+	
+#if 0
+	if (client->mvc.status_code != ELYSIAN_HTTP_STATUS_CODE_206) {
+		if((client->httpreq.range_start != ELYSIAN_HTTP_RANGE_WF) || (client->httpreq.range_end != ELYSIAN_HTTP_RANGE_WF))) {
+			/*
+			** Ranges are only applied when HTTP 206 status code is set 
+			*/
+			client->httpreq.range_start = ELYSIAN_HTTP_RANGE_WF;
+			client->httpreq.range_end = ELYSIAN_HTTP_RANGE_WF;
+		}
+	}
+#endif
+	
+	ELYSIAN_LOG("MVC configured with view '%s' and HTTP status code %u", client->mvc.view, elysian_http_get_status_code_num(client->mvc.status_code));
+	
     return ELYSIAN_ERR_OK;
 }
 
@@ -196,6 +300,26 @@ elysian_err_t elysian_mvc_view_set(elysian_t* server, char* view){
 }
 
 
+elysian_err_t elysian_mvc_status_code_set(elysian_t* server, elysian_http_status_code_e status_code) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	client->mvc.status_code = status_code;
+	ELYSIAN_LOG("MVC status code set");
+	return ELYSIAN_ERR_OK;
+}
+
+elysian_err_t elysian_mvc_transfer_encoding_set(elysian_t* server, elysian_http_transfer_encoding_t transfer_encoding) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	client->mvc.transfer_encoding = transfer_encoding;
+	return ELYSIAN_ERR_OK;
+}
+
+elysian_err_t elysian_mvc_content_range_set(elysian_t* server, uint32_t range_start, uint32_t range_end) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	client->mvc.range_start = range_start;
+	client->mvc.range_end = range_end;
+	return ELYSIAN_ERR_OK;
+}
+
 elysian_err_t elysian_mvc_httpreq_url_get(elysian_t* server, char** url) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	*url = client->httpreq.url;
@@ -220,17 +344,17 @@ elysian_err_t elysian_mvc_httpreq_header_get(elysian_t* server, char* header_nam
 /* --------------------------------------------------------------------------------------------------------------------------------
 | Redirection
 -------------------------------------------------------------------------------------------------------------------------------- */
-elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url){
+elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_err_t err;
     char hostname[64];
 	
-	if(client->httpresp.redirection_url){
-		elysian_mem_free(server, client->httpresp.redirection_url);
-		client->httpresp.redirection_url = NULL;
+	if (client->mvc.redirection_url){
+		elysian_mem_free(server, client->mvc.redirection_url);
+		client->mvc.redirection_url = NULL;
 	}
 	
-	if(client->mvc.view){
+	if (client->mvc.view) {
         elysian_mem_free(server, client->mvc.view);
         client->mvc.view = NULL;
     }
@@ -251,18 +375,32 @@ elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url){
 	/*
 	** http://www.example.org/index.asp
 	*/
-	client->httpresp.redirection_url = elysian_mem_malloc(server, strlen(redirection_url) + strlen(hostname) + 16 /* http:// */ + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
-	if(!client->httpresp.redirection_url){
+	client->mvc.redirection_url = elysian_mem_malloc(server, strlen(redirection_url) + strlen(hostname) + 16 /* http:// */ + 1, ELYSIAN_MEM_MALLOC_PRIO_NORMAL);
+	if(!client->mvc.redirection_url){
 		 return ELYSIAN_ERR_POLL;
 	}
 	
-	elysian_sprintf(client->httpresp.redirection_url, "http://%s:%u%s", hostname, server->listening_port, redirection_url);
+	elysian_sprintf(client->mvc.redirection_url, "http://%s:%u%s", hostname, server->listening_port, redirection_url);
 
-	elysian_set_http_status_code(server, ELYSIAN_HTTP_STATUS_CODE_302);
+	elysian_mvc_status_code_set(server, ELYSIAN_HTTP_STATUS_CODE_302);
 	
-    ELYSIAN_LOG("Redirection URL set to '%s'", client->httpresp.redirection_url);
+    ELYSIAN_LOG("Redirection URL set to '%s'", client->mvc.redirection_url);
     
     return ELYSIAN_ERR_OK;
+}
+
+/*
+HTTP/1.1 201 Created
+Date: Fri, 7 Oct 2005 17:17:11 GMT
+Content-Length: nnn
+Content-Type: application/atom+xml;type=entry;charset="utf-8"
+		Location: http://example.org/edit/first-post.atom
+		ETag: "c180de84f991g8"
+		
+*/
+elysian_err_t elysian_mvc_resource_created(elysian_t* server, char* resource_location) {
+	
+	return ELYSIAN_ERR_FATAL;
 }
 
 /* --------------------------------------------------------------------------------------------------------------------------------

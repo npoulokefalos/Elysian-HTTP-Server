@@ -86,7 +86,6 @@ void elysian_state_http_connection_accepted(elysian_t* server, elysian_schdlr_ev
 
 			elysian_mvc_init(server);
 			
-			client->httpresp.redirection_url = NULL;
             client->httpresp.buf = NULL;
 
 			elysian_resource_init(server);
@@ -324,11 +323,11 @@ void elysian_state_http_request_headers_receive(elysian_t* server, elysian_schdl
 			ELYSIAN_ASSERT(client->store_cbuf_list == NULL);
 			
 			client->http_pipelining_enabled = 0;
-			client->httpresp.status_code = ELYSIAN_HTTP_STATUS_CODE_NA;
+			client->httpresp.current_status_code = ELYSIAN_HTTP_STATUS_CODE_NA;
 			client->httpresp.fatal_status_code = ELYSIAN_HTTP_STATUS_CODE_NA;
 			client->httpresp.attempts = 0;
 			
-            client->httpresp.keep_alive = 1;
+            //client->httpresp.keep_alive = 1;
             client->httpreq_onservice_handler = NULL;
 			client->httpreq_onservice_handler_data = NULL;
 			
@@ -370,7 +369,7 @@ void elysian_state_http_request_body_receive(elysian_t* server, elysian_schdlr_e
 			
 			memset(&client->isp, 0, sizeof(client->isp));
 			
-			if (client->httpreq.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_RAW) {
+			if (client->httpreq.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY) {
 				if (client->httpreq.content_type == ELYSIAN_HTTP_CONTENT_TYPE_MULTIPART__FORM_DATA) {
 					client->isp.func = elysian_isp_http_body_raw_multipart;
 					//client->isp.func = elysian_isp_http_body_raw;
@@ -643,17 +642,17 @@ void elysian_set_http_status_code(elysian_t* server, elysian_http_status_code_e 
 	
 	ELYSIAN_LOG("HTTP status changed to %u", elysian_http_get_status_code_num(status_code));
 	//uint8_t* keep[2];
-	
+#if 0
 	if(status_code != ELYSIAN_HTTP_STATUS_CODE_206) {
 		client->httpreq.range_start = ELYSIAN_HTTP_RANGE_WF;
 		client->httpreq.range_end = ELYSIAN_HTTP_RANGE_WF;		
 	}
-	
+#endif
 	
 	/*
 	** Set status code
 	*/
-	client->httpresp.status_code = status_code;
+	client->httpresp.current_status_code = status_code;
 }
 
 void elysian_set_fatal_http_status_code(elysian_t* server, elysian_http_status_code_e status_code) {
@@ -709,29 +708,32 @@ void elysian_state_http_response_entry(elysian_t* server, elysian_schdlr_ev_t ev
     switch(ev){
         case elysian_schdlr_EV_ENTRY:
         {
+			ELYSIAN_ASSERT(!elysian_resource_isopened(server));
+
 			ELYSIAN_LOG("Attempting to enter the HTTP response phase..");
-			uint8_t max_http_resp_attempts = 2; // This will allow 200 -> 500, user defined -> 500
-			if (client->httpresp.attempts == max_http_resp_attempts) {
+			if (client->httpresp.attempts >= 2) {
 				/*
-				** We have already made 2 attempts to prepare the HTTP response, abort.
-				** This is going to block any infinite circular attempts to send the response.
-				** 
+				** We have already made 2 (failed) attempts to prepare the HTTP response, abort.
 				*/
 				ELYSIAN_LOG("Maximum HTTP response attempts reached, aborting");
 				elysian_schdlr_state_set(server, elysian_state_http_disconnect);
+				return;
 			} else {
 				client->httpresp.attempts++;
-				elysian_schdlr_state_set(server, elysian_state_configure_mvc);
-				if (client->httpresp.status_code == ELYSIAN_HTTP_STATUS_CODE_500) {
+				
+				if (client->httpresp.current_status_code == ELYSIAN_HTTP_STATUS_CODE_500) {
 					/*
 					** Don't allow any other HTTP responses to be sent after that (etc a 404 after a 500)
 					** This is going to block any infinite circular attempts to send the response.
 					** For example "try to send status 500" -> ERR_FATAL -> "try to send status 500" -> ERR_FATAL ..
 					*/
-					client->httpresp.attempts = max_http_resp_attempts;
+					client->httpresp.attempts = 2;
 				}
+				
+				
+				elysian_schdlr_state_set(server, elysian_state_configure_mvc);
+				return;
 			}
-			return;
         }break;
         case elysian_schdlr_EV_READ:
         {
@@ -755,7 +757,6 @@ void elysian_state_http_response_entry(elysian_t* server, elysian_schdlr_ev_t ev
 
 void elysian_state_configure_mvc(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-	char status_code_page_name[32];
 	elysian_err_t err;
 
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
@@ -774,13 +775,17 @@ void elysian_state_configure_mvc(elysian_t* server, elysian_schdlr_ev_t ev){
         {
 			elysian_mvc_clear(server);
 
+#if 0
 			if(client->httpresp.status_code != ELYSIAN_HTTP_STATUS_CODE_NA) {
 				/*
-				** Status code is available, no need to query application layer
+				** Status code is available, no need to query application layer (possibly HTTP error status)
 				*/
 				ELYSIAN_LOG("Trying to open error page %u", elysian_http_get_status_code_num(client->httpresp.status_code));
 				elysian_sprintf(status_code_page_name, ELYSIAN_FS_ROM_VRT_ROOT"/%u.html", elysian_http_get_status_code_num(client->httpresp.status_code));
 				err = elysian_mvc_view_set(server, status_code_page_name);
+				elysian_mvc_status_code_set(server, client->httpresp.status_code);
+				elysian_mvc_transfer_encoding_set(server, ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY);
+				elysian_mvc_content_range_set(server, ELYSIAN_HTTP_RANGE_WF, ELYSIAN_HTTP_RANGE_WF);
 			} else {
 				/*
 				** Status code is not available, query application layer.
@@ -789,9 +794,14 @@ void elysian_state_configure_mvc(elysian_t* server, elysian_schdlr_ev_t ev){
 				*/
 				err = elysian_mvc_configure(server);
 			}
-			
+#else
+			err = elysian_mvc_configure(server);
+#endif
 			switch(err){
 				case ELYSIAN_ERR_OK:
+#if 0
+					elysian_mvc_configuration_fix(server);
+#endif
 					elysian_schdlr_state_set(server, elysian_state_prepare_http_response);
 					return;
 					break;
@@ -841,6 +851,7 @@ void elysian_state_prepare_http_response(elysian_t* server, elysian_schdlr_ev_t 
         }break;
         case elysian_schdlr_EV_POLL:
         {
+#if 0
 			/*
             ** Setup filestream
             */
@@ -949,6 +960,60 @@ void elysian_state_prepare_http_response(elysian_t* server, elysian_schdlr_ev_t 
 					break;
 				}
 			};
+#else
+			err = elysian_resource_open(server);
+			switch(err){
+				case ELYSIAN_ERR_OK:
+				{
+					//client->httpresp.body_size = client->httpresp.resource_size;
+					if (client->httpreq.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED) {
+						client->httpresp.body_size = -1; // Tranfer size is unknown, send until EOF.
+					} else {
+						if (client->mvc.status_code == ELYSIAN_HTTP_STATUS_CODE_206) {
+							client->httpresp.body_size = client->mvc.range_end - client->mvc.range_start + 1;
+						} else {
+							uint32_t resource_size;
+							err = elysian_resource_size(server, &resource_size);
+							if (err != ELYSIAN_ERR_OK) {
+								elysian_resource_close(server);
+								elysian_schdlr_state_set(server, elysian_state_fatal_error_entry);
+								return;
+							}
+							client->httpresp.body_size = resource_size;
+						}
+					}
+					
+					elysian_schdlr_state_set(server, elysian_state_build_http_response);
+					return;
+				} break;
+				case ELYSIAN_ERR_POLL:
+				{
+					elysian_schdlr_state_poll_backoff(server);
+					return;
+				} break;
+				case ELYSIAN_ERR_NOTFOUND:
+				{
+					if ((client->mvc.status_code >= ELYSIAN_HTTP_STATUS_CODE_200) && (client->mvc.status_code <= ELYSIAN_HTTP_STATUS_CODE_206)) {
+						elysian_set_http_status_code(server, ELYSIAN_HTTP_STATUS_CODE_404);
+					} else {
+						elysian_set_http_status_code(server, ELYSIAN_HTTP_STATUS_CODE_500);
+					}
+					elysian_schdlr_state_set(server, elysian_state_http_response_entry);
+					return;
+				} break;
+				case ELYSIAN_ERR_FATAL:
+				{
+					elysian_schdlr_state_set(server, elysian_state_fatal_error_entry);
+					return;
+				} break;
+				default:
+				{
+					ELYSIAN_ASSERT(0);
+					elysian_schdlr_state_set(server, elysian_state_http_disconnect);
+					return;
+				} break;
+			};	
+#endif
         }break;
         case elysian_schdlr_EV_ABORT:
         {
@@ -961,8 +1026,6 @@ void elysian_state_prepare_http_response(elysian_t* server, elysian_schdlr_ev_t 
         }break;
     };
 }
-
-
 
 void elysian_state_build_http_response(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
@@ -979,7 +1042,7 @@ void elysian_state_build_http_response(elysian_t* server, elysian_schdlr_ev_t ev
 			
 			client->httpresp.buf_size = ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX;
 			
-			ELYSIAN_LOG("Resource '%s' opened, size is (%u)", client->mvc.view, client->httpresp.resource_size);
+			//ELYSIAN_LOG("Resource '%s' opened, size is (%u)", client->mvc.view, client->httpresp.resource_size);
         }break;
         case elysian_schdlr_EV_READ:
         {
@@ -1019,6 +1082,7 @@ void elysian_state_build_http_response(elysian_t* server, elysian_schdlr_ev_t ev
 					return;
 					break;
 				case ELYSIAN_ERR_FATAL:
+					elysian_resource_close(server);
 					elysian_schdlr_state_set(server, elysian_state_fatal_error_entry);
 					return;
 					break;
@@ -1069,7 +1133,7 @@ void elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev)
         case elysian_schdlr_EV_POLL:
         {
             //elysian_time_sleep(500);
-            if(!client->httpresp.buf){
+            if (!client->httpresp.buf) {
 				/*
 				** client->httpresp.buf is the only high priority allocation. This is going to ensure that
 				** a newly accepted client that allocates the majority of the available memory will not
@@ -1096,7 +1160,7 @@ void elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev)
             }
 
 			packet_count = 0;
-			do{
+			do {
 				/*
 				** Defrag
 				*/
@@ -1117,67 +1181,115 @@ void elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev)
 				/*
 				** Read
 				*/
-				read_size = client->httpresp.headers_size + client->httpresp.body_size - client->httpresp.sent_size - client->httpresp.buf_len;
-				read_size = ((read_size) > (client->httpresp.buf_size - client->httpresp.buf_len)) ? client->httpresp.buf_size - client->httpresp.buf_len : read_size;      
-				//ELYSIAN_LOG("We have %u bytes, we can read %u more", client->httpresp.buf_len, read_size);
-				if(read_size){
-					err = elysian_resource_read(server, &client->httpresp.buf[client->httpresp.buf_index + client->httpresp.buf_len], read_size, &read_size_actual);
-					switch(err){
-						case ELYSIAN_ERR_OK:
-							client->httpresp.buf_len += read_size_actual;
-							//ELYSIAN_LOG("We just read %u bytes", read_size_actual);
-							break;
-						case ELYSIAN_ERR_POLL:
-							elysian_schdlr_state_poll_backoff(server);
-							return;
-							break;
-						case ELYSIAN_ERR_FATAL:
-							elysian_schdlr_state_set(server, elysian_state_http_disconnect);
-							return;
-							break;
-						default:
-							ELYSIAN_ASSERT(0);
-							elysian_schdlr_state_set(server, elysian_state_http_disconnect);
-							return;
-							break;
-					};
-				}
-				
-				/*
-				** Send
-				*/
-				send_size = client->httpresp.buf_len;
-				if(send_size){
-					err = elysian_socket_write(&client->socket, &client->httpresp.buf[client->httpresp.buf_index], send_size, &send_size_actual);
-					switch(err){
-						case ELYSIAN_ERR_OK:
-							//ELYSIAN_LOG("We just send %u bytes", send_size_actual);
-							elysian_schdlr_state_timeout_reset(server);
-							client->httpresp.buf_index += send_size_actual;
-							client->httpresp.buf_len -= send_size_actual;
-							client->httpresp.sent_size += send_size_actual;
-							packet_count++;
-							break;
-						case ELYSIAN_ERR_POLL:
-							elysian_schdlr_state_poll_backoff(server); 
-							return;
-							break;
-						default:
-							elysian_schdlr_state_set(server, elysian_state_http_disconnect);
-							return;
-							break;
-					};
+				//if ((client->httpreq.method == ELYSIAN_HTTP_METHOD_HEAD) && (client->httpresp.sent_size == client->httpresp.headers_size)) {
+					//http_response_sent = 1;
+				//} else {
+#if 0
+					read_size = client->httpresp.headers_size + client->httpresp.body_size - client->httpresp.sent_size - client->httpresp.buf_len;
+					read_size = ((read_size) > (client->httpresp.buf_size - client->httpresp.buf_len)) ? client->httpresp.buf_size - client->httpresp.buf_len : read_size;      
+					//ELYSIAN_LOG("We have %u bytes, we can read %u more", client->httpresp.buf_len, read_size);
+					if (read_size) {
+						err = elysian_resource_read(server, &client->httpresp.buf[client->httpresp.buf_index + client->httpresp.buf_len], read_size, &read_size_actual);
+						switch(err){
+							case ELYSIAN_ERR_OK:
+								client->httpresp.buf_len += read_size_actual;
+								//ELYSIAN_LOG("We just read %u bytes", read_size_actual);
+								break;
+							case ELYSIAN_ERR_POLL:
+								elysian_schdlr_state_poll_backoff(server);
+								return;
+								break;
+							case ELYSIAN_ERR_FATAL:
+								elysian_schdlr_state_set(server, elysian_state_http_disconnect);
+								return;
+								break;
+							default:
+								ELYSIAN_ASSERT(0);
+								elysian_schdlr_state_set(server, elysian_state_http_disconnect);
+								return;
+								break;
+						};
+					}
+#else
+					uint8_t resource_read_complete = 0;
 
-				}
+					if (client->httpresp.body_size == (uint32_t) -1 ) {
+						// Read until EOF (Chunked HTTP Response)
+						read_size = -1;
+					} else {
+						// Read only partial range
+						read_size = client->httpresp.headers_size + client->httpresp.body_size - client->httpresp.sent_size - client->httpresp.buf_len;
+					}
+					
+					read_size = ((read_size) > (client->httpresp.buf_size - client->httpresp.buf_len)) ? client->httpresp.buf_size - client->httpresp.buf_len : read_size;  
+
+					if (read_size) {
+						err = elysian_resource_read(server, &client->httpresp.buf[client->httpresp.buf_index + client->httpresp.buf_len], read_size, &read_size_actual);
+						switch(err){
+							case ELYSIAN_ERR_OK:
+								client->httpresp.buf_len += read_size_actual;
+								ELYSIAN_LOG(">>>>>>>>>>>>>>>>>> We just read %u bytes", read_size_actual);
+								if (read_size_actual < read_size) {
+									/*
+									** The whole resource was read
+									*/
+									resource_read_complete = 1;
+								}
+								break;
+							case ELYSIAN_ERR_FATAL:
+								elysian_schdlr_state_set(server, elysian_state_http_disconnect);
+								return;
+								break;
+							default:
+								ELYSIAN_ASSERT(0);
+								elysian_schdlr_state_set(server, elysian_state_http_disconnect);
+								return;
+								break;
+						};
+					} else {
+						/*
+						** The whole resource was read
+						*/
+						resource_read_complete = 1;
+					}
+#endif
+					/*
+					** Send
+					*/
+					send_size = client->httpresp.buf_len;
+					if (send_size){
+						err = elysian_socket_write(&client->socket, &client->httpresp.buf[client->httpresp.buf_index], send_size, &send_size_actual);
+						switch(err){
+							case ELYSIAN_ERR_OK:
+								//ELYSIAN_LOG("We just send %u bytes", send_size_actual);
+								elysian_schdlr_state_timeout_reset(server);
+								client->httpresp.buf_index += send_size_actual;
+								client->httpresp.buf_len -= send_size_actual;
+								client->httpresp.sent_size += send_size_actual;
+								packet_count++;
+								break;
+							case ELYSIAN_ERR_POLL:
+								elysian_schdlr_state_poll_backoff(server); 
+								return;
+								break;
+							default:
+								elysian_schdlr_state_set(server, elysian_state_http_disconnect);
+								return;
+								break;
+						};
+
+					}
+				//}
 				
 				//ELYSIAN_LOG("Client %u complete ratio is %u [%u bytes left]", client->id, (client->httpresp.sent_size * 100)/(client->httpresp.headers_size + client->httpresp.body_size), client->httpresp.headers_size + client->httpresp.body_size - client->httpresp.sent_size);
 				
 				/*
 				** Check if we are done
 				*/
-				if(client->httpresp.headers_size + client->httpresp.body_size == client->httpresp.sent_size){
+				//if(client->httpresp.headers_size + client->httpresp.body_size == client->httpresp.sent_size) {
+				if ((resource_read_complete) && (client->httpresp.buf_len == 0)) {
 					ELYSIAN_LOG("Client %u: The whole response was sent!!!", client->id);
-					if(client->httpresp.keep_alive && client->http_pipelining_enabled){
+					if(client->mvc.keep_alive && client->http_pipelining_enabled){
 						elysian_schdlr_state_set(server, elysian_state_http_keepalive);
 						return;
 					}else{
@@ -1185,7 +1297,7 @@ void elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev)
 						return;
 					}
 				}
-            }while(packet_count < 8);
+            } while (packet_count < 8);
 			
             /*
             ** Check if we can release the response buffer so it can be used by other clients
@@ -1355,14 +1467,6 @@ elysian_err_t elysian_client_cleanup(elysian_t* server){
         client->httpresp.buf = NULL;
     }
     
-	/*
-    ** Release redirection URL
-    */
-	if(client->httpresp.redirection_url){
-		elysian_mem_free(server, client->httpresp.redirection_url);
-		client->httpresp.redirection_url = NULL;
-	}
-	 
     if(client->httpreq.url){
         elysian_mem_free(server, client->httpreq.url);
         client->httpreq.url = NULL;
