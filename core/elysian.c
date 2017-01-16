@@ -1031,16 +1031,16 @@ void elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev)
         }break;
         case elysian_schdlr_EV_POLL:
         {
-            //elysian_time_sleep(500);
             if (!client->httpresp.buf) {
-				/*
-				** client->httpresp.buf is the only high priority allocation. This is going to ensure that
-				** a newly accepted client that allocates the majority of the available memory will not
-				** affect the servicing of already accepted connections, and they will be able to continue
-				** sending the HTTP response. In different scenario a newly accepted connection could block
-				** the servicing of the existing ones by not allowing them to allocate the response buffer.
-				*/
+#if 1
+				client->httpresp.buf_size = (30 * ELYSIAN_MAX_MEMORY_USAGE_KB * 1024) / 100;
+				client->httpresp.buf_size = client->httpresp.buf_size / 3;
+				if (client->httpresp.buf_size > ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX) {
+					client->httpresp.buf_size = ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX;
+				}		
+#else
 				client->httpresp.buf_size = ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX;
+#endif
 				while (1) {
 					client->httpresp.buf = elysian_mem_malloc(server, client->httpresp.buf_size);
 					if (!client->httpresp.buf) {

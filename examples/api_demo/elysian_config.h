@@ -53,7 +53,7 @@
 
 
 /*
-** Configuration options
+** The maximum number of supported clients
 */
 #define ELYSIAN_MAX_CLIENTS_NUM               		(uint32_t)(10)
 
@@ -65,7 +65,7 @@
 #define ELYSIAN_SOCKET_SELECT_SUPPORTED				(1)
 
 /*
-** Specify the maximum amount of memory that the Web Server is going to work with.
+** Specify the maximum amount of memory that the Web Server could allocate.
 */
 #define ELYSIAN_MAX_MEMORY_USAGE_KB	    			(10)
 
@@ -73,14 +73,14 @@
 ** Specify the maximum size of HTTP body that should be accepted by the server.
 ** This is specifically for HTTP requests that are configured to be stored in RAM.
 */
-#define ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM	    		(3)
+#define ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM	   		(3)
 
 /*
 ** Specify the maximum size of HTTP body that should be accepted by the server.
 ** This is specifically for HTTP requests that are configured to be stored in EXT storage device.
 ** (using the ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS flag)
 */
-#define ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK	    		(5 * 1024)
+#define ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK	  		(5 * 1024)
 
 /*
 ** The size of buffer that will be allocated to send the HTTP Response.
