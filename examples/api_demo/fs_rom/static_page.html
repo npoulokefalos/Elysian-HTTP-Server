@@ -40,7 +40,12 @@
 	<div id="page_el_description_header">
 	Web page with static content
 	</div>
-	Example demonstrating the static content support. The web page stored in the "ROM" storage device. It does not contain any dynamic contents and therefore no MVC controller was used to serve it. 
+	Static content is any content that can be delivered to the end user without having to be generated, modified, or processed. 
+	The server delivers the same file to each user, making static content one of the simplest and most efficient content types for transmission.
+	Since no modification/processing is required, there is no need to use MVC controllers for handling the HTTP request.<br/><br/>
+	
+	This kind of content could be stored in any memory device supported by Elysian (ROM, RAM, Handler or Ext(ernal) device). As can be seen for the URL prefix (<i>/fs_rom/</i>), this particular Web Page is stored in the ROM memory device
+	using the "makefsdata.py" tool.
 </div>
 
 

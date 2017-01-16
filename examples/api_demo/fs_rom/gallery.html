@@ -38,8 +38,15 @@
 
 <div id="page_el_description">
 	<div id="page_el_description_header">
-	Gallery
+	HTTP pipelining, keep-alive connections and multi-client support
 	</div>
+	
+	Despite of the single thread implementation and due to a number of implemented HTTP features and architecture, Elysian offers unique perfomance when dealing with concurrent HTTP requests.<br/><br/>
+	
+	Except from core HTTP features like pipelining and keep-alive connections the internal state machine is designed to overcome temporary memory or network unavailability issues which is a
+	typicall case on memory contrained embedded devices. <br/><br/>
+	
+	This is achieved by means of the internal exponential backoff mechanism that re-schedules temporary failed operations on periods of high load.
 </div>
 
 <div id="page_el_main">
