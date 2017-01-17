@@ -1,3 +1,7 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Elysian HTTP Server</title>
 <link rel="stylesheet" type="text/css" href="../fs_rom/css.css">
 </head>
 <body>
@@ -14,39 +18,45 @@
 	<div class="page_el_menu_item"><a href="../fs_rom/basic_access_auth.html">Basic Access Auth (admin, admin)</a></div>
 	<div class="page_el_menu_item"><a href="../fs_rom/ajax.html">Ajax</a></div>
 	<div class="page_el_menu_item"><a href="../fs_rom/gallery.html">Gallery</a></div>
-	<div class="page_el_menu_item"><a href="../fs_rom/file_download.html">File Download</a></div>
-	<div class="page_el_menu_item"><a href="../fs_rom/partial_content.html">Streaming Audio (HTTP Partial Content)</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/virtual_files.html">Virtual Files</a></div>
 	<div class="page_el_menu_item"><a href="../fs_rom/redirected_page0.html">HTTP Redirection</a></div>
 	<div class="page_el_cleaner"></div>
 </div>
 <div class="page_el_menu">
 	<div class="page_el_menu_item"><a href="../fs_rom/form_get.html">HTTP GET Form</a></div>
 	<div class="page_el_menu_item"><a href="../fs_rom/form_post.html">HTTP POST Form</a></div>
-	<div class="page_el_menu_item"><a href="../fs_rom/file_upload.html">File Upload Form</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/file_upload_ram.html">File Upload (RAM)</a></div>
 	<div class="page_el_menu_item"><a href="../fs_rom/http_request_exposure.html">HTTP Request Exposure</a></div>
 	<div class="page_el_cleaner"></div>
 </div>
 <div class="page_el_menu">
-	<div class="page_el_menu_item"><a href="../fs_ext/dynamic_page_disk.html">Dynamic Web Page (Disk)</a></div>
-	<div class="page_el_menu_item"><a href="../fs_ext/file_upload_disk.html">File Upload Form (Disk)</a></div>
+	<div class="page_el_menu_item"><a href="../fs_ext/file_upload_ext.html">File Upload (EXT)</a></div>
+	<div class="page_el_menu_item"><a href="../fs_ext/partial_content.html">Streaming Audio (HTTP Partial Content)</a></div>
 	<div class="page_el_cleaner"></div>
 </div>
 
 <div id="page_el_description">
 	<div id="page_el_description_header">
-	File upload, HTTP request body temporary saved to the RAM
+	File upload, HTTP request body saved to the "EXT(ernal)" (Hard Disk) storage device
 	</div>
-	Example for uploading small files to the web server. The controller used here temporary stores the HTTP body in the RAM memory of the Web Server. 
-	Consequently, the maximum HTTP body size is <%=attr_max_upload_size%> Kbytes.
-	Use the <b>ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM</b> and <b>ELYSIAN_MAX_MEMORY_USAGE_KB</b> configuration options to increase the maximum allowed HTTP body size.<br/> <br/> 
-	HTTP controllers that store the HTTP body in the RAM memory are suitable for small HTTP requests etc for small HTML forms with configuration options. <br/> <br/> 
-	If there is a need to upload files of bigger size (etc .mp3 or .pdf files), refer to the "File Upload Form (Disk)" example, whose controller saves the HTTP body to the
-	"EXT(ernal)" storage device (SD Card or HDD).	
+	HTTP file upload is the process that enables an HTTP client to send files to the Web Server. In the same way there are HTML form elements that enable text input, 
+	there are also text elements for choosing a file.<br/> <br/> 
+	
+	There are only a couple of real differences. The input type of the upload is '<i>file</i>' rather than '<i>text</i>'. The '<i>enctype</i>' of the form is '<i>multipart/form-data</i>'.
+	The <i>multipart</i> content type is an internet standard for sending lots of different types of information over a single HTTP connection as one bundle. <br/> <br/> 
+	
+	The uploaded data should be temporary stored by the Web Server before given to the application layer for further analysis.
+	Elysian Web Server can store these kind of data either to RAM or to the EXT(ernal) (SD Card, USB or HDD drive) memory device.<br/> <br/> 
+
+	The MVC controller implemented here stores them to the EXT(ernal) memory device -- The Hard Disk. The maximum allowed upload size can be configured using the <i>ELYSIAN_MAX_HTTP_BODY_SIZE_KB_EXT</i> definition.
+	Current value is <b><%=attr_max_upload_size%> Kbytes</b>.<br/> <br/>
+	
+	For an implementation using the RAM memory device as temporary storage medium, refer to the "File Upload (RAM)" example.
 </div>
 
 <div id="page_el_main">
 	<div class="page_el_form">
-		<form action="../fs_rom/file_upload_controller" method="post" enctype="multipart/form-data">
+		<form action="../fs_ext/file_upload_ext_controller" method="post" enctype="multipart/form-data">
 			<div class="page_el_form_label">Sample parameter #1:</div>
 			<div class="page_el_form_input">
 				<input type="text" name="param1" value="Sample data #1">

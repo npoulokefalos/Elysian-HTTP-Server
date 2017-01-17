@@ -201,7 +201,7 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 #if 1
 		controller = elysian_mvc_controller_get(server, client->httpreq.url, client->httpreq.method);
 		if((controller) && (controller->flags & ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS)) {
-			max_http_body_size = ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK;
+			max_http_body_size = ELYSIAN_MAX_HTTP_BODY_SIZE_KB_EXT;
 		} else {
 			max_http_body_size = ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM;
 		}

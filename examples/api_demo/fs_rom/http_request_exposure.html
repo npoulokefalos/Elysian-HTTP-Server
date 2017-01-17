@@ -18,21 +18,20 @@
 	<div class="page_el_menu_item"><a href="../fs_rom/basic_access_auth.html">Basic Access Auth (admin, admin)</a></div>
 	<div class="page_el_menu_item"><a href="../fs_rom/ajax.html">Ajax</a></div>
 	<div class="page_el_menu_item"><a href="../fs_rom/gallery.html">Gallery</a></div>
-	<div class="page_el_menu_item"><a href="../fs_rom/file_download.html">File Download</a></div>
-	<div class="page_el_menu_item"><a href="../fs_rom/partial_content.html">Streaming Audio (HTTP Partial Content)</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/virtual_files.html">Virtual Files</a></div>
 	<div class="page_el_menu_item"><a href="../fs_rom/redirected_page0.html">HTTP Redirection</a></div>
 	<div class="page_el_cleaner"></div>
 </div>
 <div class="page_el_menu">
 	<div class="page_el_menu_item"><a href="../fs_rom/form_get.html">HTTP GET Form</a></div>
 	<div class="page_el_menu_item"><a href="../fs_rom/form_post.html">HTTP POST Form</a></div>
-	<div class="page_el_menu_item"><a href="../fs_rom/file_upload.html">File Upload Form</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/file_upload_ram.html">File Upload (RAM)</a></div>
 	<div class="page_el_menu_item"><a href="../fs_rom/http_request_exposure.html">HTTP Request Exposure</a></div>
 	<div class="page_el_cleaner"></div>
 </div>
 <div class="page_el_menu">
-	<div class="page_el_menu_item"><a href="../fs_ext/dynamic_page_disk.html">Dynamic Web Page (Disk)</a></div>
-	<div class="page_el_menu_item"><a href="../fs_ext/file_upload_disk.html">File Upload Form (Disk)</a></div>
+	<div class="page_el_menu_item"><a href="../fs_ext/file_upload_ext.html">File Upload (EXT)</a></div>
+	<div class="page_el_menu_item"><a href="../fs_ext/partial_content.html">Streaming Audio (HTTP Partial Content)</a></div>
 	<div class="page_el_cleaner"></div>
 </div>
 
@@ -40,10 +39,12 @@
 	<div id="page_el_description_header">
 	HTTP request exposure
 	</div>
-	There are times when full access to the HTTP request header or/and body is required. This could be true if for example there is a need to send different version
-	of the web page when the HTTP client is a mobile phone, or if the HTTP body is a JSON request. The HTTP request headers/body can be exposed as parameters with
-	certain names. The controller of the example below is retrieving the HTTP headers of the request, and sends them back to the client when the "submit" button
-	is pressed.
+	Elysian Web Server provides full access to the HTTP request contents.<br/><br/>
+	
+	The application layer has the freedom to perform different actions based on the contents of the URL, HTTP headers and the HTTP body.
+	For example, it is possible to provide different versions of a web application depending on whether the HTTP request was originated by a mobile phone or a desktop PC.<br/><br/>
+	
+	The example below will provide the full contents of the recieved HTTP request, back to the browser.
 </div>
 
 <div id="page_el_main">

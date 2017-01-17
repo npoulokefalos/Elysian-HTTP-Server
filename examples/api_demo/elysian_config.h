@@ -80,7 +80,7 @@
 ** This is specifically for HTTP requests that are configured to be stored in EXT storage device.
 ** (using the ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS flag)
 */
-#define ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK	  		(5 * 1024)
+#define ELYSIAN_MAX_HTTP_BODY_SIZE_KB_EXT	  		(5 * 1024)
 
 /*
 ** The size of buffer that will be allocated to send the HTTP Response.

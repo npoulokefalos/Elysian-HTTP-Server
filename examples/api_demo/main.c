@@ -71,7 +71,7 @@ elysian_err_t controller_dynamic_page_html(elysian_t* server){
         return err;
     }
 	
-	elysian_sprintf(attr_value, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK);
+	elysian_sprintf(attr_value, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_EXT);
 	err = elysian_mvc_attribute_set(server, "attr_ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK", attr_value);
     if(err != ELYSIAN_ERR_OK){ 
         return err;
@@ -264,11 +264,11 @@ elysian_err_t controller_file_upload(elysian_t* server){
 	/*
 	** Set the value to the attr_max_upload_size attribute
 	*/
-	if (strcmp(requested_url, "/fs_rom/file_upload_controller") == 0) {
+	if (strcmp(requested_url, "/fs_rom/file_upload_ram_controller") == 0) {
 		elysian_sprintf(max_upload_size, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM);
 	} else {
-		// requested URL was "file_upload_disk_controller"
-		elysian_sprintf(max_upload_size, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK);
+		// requested URL was "file_upload_ext_controller"
+		elysian_sprintf(max_upload_size, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_EXT);
 	}
 	err = elysian_mvc_attribute_set(server, "attr_max_upload_size", max_upload_size);
     if(err != ELYSIAN_ERR_OK){ 
@@ -329,11 +329,11 @@ elysian_err_t controller_file_upload(elysian_t* server){
         return err;
     }
 	
-	if (strcmp(requested_url, "/fs_rom/file_upload_controller") == 0) {
-		err = elysian_mvc_view_set(server, "/fs_rom/file_upload.html");
+	if (strcmp(requested_url, "/fs_rom/file_upload_ram_controller") == 0) {
+		err = elysian_mvc_view_set(server, "/fs_rom/file_upload_ram.html");
 	} else {
-		// requested URL was "file_upload_disk_controller"
-		err = elysian_mvc_view_set(server, "/fs_ext/file_upload_disk.html");
+		// requested URL was "file_upload_ext_controller"
+		err = elysian_mvc_view_set(server, "/fs_ext/file_upload_ext.html");
 	}
 
     return ELYSIAN_ERR_OK;
@@ -359,11 +359,11 @@ elysian_err_t controller_file_upload_html(elysian_t* server){
 	/*
 	** Set the value to the attr_max_upload_size attribute
 	*/
-	if (strcmp(requested_url, "/fs_rom/file_upload.html") == 0) {
+	if (strcmp(requested_url, "/fs_rom/file_upload_ram.html") == 0) {
 		elysian_sprintf(max_upload_size, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM);
 	} else {
-		// requested URL was "file_upload_disk_controller"
-		elysian_sprintf(max_upload_size, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK);
+		// requested URL was "file_upload_ext_controller"
+		elysian_sprintf(max_upload_size, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_EXT);
 	}
 	err = elysian_mvc_attribute_set(server, "attr_max_upload_size", max_upload_size);
     if(err != ELYSIAN_ERR_OK){ 
@@ -380,10 +380,10 @@ elysian_err_t controller_file_upload_html(elysian_t* server){
         return err;
     }
 	
-	if (strcmp(requested_url, "/fs_rom/file_upload.html") == 0) {
-		err = elysian_mvc_view_set(server, "/fs_rom/file_upload.html");
+	if (strcmp(requested_url, "/fs_rom/file_upload_ram.html") == 0) {
+		err = elysian_mvc_view_set(server, "/fs_rom/file_upload_ram.html");
 	} else {
-		err = elysian_mvc_view_set(server, "/fs_ext/file_upload_disk.html");
+		err = elysian_mvc_view_set(server, "/fs_ext/file_upload_ext.html");
 	}
 	
     if(err != ELYSIAN_ERR_OK){ 
@@ -533,7 +533,7 @@ elysian_err_t controller_redirected_page0_html(elysian_t* server){
 		return err;
 	}
 	
-	elysian_sprintf(httpresp_header_value, "http://%s:%u%s", hostname, server->listening_port, "/fs_rom/redirected_page1.html?redirection_message=this+is+a+custom+redirection+message");
+	elysian_sprintf(httpresp_header_value, "http://%s:%u%s", hostname, server->listening_port, "/fs_rom/redirected_page1.html?redirection_message=sample+redirection+message");
 	err = elysian_mvc_httpresp_header_add(server, "Location", httpresp_header_value);
 	if(err != ELYSIAN_ERR_OK){ 
         return err;
@@ -616,7 +616,7 @@ elysian_err_t controller_ajax(elysian_t* server){
 }
 
 
-elysian_err_t controller_file_download_html(elysian_t* server){
+elysian_err_t controller_virtual_files_html(elysian_t* server){
 	//elysian_client_t* client = elysian_mvc_client(server);
 	char attr_value[32];
     elysian_err_t err;
@@ -624,12 +624,12 @@ elysian_err_t controller_file_download_html(elysian_t* server){
     ELYSIAN_LOG("[[ %s ]]", __func__);
     
 	elysian_sprintf(attr_value, "%u", elysian_time_now());
-	err = elysian_mvc_attribute_set(server, "attr_huge_file_path", "/fs_hdl/huge.file");
+	err = elysian_mvc_attribute_set(server, "attr_virtual_file_path", "/fs_hdl/virtual_file.log");
     if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
 	
-    err = elysian_mvc_view_set(server, "/fs_rom/file_download.html");
+    err = elysian_mvc_view_set(server, "/fs_rom/virtual_files.html");
     if(err != ELYSIAN_ERR_OK){ 
         return err;
     }
@@ -679,7 +679,7 @@ typedef struct{
 	uint32_t read_cursor;
 } example_hdl_file_t;
 
-int huge_file_handler(elysian_t* server, elysian_file_hdl_action_e action,  void** varg, uint8_t* buf, uint32_t buf_size){
+int virtual_file_handler(elysian_t* server, elysian_file_hdl_action_e action,  void** varg, uint8_t* buf, uint32_t buf_size){
 	example_hdl_file_t* file_args = (example_hdl_file_t*) *varg;
 	uint32_t read_size;
 	
@@ -740,7 +740,7 @@ int huge_file_handler(elysian_t* server, elysian_file_hdl_action_e action,  void
 
 
 const elysian_file_hdl_t hdl_fs[] = {
-	{.name = (char*) "/huge.file", .handler = huge_file_handler},
+	{.name = (char*) "/virtual_file.log", .handler = virtual_file_handler},
 	{.name = NULL, .handler = NULL},
 };
 
@@ -758,9 +758,9 @@ const elysian_mvc_controller_t mvc_controllers[] = {
 		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
 	{.url = "/fs_rom/form_post_controller", .handler = controller_form_post, 
 		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST},
-	{.url = "/fs_rom/file_upload.html", .handler = controller_file_upload_html, 
+	{.url = "/fs_rom/file_upload_ram.html", .handler = controller_file_upload_html, 
 		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
-	{.url = "/fs_rom/file_upload_controller", .handler = controller_file_upload, 
+	{.url = "/fs_rom/file_upload_ram_controller", .handler = controller_file_upload, 
 		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT},
 	{.url = "/fs_rom/http_request_exposure.html", .handler = controller_http_request_exposure_html, 
 		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
@@ -772,7 +772,7 @@ const elysian_mvc_controller_t mvc_controllers[] = {
 		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
 	{.url = "/fs_rom/ajax_controller", .handler = controller_ajax, 
 		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
-	{.url = "/fs_rom/file_download.html", .handler = controller_file_download_html, 
+	{.url = "/fs_rom/virtual_files.html", .handler = controller_virtual_files_html, 
 		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
 	
 	/*
@@ -780,9 +780,9 @@ const elysian_mvc_controller_t mvc_controllers[] = {
 	*/
 	{.url = "/fs_ext/dynamic_page_disk.html", .handler = controller_dynamic_page_disk_html, 
 		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
-	{.url = "/fs_ext/file_upload_disk.html", .handler = controller_file_upload_html, 
+	{.url = "/fs_ext/file_upload_ext.html", .handler = controller_file_upload_html, 
 		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET},
-	{.url = "/fs_ext/file_upload_disk_controller", .handler = controller_file_upload, 
+	{.url = "/fs_ext/file_upload_ext_controller", .handler = controller_file_upload, 
 		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT | ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS},
 
 	/*

@@ -101,7 +101,7 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 	
 	ELYSIAN_ASSERT(client->mvc.view == NULL);
 	ELYSIAN_ASSERT(client->mvc.attributes == NULL);
-	ELYSIAN_ASSERT(client->httpreq.url != NULL);
+	//ELYSIAN_ASSERT(client->httpreq.url != NULL); It could be NULL if code reached here from failed HTTP request parsing
 	
 	/* -----------------------------------------------------------------------------------------------------
 	** Initialize MVC
