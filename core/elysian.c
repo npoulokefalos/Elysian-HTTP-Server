@@ -1009,10 +1009,11 @@ void elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev)
     elysian_err_t err;
     uint32_t read_size;
     uint32_t read_size_actual;
-    uint32_t send_size;
+    //uint32_t send_size;
     uint32_t send_size_actual;
     uint32_t i;
 	uint32_t packet_count;
+	uint8_t read_complete;
 	
 	//ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
     switch(ev){
@@ -1068,8 +1069,8 @@ void elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev)
 				/*
 				** Defrag
 				*/
-				#if 1
-				if(client->httpresp.buf_index == client->httpresp.buf_size) {
+#if 0
+				if (client->httpresp.buf_len == 0) {
 					client->httpresp.buf_index = 0;
 				} else {
 					if((client->httpresp.buf_index * 100) / client->httpresp.buf_size >= 25){
@@ -1080,34 +1081,43 @@ void elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev)
 						client->httpresp.buf_index = 0;
 					}
 				}
-				#endif
+#else
+				if (client->httpresp.buf_len == 0) {
+					client->httpresp.buf_index = 0;
+				}
+#endif
 				
 				/*
 				** Read
 				*/
-					uint8_t resource_read_complete = 0;
-
-					if (client->httpresp.body_size == (uint32_t) -1 ) {
-						// Read until EOF (Chunked HTTP Response)
-						read_size = -1;
-					} else {
-						// Read only partial range
-						read_size = client->httpresp.headers_size + client->httpresp.body_size - client->httpresp.sent_size - client->httpresp.buf_len;
+				read_complete = 0;
+				if (client->httpresp.body_size == (uint32_t) -1 ) {
+					// Read until EOF (Chunked HTTP Response)
+					read_size = -1;
+				} else {
+					// Read only partial range
+					read_size = client->httpresp.headers_size + client->httpresp.body_size - (client->httpresp.sent_size + client->httpresp.buf_len);
+				}
+				
+				if (read_size) {
+					/*
+					** We haven't read the whole resource, read more data if possible
+					*/
+					if (read_size > client->httpresp.buf_size - (client->httpresp.buf_index + client->httpresp.buf_len)) {
+						read_size = client->httpresp.buf_size - (client->httpresp.buf_index + client->httpresp.buf_len);
 					}
 					
-					read_size = ((read_size) > (client->httpresp.buf_size - client->httpresp.buf_len)) ? client->httpresp.buf_size - client->httpresp.buf_len : read_size;  
-
 					if (read_size) {
 						err = elysian_resource_read(server, &client->httpresp.buf[client->httpresp.buf_index + client->httpresp.buf_len], read_size, &read_size_actual);
 						switch(err){
 							case ELYSIAN_ERR_OK:
 								client->httpresp.buf_len += read_size_actual;
-								//ELYSIAN_LOG(">>>>>>>>>>>>>>>>>> We just read %u bytes", read_size_actual);
+								//ELYSIAN_LOG("Client %u HTTP response: read %u bytes.", read_size_actual);
 								if (read_size_actual < read_size) {
 									/*
 									** The whole resource was read
 									*/
-									resource_read_complete = 1;
+									read_complete = 1;
 								}
 								break;
 							case ELYSIAN_ERR_FATAL:
@@ -1120,50 +1130,45 @@ void elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev)
 								return;
 								break;
 						};
-					} else {
-						/*
-						** The whole resource was read
-						*/
-						resource_read_complete = 1;
 					}
-
+				} else {
 					/*
-					** Send
+					** The whole resource was read
 					*/
-					send_size = client->httpresp.buf_len;
-					if (send_size){
-						err = elysian_socket_write(&client->socket, &client->httpresp.buf[client->httpresp.buf_index], send_size, &send_size_actual);
-						switch(err){
-							case ELYSIAN_ERR_OK:
-								//ELYSIAN_LOG("We just send %u bytes", send_size_actual);
-								elysian_schdlr_state_timeout_reset(server);
-								client->httpresp.buf_index += send_size_actual;
-								client->httpresp.buf_len -= send_size_actual;
-								client->httpresp.sent_size += send_size_actual;
-								packet_count++;
-								break;
-							case ELYSIAN_ERR_POLL:
-								elysian_schdlr_state_poll_backoff(server); 
-								return;
-								break;
-							default:
-								elysian_schdlr_state_set(server, elysian_state_http_disconnect);
-								return;
-								break;
-						};
+					read_complete = 1;
+				}
 
-					}
-				//}
-				
-				//ELYSIAN_LOG("Client %u complete ratio is %u [%u bytes left]", client->id, (client->httpresp.sent_size * 100)/(client->httpresp.headers_size + client->httpresp.body_size), client->httpresp.headers_size + client->httpresp.body_size - client->httpresp.sent_size);
-				
 				/*
-				** Check if we are done
+				** Send
 				*/
-				//if(client->httpresp.headers_size + client->httpresp.body_size == client->httpresp.sent_size) {
-				if ((resource_read_complete) && (client->httpresp.buf_len == 0)) {
-					ELYSIAN_LOG("Client %u: The whole response was sent!!!", client->id);
-					if(client->mvc.keep_alive && client->http_pipelining_enabled){
+				if (client->httpresp.buf_len) {
+					err = elysian_socket_write(&client->socket, &client->httpresp.buf[client->httpresp.buf_index], client->httpresp.buf_len, &send_size_actual);
+					switch(err){
+						case ELYSIAN_ERR_OK:
+							//ELYSIAN_LOG("Client %u HTTP response: sent %u bytes.", send_size_actual);
+							elysian_schdlr_state_timeout_reset(server);
+							client->httpresp.buf_index += send_size_actual;
+							client->httpresp.buf_len -= send_size_actual;
+							client->httpresp.sent_size += send_size_actual;
+							packet_count++;
+							break;
+						case ELYSIAN_ERR_POLL:
+							elysian_schdlr_state_poll_backoff(server); 
+							return;
+							break;
+						default:
+							elysian_schdlr_state_set(server, elysian_state_http_disconnect);
+							return;
+							break;
+					};
+				} 
+
+				/*
+				** Check if finished
+				*/
+				if ((read_complete == 1) && (client->httpresp.buf_len == 0)) {
+					ELYSIAN_LOG("Client %u HTTP response: Completed!", client->id);
+					if (client->mvc.keep_alive && client->http_pipelining_enabled) {
 						elysian_schdlr_state_set(server, elysian_state_http_keepalive);
 						return;
 					}else{
