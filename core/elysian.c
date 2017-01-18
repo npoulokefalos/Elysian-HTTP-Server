@@ -1011,7 +1011,7 @@ void elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev)
     uint32_t read_size_actual;
     //uint32_t send_size;
     uint32_t send_size_actual;
-    uint32_t i;
+    //uint32_t i;
 	uint32_t packet_count;
 	uint8_t read_complete;
 	
