@@ -731,7 +731,6 @@ void elysian_state_http_response_entry(elysian_t* server, elysian_schdlr_ev_t ev
 					client->httpresp.attempts = 2;
 				}
 				
-				
 				elysian_schdlr_state_set(server, elysian_state_mvc_pre_configuration);
 				return;
 			}

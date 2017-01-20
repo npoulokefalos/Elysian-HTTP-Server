@@ -210,7 +210,7 @@ elysian_err_t elysian_socket_select(elysian_socket_t* socket_readset[], uint32_t
 ****************************************************************************************************************************
 */
 
-const elysian_fs_partition_t fs_partitions[] = {
+const elysian_fs_memdev_t fs_memdevs[] = {
 	{
 		.vrt_root = ELYSIAN_FS_RAM_VRT_ROOT,
 		.abs_root = ELYSIAN_FS_RAM_ABS_ROOT,
@@ -261,79 +261,80 @@ const elysian_fs_partition_t fs_partitions[] = {
 	}
 };
 
-elysian_fs_partition_t* elysian_fs_get_partition(char* vrt_path){
+elysian_fs_memdev_t* elysian_fs_get_memdev(char* vrt_path){
 	uint16_t vrt_root_len;
 	uint8_t vrt_root_offset;
-	
-    ELYSIAN_LOG("Getting partition of file '%s'..", vrt_path);
-    
-	if(vrt_path[0] != '/'){
+	uint8_t k;
+
+	if (vrt_path[0] != '/') {
 		vrt_root_offset = 1;
-	}else{
+	} else {
 		vrt_root_offset = 0;
 	}
 	
-	uint8_t k;
-	for(k = 0; k < sizeof(fs_partitions)/sizeof(elysian_fs_partition_t); k++){
-		vrt_root_len = strlen(fs_partitions[k].vrt_root) - vrt_root_offset;
-		ELYSIAN_LOG("comparing '%s' with '%s' fr len = %u", vrt_path, &fs_partitions[k].vrt_root[vrt_root_offset], vrt_root_len);
-		if((strlen(vrt_path) > vrt_root_len) && (memcmp(vrt_path, &fs_partitions[k].vrt_root[vrt_root_offset], vrt_root_len) == 0) && (vrt_path[vrt_root_len] == '/')){
-            ELYSIAN_LOG("Stop!");
-			return (elysian_fs_partition_t*) &fs_partitions[k];
+	for (k = 0; k < sizeof(fs_memdevs) / sizeof(elysian_fs_memdev_t); k++) {
+		vrt_root_len = strlen(fs_memdevs[k].vrt_root) - vrt_root_offset;
+		ELYSIAN_LOG("Checking virtual path of memdev '%s'..", &fs_memdevs[k].vrt_root[vrt_root_offset]);
+		if((strlen(vrt_path) > vrt_root_len) && (memcmp(vrt_path, &fs_memdevs[k].vrt_root[vrt_root_offset], vrt_root_len) == 0) && (vrt_path[vrt_root_len] == '/')){
+            ELYSIAN_LOG("Matches!");
+			return (elysian_fs_memdev_t*) &fs_memdevs[k];
 		}
 	}
+
 	return NULL;
 }
 
 void elysian_fs_finit(elysian_t* server, elysian_file_t* file){
     file->mode = ELYSIAN_FILE_MODE_NA;
 	file->status = ELYSIAN_FILE_STATUS_CLOSED;
-    file->partition = NULL;
+    file->memdev = NULL;
 }
 
 elysian_err_t elysian_fs_fopen(elysian_t* server, char* vrt_path, elysian_file_mode_t mode, elysian_file_t* file) {
 	char abs_path[ELYSIAN_FS_MAX_PATH_LEN];
-	elysian_fs_partition_t* partition;
+	elysian_fs_memdev_t* memdev;
 	elysian_err_t err;
-	//char* abs_path;
-	//char* abs_sub_path;
-	//uint32_t abs_path_len;
-	
-	ELYSIAN_LOG("Opening virtual file '%s'..", vrt_path);
+
+	ELYSIAN_LOG("Opening file with virtual path '%s'..", vrt_path);
 	
 	ELYSIAN_ASSERT(mode == ELYSIAN_FILE_MODE_READ || mode == ELYSIAN_FILE_MODE_WRITE);
 	
-	partition = elysian_fs_get_partition(vrt_path);
-	if(!partition){
-		ELYSIAN_LOG("File does not exist, no matching partition found");
+	memdev = elysian_fs_get_memdev(vrt_path);
+	if (!memdev){
+		ELYSIAN_LOG("File does not belong to any memdev (invalid root path?)");
 		return ELYSIAN_ERR_NOTFOUND;
+	} else {
+		ELYSIAN_LOG("File belongs to '%s' memdev", memdev->vrt_root);
 	}
 	
 	/*
 	** Don't create a file that we will not be able to remove
 	*/
-	if(strlen(partition->abs_root) + strlen(&vrt_path[strlen(partition->vrt_root)]) + 1 <= ELYSIAN_FS_MAX_PATH_LEN) {
-		elysian_sprintf(abs_path, "%s%s", partition->abs_root, &vrt_path[strlen(partition->vrt_root)]);
+	if(strlen(memdev->abs_root) + strlen(&vrt_path[strlen(memdev->vrt_root)]) + 1 <= ELYSIAN_FS_MAX_PATH_LEN) {
+		elysian_sprintf(abs_path, "%s%s", memdev->abs_root, &vrt_path[strlen(memdev->vrt_root)]);
 	} else {
+		ELYSIAN_LOG("Filepath too long");
 		return ELYSIAN_ERR_FATAL;
 	}
 	
-	ELYSIAN_LOG("Opening absolute file '%s'..", abs_path);
+	ELYSIAN_LOG("Opening file with absolute path '%s'..", vrt_path);
 	
-	err = partition->fopen(server, abs_path, mode, file);
+	err = memdev->fopen(server, abs_path, mode, file);
 	
 	if(err == ELYSIAN_ERR_OK){
-		file->partition = partition;
+		file->memdev = memdev;
 		file->mode = mode;
 		file->status = ELYSIAN_FILE_STATUS_OPENED;
 		return ELYSIAN_ERR_OK;
 	}else if(err == ELYSIAN_ERR_NOTFOUND){
 		/* Continue */
+		ELYSIAN_LOG("File not found!");
 	}else if(err == ELYSIAN_ERR_POLL){
 		/* Continue */
 	}else{
 		err = ELYSIAN_ERR_FATAL;
 	}
+	
 	file->mode = ELYSIAN_FILE_MODE_NA;
 	file->status = ELYSIAN_FILE_STATUS_CLOSED;
 	return err;
@@ -348,9 +349,9 @@ elysian_err_t elysian_fs_fsize(elysian_t* server, elysian_file_t* file, uint32_t
 	
 	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED);
 	ELYSIAN_ASSERT(file->mode == ELYSIAN_FILE_MODE_READ);
-	ELYSIAN_ASSERT(file->partition);
+	ELYSIAN_ASSERT(file->memdev);
 	
-	err = file->partition->fsize(server, file, filesize);
+	err = file->memdev->fsize(server, file, filesize);
 	
     return err;
 }
@@ -360,9 +361,9 @@ elysian_err_t elysian_fs_fseek(elysian_t* server, elysian_file_t* file, uint32_t
 	
 	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED);
 	ELYSIAN_ASSERT(file->mode == ELYSIAN_FILE_MODE_READ);
-	ELYSIAN_ASSERT(file->partition);
+	ELYSIAN_ASSERT(file->memdev);
 	
-	err = file->partition->fseek(server, file, seekpos);
+	err = file->memdev->fseek(server, file, seekpos);
 
     return err;
 }
@@ -372,9 +373,9 @@ elysian_err_t elysian_fs_ftell(elysian_t* server, elysian_file_t* file, uint32_t
 	
 	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED);
 	ELYSIAN_ASSERT(file->mode == ELYSIAN_FILE_MODE_READ);
-	ELYSIAN_ASSERT(file->partition);
+	ELYSIAN_ASSERT(file->memdev);
 	
-	err = file->partition->ftell(server, file, seekpos);
+	err = file->memdev->ftell(server, file, seekpos);
 
     return err;
 }
@@ -385,7 +386,7 @@ elysian_err_t elysian_fs_fread(elysian_t* server, elysian_file_t* file, uint8_t*
 	
 	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED);
 	ELYSIAN_ASSERT(file->mode == ELYSIAN_FILE_MODE_READ);
-	ELYSIAN_ASSERT(file->partition);
+	ELYSIAN_ASSERT(file->memdev);
 	
 	/*
 	** We could just 'buf_size' bytes and get EOF when actualreadsize < buf_size.
@@ -398,7 +399,7 @@ elysian_err_t elysian_fs_fread(elysian_t* server, elysian_file_t* file, uint8_t*
 	*actualreadsize = 0;
 	
 	while (buf_size - buf_index) {
-		result = file->partition->fread(server, file, &buf[buf_index], buf_size - buf_index);
+		result = file->memdev->fread(server, file, &buf[buf_index], buf_size - buf_index);
 		if (result >= 0){
 			ELYSIAN_ASSERT(result <= buf_size - buf_index);
 			buf_index += result;
@@ -423,9 +424,9 @@ elysian_err_t elysian_fs_fwrite(elysian_t* server, elysian_file_t* file, uint8_t
     
 	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED);
 	ELYSIAN_ASSERT(file->mode == ELYSIAN_FILE_MODE_WRITE);
-	ELYSIAN_ASSERT(file->partition);
+	ELYSIAN_ASSERT(file->memdev);
 	
-	result = file->partition->fwrite(server, file, buf, buf_size);
+	result = file->memdev->fwrite(server, file, buf, buf_size);
 	if(result > 0){
 		*actual_write_sz = result;
 		return ELYSIAN_ERR_OK;
@@ -443,13 +444,13 @@ elysian_err_t elysian_fs_fclose(elysian_t* server, elysian_file_t* file){
     elysian_err_t err;
     
 	ELYSIAN_ASSERT(file->status == ELYSIAN_FILE_STATUS_OPENED);
-	ELYSIAN_ASSERT(file->partition);
+	ELYSIAN_ASSERT(file->memdev);
 	
-	err = file->partition->fclose(server, file);
+	err = file->memdev->fclose(server, file);
     
     file->mode = ELYSIAN_FILE_MODE_NA;
 	file->status = ELYSIAN_FILE_STATUS_CLOSED;
-    file->partition = NULL;
+    file->memdev = NULL;
     
     if(err != ELYSIAN_ERR_OK){
 		return ELYSIAN_ERR_FATAL;
@@ -460,25 +461,25 @@ elysian_err_t elysian_fs_fclose(elysian_t* server, elysian_file_t* file){
 
 /*
 ** Never return ELYSIAN_ERR_POLL here, since it could cause memory leaks on user layer.
-** Memory allocation are not allowed here.
+** Memory allocation is not allowed here.
 */
 elysian_err_t elysian_fs_fremove(elysian_t* server, char* vrt_path) {
 	char abs_path[ELYSIAN_FS_MAX_PATH_LEN];
-	elysian_fs_partition_t* partition;
+	elysian_fs_memdev_t* memdev;
     elysian_err_t err;
 
-	partition = elysian_fs_get_partition(vrt_path);
-	if(!partition){
+	memdev = elysian_fs_get_memdev(vrt_path);
+	if(!memdev){
 		return ELYSIAN_ERR_FATAL;
 	}
     
-	if(strlen(partition->abs_root) + strlen(&vrt_path[strlen(partition->vrt_root)]) + 1 <= ELYSIAN_FS_MAX_PATH_LEN) {
-		elysian_sprintf(abs_path, "%s%s", partition->abs_root, &vrt_path[strlen(partition->vrt_root)]);
+	if (strlen(memdev->abs_root) + strlen(&vrt_path[strlen(memdev->vrt_root)]) + 1 <= ELYSIAN_FS_MAX_PATH_LEN) {
+		elysian_sprintf(abs_path, "%s%s", memdev->abs_root, &vrt_path[strlen(memdev->vrt_root)]);
 	} else {
 		return ELYSIAN_ERR_FATAL;
 	}
 	
-	err = partition->fremove(server, abs_path);
+	err = memdev->fremove(server, abs_path);
 	
 	ELYSIAN_ASSERT(err != ELYSIAN_ERR_POLL);
 	

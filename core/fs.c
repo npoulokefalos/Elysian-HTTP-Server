@@ -33,16 +33,6 @@ elysian_fs_ram_file_t fs_ram_files ={
     .next = &fs_ram_files
 };
 
-#if 0
-void elysian_fs_ram_init(){
-	fs_ram_files.name = NULL;
-	fs_ram_files.cbuf = NULL;
-	fs_ram_files.read_handles = 0;
-	fs_ram_files.write_handles = 0;
-	fs_ram_files.next = &fs_ram_files;
-}
-#endif
-
 elysian_err_t elysian_fs_ram_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file){
 	elysian_err_t err;
     elysian_fs_ram_file_t* fs_ram_file;

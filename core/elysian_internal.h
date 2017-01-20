@@ -370,11 +370,11 @@ struct elysian_file_hdl_t{
 };
 #endif
 
-typedef struct elysian_fs_partition_t elysian_fs_partition_t;
+typedef struct elysian_fs_memdev_t elysian_fs_memdev_t;
 
 typedef struct elysian_file_t elysian_file_t;
 struct elysian_file_t{
-	elysian_fs_partition_t* partition;
+	elysian_fs_memdev_t* memdev;
     elysian_file_status_t status;
 	elysian_file_mode_t mode;
 	
@@ -387,8 +387,8 @@ struct elysian_file_t{
 };
 
 
-typedef struct elysian_fs_partition_t elysian_fs_partition_t;
-struct elysian_fs_partition_t{
+//typedef struct elysian_fs_memdev_t elysian_fs_memdev_t;
+struct elysian_fs_memdev_t{
 	const char* vrt_root;
 	const char* abs_root;
 	elysian_err_t (*fopen)(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file);
