@@ -37,14 +37,16 @@
 
 <div id="page_el_description">
 	<div id="page_el_description_header">
-	HTTP pipelining, keep-alive connections and multi-client support
+	HTTP persistent connections and pipelining
 	</div>
-	Elysian was designed from ground up to deliver decent HTTP perfomance on memory constrained embedded devices and applications.<br/><br/>
 	
-	Except from core HTTP features such as pipelining and keep-alive connections, the internal state machine was also designed to overcome temporary memory or network unavailability issues which is a
-	typical case on this kind of devices. This is achieved by means of the internal backoff mechanism that re-schedules temporary failed operations on periods of high load. <br/><br/>
+	<i>HTTP persistent connections</i>, also called HTTP keep-alive, is the idea of using the same connection to send and receive multiple HTTP requests/responses, 
+	as opposed to opening a new connection for every single request/response pair. <br/><br/>
 	
-	Concurrent HTTP requests, like the ones of this example, can be handled using minimal CPU and memory resources.
+	<i>HTTP pipelining</i> is a feature of persistent connections. It allows the Browser to send a new request on the same connection without waiting for the response of the previous one.
+	These back to back HTTP requests result in a dramatic improvement in page loading times. <br/><br/>
+	
+	To take advantage of both features, Elysian will keep an HTTP connection open for a few seconds after completing all transactions so it can be reused for future HTTP requests.
 </div>
 
 <div id="page_el_main">

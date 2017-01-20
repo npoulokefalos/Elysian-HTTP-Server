@@ -940,8 +940,7 @@ void elysian_state_build_http_response(elysian_t* server, elysian_schdlr_ev_t ev
             elysian_schdlr_state_poll_enable(server);
 			
 			client->httpresp.buf_size = ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX;
-			
-			//ELYSIAN_LOG("Resource '%s' opened, size is (%u)", client->mvc.view, client->httpresp.resource_size);
+
         }break;
         case elysian_schdlr_EV_READ:
         {
@@ -1038,7 +1037,10 @@ void elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev)
 				client->httpresp.buf_size = client->httpresp.buf_size / 3;
 				if (client->httpresp.buf_size > ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX) {
 					client->httpresp.buf_size = ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX;
-				}		
+				}
+				if (client->httpresp.buf_size < 128) {
+					client->httpresp.buf_size = 128;
+				}	
 #else
 				client->httpresp.buf_size = ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX;
 #endif
