@@ -156,6 +156,7 @@ elysian_err_t elysian_cbuf_rechain(elysian_t* server, elysian_cbuf_t** cbuf_list
 void elysian_cbuf_strget(elysian_cbuf_t* cbuf, uint32_t cbuf_index, char* buf, uint32_t buf_len);
 uint8_t elysian_cbuf_strcmp(elysian_cbuf_t* cbuf, uint32_t index, char* str, uint8_t matchCase);
 void elysian_cbuf_strcpy(elysian_cbuf_t* cbuf, uint32_t index0, uint32_t index1, char* str);
+void elysian_cbuf_memcpy(elysian_cbuf_t* cbuf, uint32_t index0, uint32_t index1, uint8_t* buf);
 uint32_t elysian_cbuf_strstr(elysian_cbuf_t* cbuf0, uint32_t index, char* str, uint8_t matchCase);
 elysian_cbuf_t* elysian_cbuf_list_dropn(elysian_cbuf_t* cbuf, uint32_t n);
 void cbuf_list_print(elysian_cbuf_t* cbuf);
@@ -176,6 +177,7 @@ typedef enum{
 
 typedef enum{
 	ELYSIAN_HTTP_STATUS_CODE_100 = 0,
+	ELYSIAN_HTTP_STATUS_CODE_101,
 	ELYSIAN_HTTP_STATUS_CODE_200,
 	ELYSIAN_HTTP_STATUS_CODE_201,
 	ELYSIAN_HTTP_STATUS_CODE_206,
@@ -212,6 +214,22 @@ typedef enum{
     ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED,
 }elysian_http_transfer_encoding_t;
 
+typedef enum{
+    ELYSIAN_WEBSOCKET_VERSION_13,
+	ELYSIAN_WEBSOCKET_VERSION_NA,
+}elysian_websocket_version_t;
+
+typedef enum{
+    ELYSIAN_HTTP_CONNECTION_CLOSE,
+    ELYSIAN_HTTP_CONNECTION_KEEPALIVE,
+	ELYSIAN_HTTP_CONNECTION_UPGRADE
+}elysian_http_connection_t;
+
+typedef enum{
+	ELYSIAN_HTTP_CONNECTION_UPGRADE_NO,
+    ELYSIAN_HTTP_CONNECTION_UPGRADE_WEBSOCKET,
+}elysian_http_connection_upgrade_t;
+
 elysian_err_t elysian_http_request_headers_received(elysian_t* server);
 elysian_err_t elysian_http_request_headers_parse(elysian_t* server);
 elysian_err_t elysian_http_request_get_uri(elysian_t* server, char** uri);
@@ -243,6 +261,7 @@ char* elysian_http_get_mime_type(char* uri);
 */
 
 void elysian_time_sleep(uint32_t ms);
+uint32_t elysian_time_elapsed(uint32_t tic_ms);
 
 /*
 ****************************************************************************************************************************
@@ -439,6 +458,36 @@ elysian_err_t elysian_strstr_file(elysian_t* server, elysian_file_t* file, uint3
 elysian_err_t elysian_strncpy_file(elysian_t* server, elysian_file_t* file, uint32_t offset, char* str, uint32_t n);
 void elysian_str_trim(elysian_t* server, char* str, char* ignore_prefix_chars, char* ignore_suffix_chars);
 
+/* 
+** Websockets
+*/
+typedef struct elysian_websocket_controller_t elysian_websocket_controller_t;
+struct elysian_websocket_controller_t{
+    const char* url;
+	uint32_t timer_interval_ms;
+    elysian_err_t (*connected_handler)(elysian_t* server, void** vargs);
+	elysian_err_t (*frame_handler)(elysian_t* server, uint8_t* frame_data, uint32_t frame_len, void* vargs);
+	elysian_err_t (*timer_handler)(elysian_t* server, void* vargs);
+	elysian_err_t (*disconnected_handler)(elysian_t* server, void* vargs);
+};
+
+typedef enum {
+	ELYSIAN_WEBSOCKET_FRAME_OPCODE_CONTINUATION = 0x0,
+	ELYSIAN_WEBSOCKET_FRAME_OPCODE_TEXT = 0x1,
+	ELYSIAN_WEBSOCKET_FRAME_OPCODE_BINARY = 0x2,
+	ELYSIAN_WEBSOCKET_FRAME_OPCODE_CLOSE = 0x8,
+	ELYSIAN_WEBSOCKET_FRAME_OPCODE_PING = 0x9,
+	ELYSIAN_WEBSOCKET_FRAME_OPCODE_PONG = 0xA,
+} elysian_websocket_opcode_e;
+
+typedef enum {
+	ELYSIAN_WEBSOCKET_FLAG_PING_PENDING = 1 << 0,
+	ELYSIAN_WEBSOCKET_FLAG_PONG_RECEIVED = 1 << 1,
+	ELYSIAN_WEBSOCKET_FLAG_CLOSE_PENDING = 1 << 2,
+	ELYSIAN_WEBSOCKET_FLAG_CLOSE_RECEIVED = 1 << 3,
+	ELYSIAN_WEBSOCKET_FLAG_CLOSE_REQUESTED = 1 << 4,
+	ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING = 1 << 5,
+} elysian_websocket_flag_e;
 
 /* 
 ** MVC
@@ -539,6 +588,7 @@ struct elysian_mvc_httpresp_header_t {
 typedef elysian_err_t (*elysian_mvc_controller_handler_t)(elysian_t* server);
 	
 
+
 typedef struct elysian_mvc_controller_t elysian_mvc_controller_t;
 struct elysian_mvc_controller_t{
     const char* url;
@@ -570,7 +620,8 @@ struct elysian_mvc_t{
 	** Flag indicating if connection will be kept alive or closed after
 	** the current HTTP response is sent.
 	*/
-    uint8_t keep_alive;
+	elysian_http_connection_t connection;
+	elysian_http_connection_upgrade_t connection_upgrade;
 	
 	uint32_t content_length;
 	
@@ -657,7 +708,7 @@ typedef enum{
     elysian_schdlr_EV_READ, 
     elysian_schdlr_EV_POLL,
     //elysian_schdlr_EV_CLOSED,
-    //elysian_schdlr_EV_TIMER,
+    elysian_schdlr_EV_TIMER,
     elysian_schdlr_EV_ABORT,
 }elysian_schdlr_ev_t;
 
@@ -789,6 +840,11 @@ struct elysian_httpreq_t{
 	elysian_http_method_e method;
     elysian_http_content_type_t content_type;
 	elysian_http_transfer_encoding_t transfer_encoding;
+	
+	elysian_http_connection_t connection;
+	elysian_http_connection_upgrade_t connection_upgrade;
+	elysian_websocket_version_t websocket_version;
+	
     uint8_t expect_status_code;
     uint16_t headers_len;
     uint32_t body_len;
@@ -818,12 +874,7 @@ struct elysian_httpresp_t{
     uint16_t buf_len; /* Current length, <= buf_size */
     uint16_t buf_size; /* Total allocation size */
     
-    /*
-	** Flag indicating if connection will be kept alive or closed after
-	** the current HTTP response is sent.
-	*/
-    //uint8_t keep_alive;
-	
+
 	/*
 	** Status code used for the HTTP response
 	*/
@@ -889,11 +940,22 @@ struct elysian_isp_chunked_t{
 	uint32_t chunkSzProcessed;
 };
 
+typedef struct elysian_isp_websocket_t elysian_isp_websocket_t;
+struct elysian_isp_websocket_t{
+	uint8_t state;
+	//uint32_t index;
+	uint8_t header[10];
+	uint8_t masking_key[4];
+	uint32_t payload_len;
+	//uint8_t* payload;
+};
+
 elysian_err_t elysian_isp_http_headers(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
 elysian_err_t elysian_isp_http_body_raw(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
 elysian_err_t elysian_isp_http_body_chunked(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
 elysian_err_t elysian_isp_http_body_chunked_multipart(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
 elysian_err_t elysian_isp_http_body_raw_multipart(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
+elysian_err_t elysian_isp_websocket(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
 
 void elysian_isp_cleanup(elysian_t* server);
 
@@ -920,8 +982,48 @@ struct elysian_isp_t{
 	elysian_isp_raw_t raw;
 	elysian_isp_chunked_t chunked;
 	elysian_isp_multipart_t multipart;
+	elysian_isp_websocket_t websocket;
+	
 	elysian_cbuf_t* cbuf_list;
 	elysian_err_t (*func)(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream);
+};
+
+typedef struct elysian_websocket_frame_t elysian_websocket_frame_t;
+struct elysian_websocket_frame_t {
+	uint8_t opcode;
+	uint8_t* data;
+	uint32_t len;
+	uint32_t sent_len;
+	elysian_websocket_frame_t* next;
+};
+
+elysian_websocket_frame_t* elysian_websocket_frame_allocate(elysian_t* server, uint32_t len);
+void elysian_websocket_frame_deallocate(elysian_t* server, elysian_websocket_frame_t* frame);
+
+elysian_err_t elysian_websocket_init(elysian_t* server);
+elysian_err_t elysian_websocket_connected(elysian_t* server);
+elysian_err_t elysian_websocket_cleanup(elysian_t* server);
+elysian_err_t elysian_websocket_process (elysian_t* server);
+elysian_err_t elysian_websocket_app_timer(elysian_t* server);
+elysian_err_t elysian_websocket_ping_timer(elysian_t* server);
+
+typedef struct elysian_websocket_t elysian_websocket_t;
+struct elysian_websocket_t {
+	elysian_websocket_controller_t* controller;
+	void* handler_args;
+	
+	elysian_websocket_frame_t* rx_frames;
+	elysian_websocket_frame_t* tx_frames;
+	
+	elysian_websocket_flag_e flags;
+	
+	uint32_t rx_path_healthy_ms;
+	
+	//uint8_t pong_received;
+	//uint16_t timer_ms;
+	//uint16_t ping_timer_ms;
+	//uint16_t rx_timer_ms;
+	//uint32_t prev_timer_ms;
 };
 
 //typedef struct elysian_client_t elysian_client_t;
@@ -947,7 +1049,11 @@ struct elysian_client_t{
     elysian_httpresp_t httpresp;
     elysian_mvc_t mvc;
     elysian_resource_t* resource;
+	elysian_websocket_t websocket;
+	
 	uint8_t http_pipelining_enabled;
+	
+	//elysian_websocket_frame_t* websocket_frame;
 	
 	/*
 	** Callback function/data set by user to notify that the current request

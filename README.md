@@ -18,11 +18,12 @@ Supported features include:
 - Much emphasis on ease of use, easy integration and power consumption
 - Support for dynamic content using the model-view-controller (MVC) design pattern
 - Single thread / Μultiple client implementation
-- Extremely robust: Εxponential backoff mechanism resolves any temporarυ memory or network unavailability issues. 
+- Extremely robust: Εxponential backoff mechanism resolves any temporary memory or network unavailability issues. 
 - Support for GET/HEAD/POST/PUT HTTP requests
 - Support for multipart HTTP requests for file uploading.
-- Chunked tranfer encoding and decoding
+- Chunked transfer encoding and decoding
 - HTTP pipelining and keep-alive connections
+- Websockets v13 (RFC 6455)
 - Support for HTTP requests with expectation
 - Support for multiple memory devices: Files can be stored to ROM, RAM, or External memory device (etc SD-Card, USB, Hard Disk)
 - Bounded memory usage

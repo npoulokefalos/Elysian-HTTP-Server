@@ -92,6 +92,10 @@ elysian_err_t elysian_mvc_clear(elysian_t* server){
     return ELYSIAN_ERR_OK;
 }
 
+elysian_err_t elysian_websockets_controller(elysian_t* server);
+static const elysian_mvc_controller_t elysian_mvc_controller_websockets_def = {.url = (char*) "", .handler = elysian_websockets_controller, .flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET};
+
+
 elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_err_t err;
@@ -106,7 +110,8 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 	/* -----------------------------------------------------------------------------------------------------
 	** Initialize MVC
 	----------------------------------------------------------------------------------------------------- */
-	client->mvc.keep_alive = 1;
+	client->mvc.connection = ELYSIAN_HTTP_CONNECTION_KEEPALIVE;
+	client->mvc.connection_upgrade = ELYSIAN_HTTP_CONNECTION_UPGRADE_NO;
 	if (client->httpresp.current_status_code != ELYSIAN_HTTP_STATUS_CODE_NA) {
 		/*
 		** Status code has been decided automatically by the Web Server (for example due to internal error).
@@ -115,25 +120,10 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 		char status_code_page_name[32];
 		elysian_sprintf(status_code_page_name, ELYSIAN_FS_ROM_VRT_ROOT"/%u.html", elysian_http_get_status_code_num(client->httpresp.current_status_code));
 		err = elysian_mvc_view_set(server, status_code_page_name);
-		switch (err) {
-			case ELYSIAN_ERR_OK:
-			{
-				// Move on
-			}break;
-			case ELYSIAN_ERR_POLL:
-			{
-				return err;
-			}break;
-			case ELYSIAN_ERR_FATAL:
-			{
-				return err;
-			}break;
-			default:
-			{
-				ELYSIAN_ASSERT(0);
-				return ELYSIAN_ERR_FATAL;
-			}break;
-		};
+		if (err != ELYSIAN_ERR_OK) { 
+			ELYSIAN_ASSERT((err == ELYSIAN_ERR_POLL) || (err == ELYSIAN_ERR_FATAL));
+			return err;
+		}
 		
 		elysian_mvc_transfer_encoding_set(server, ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY);
 		elysian_mvc_status_code_set(server, client->httpresp.current_status_code);
@@ -147,28 +137,13 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 		** Initialize MVC according to HTTP request. Let user bypass it according to preference.
 		*/
 		err = elysian_mvc_view_set(server, client->httpreq.url);
-		switch (err) {
-			case ELYSIAN_ERR_OK:
-			{
-				// Move on
-			}break;
-			case ELYSIAN_ERR_POLL:
-			{
-				return err;
-			}break;
-			case ELYSIAN_ERR_FATAL:
-			{
-				return err;
-			}break;
-			default:
-			{
-				ELYSIAN_ASSERT(0);
-				return ELYSIAN_ERR_FATAL;
-			}break;
-		};
+		if (err != ELYSIAN_ERR_OK) { 
+			ELYSIAN_ASSERT((err == ELYSIAN_ERR_POLL) || (err == ELYSIAN_ERR_FATAL));
+			return err;
+		}
 		
 		elysian_mvc_transfer_encoding_set(server, ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY);
-		if((client->httpreq.range_start == ELYSIAN_HTTP_RANGE_WF) && (client->httpreq.range_end == ELYSIAN_HTTP_RANGE_WF)) {
+		if ((client->httpreq.range_start == ELYSIAN_HTTP_RANGE_WF) && (client->httpreq.range_end == ELYSIAN_HTTP_RANGE_WF)) {
 			/*
 			** None-partial HTTP request
 			*/
@@ -188,9 +163,17 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 	}
 	
 	/* -----------------------------------------------------------------------------------------------------
-	** Alter MVC according to user preferences
+	** Assign the appropriate application controller
 	----------------------------------------------------------------------------------------------------- */
-	controller = elysian_mvc_controller_get(server, client->httpreq.url, client->httpreq.method);
+	controller = NULL;
+	if ((client->httpreq.connection == ELYSIAN_HTTP_CONNECTION_UPGRADE) && (client->httpreq.connection_upgrade == ELYSIAN_HTTP_CONNECTION_UPGRADE_WEBSOCKET)) {
+		controller = (elysian_mvc_controller_t*) &elysian_mvc_controller_websockets_def;
+	}
+	
+	if (!controller) {
+		controller = elysian_mvc_controller_get(server, client->httpreq.url, client->httpreq.method);
+	}
+
 	if (controller) {
 		ELYSIAN_LOG("Calling user defined controller..");
 
@@ -395,10 +378,6 @@ elysian_err_t elysian_mvc_httpreq_header_get(elysian_t* server, char* header_nam
 	return err;
 }
 
-/* --------------------------------------------------------------------------------------------------------------------------------
-| Redirection
--------------------------------------------------------------------------------------------------------------------------------- */
-
 elysian_err_t elysian_mvc_httpresp_header_add(elysian_t* server, char* header_name, char* header_value) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	elysian_mvc_httpresp_header_t* httpresp_header;
@@ -431,29 +410,16 @@ elysian_err_t elysian_mvc_httpresp_header_add(elysian_t* server, char* header_na
 	return ELYSIAN_ERR_OK;
 }
 
-/*
-HTTP/1.1 201 Created
-Date: Fri, 7 Oct 2005 17:17:11 GMT
-Content-Length: nnn
-Content-Type: application/atom+xml;type=entry;charset="utf-8"
-		Location: http://example.org/edit/first-post.atom
-		ETag: "c180de84f991g8"
-		
-*/
-elysian_err_t elysian_mvc_resource_created(elysian_t* server, char* resource_location) {
 	
-	return ELYSIAN_ERR_FATAL;
-}
-
 /* --------------------------------------------------------------------------------------------------------------------------------
 | Controllers
 -------------------------------------------------------------------------------------------------------------------------------- */
-elysian_mvc_controller_t* elysian_mvc_controller_get(elysian_t* server, char* url, elysian_http_method_e method_id){
+elysian_mvc_controller_t* elysian_mvc_controller_get(elysian_t* server, char* url, elysian_http_method_e method_id) {
     int i;
     ELYSIAN_LOG("Searching user defined controller for url '%s' and method '%s'", url, elysian_http_get_method_name(method_id));
 	
 	if (server->controllers) {
-		for(i = 0; (server->controllers[i].url != NULL) && (server->controllers[i].handler != NULL); i++){
+		for (i = 0; (server->controllers[i].url != NULL) && (server->controllers[i].handler != NULL); i++) {
 			ELYSIAN_LOG("Trying to match with controller %s", server->controllers[i].url);
 			if (strcmp(server->controllers[i].url, url) == 0) {
 				ELYSIAN_LOG("flag = %u, method id = %u", server->controllers[i].flags, method_id);
@@ -469,7 +435,6 @@ elysian_mvc_controller_t* elysian_mvc_controller_get(elysian_t* server, char* ur
 			}
 		}
 	}
-	
     return NULL;
 }
 

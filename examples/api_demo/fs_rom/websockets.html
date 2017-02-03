@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Elysian HTTP Server</title>
+<link rel="stylesheet" type="text/css" href="../fs_rom/css.css">
+
+	<script type="text/javascript">
+         function WebSocketTest()
+         {
+            if ("WebSocket" in window)
+            {
+               //alert("WebSocket is supported by your Browser!");
+               
+               // Let us open a web socket
+               //var ws = new WebSocket("ws://localhost:9001/websockets_example");
+				var_ws_open = 0;
+				var l = window.location;
+				var ws = new WebSocket(((l.protocol === "https:") ? "wss://" : "ws://") + l.host + "/websockets_example");
+
+				function send_message() {
+					if (var_ws_open) {
+						ws.send("Message to send");
+					}
+				}
+				
+
+
+               ws.onopen = function()
+               {
+				  var_ws_open = 1;
+                  // Web Socket is connected, send data using send()
+                  ws.send("Message to send");
+				  
+				var delay = 1000; //1 second
+				setInterval(send_message, delay);
+				
+                  //alert("Message is sent...");
+               };
+				
+               ws.onmessage = function (evt) 
+               { 
+                  var received_msg = evt.data;
+                  //alert("Message is received..." + received_msg);
+				  document.getElementById("websocket_result").innerHTML =  document.getElementById("websocket_result").innerHTML + "[" + (new Date().getTime() % 3600000) + "] Server message: '" + received_msg + "'" + "&#13;&#10;";
+				  
+				  document.getElementById("websocket_result").scrollTop = document.getElementById("websocket_result").scrollHeight;
+
+               };
+				
+               ws.onclose = function()
+               { 
+                  // websocket is closed.
+				  var_ws_open = 0;
+                  //alert("Connection is closed..."); 
+               };
+            }
+            
+            else
+            {
+               // The browser doesn't support WebSocket
+               //alert("WebSocket NOT supported by your Browser!");
+            }
+         }
+      </script>
+	  
+</head>
+<body>
+
+<div id="page_el_header">
+	<h1>Elysian Web Server</h1>
+	<h3>/Expectations revised</h3>
+</div>
+
+<div class="page_el_menu">
+	<div class="page_el_menu_item"><a href="../fs_rom/index.html">Home</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/static_page.html">Static Web Page</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/dynamic_page.html">Dynamic Web Page</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/basic_access_auth.html">Basic Access Auth (admin, admin)</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/ajax.html">Ajax</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/gallery.html">Gallery</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/virtual_files.html">Virtual Files</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/redirected_page0.html">HTTP Redirection</a></div>
+	<div class="page_el_cleaner"></div>
+</div>
+<div class="page_el_menu">
+	<div class="page_el_menu_item"><a href="../fs_rom/form_get.html">HTTP GET Form</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/form_post.html">HTTP POST Form</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/file_upload_ram.html">File Upload (RAM)</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/http_request_exposure.html">HTTP Request Exposure</a></div>
+	<div class="page_el_menu_item"><a href="../fs_rom/websockets.html">Websockets</a></div>
+	<div class="page_el_cleaner"></div>
+</div>
+<div class="page_el_menu">
+	<div class="page_el_menu_item"><a href="../fs_ext/file_upload_ext.html">File Upload (EXT)</a></div>
+	<div class="page_el_menu_item"><a href="../fs_ext/partial_content.html">Streaming Audio (HTTP Partial Content)</a></div>
+	<div class="page_el_cleaner"></div>
+</div>
+
+<div id="page_el_description">
+	<div id="page_el_description_header">
+	Websockets
+	</div>
+	
+	Websockets represent a long awaited evolution in the HTTP protocol. <br/><br/>
+	
+	A websocket is a low overhead, bi-directional, full-duplex, persistent connection from a web browser to the HTTP Server.<br/><br/>
+	
+	Once a WebSocket connection is established, it remains open until either the client or the Web Server decide to close it. <br/><br/>
+	
+	This particular example implements simple echo functionality. Once the websocket connection is established, the user can send random
+	text to the Web Server. The Server will echo back the received message. In addition, every 5sec, the server will transmit application specific messages.
+</div>
+
+<div id="page_el_main">
+	<div id="page_el_main_results">
+		<a href="javascript:WebSocketTest()">Create new websocket</a>
+		<br/><br/>
+		<div id="websocket_result2">
+			<textarea id="websocket_result" style="width:95%;" rows="12" cols="100"></textarea>
+		</div>
+	</div>
+</div>
+
+<div id="page_el_footer">
+&copy;2017 Elysian Web Server | All right reserved
+</div>
+
+</body>
+</html>

@@ -27,12 +27,22 @@
 ****************************************************************************************************************************
 */
 
-uint32_t elysian_time_now(){
+uint32_t elysian_time_now() {
     return  elysian_port_time_now();
 }
 
-void elysian_time_sleep(uint32_t ms){
+void elysian_time_sleep(uint32_t ms) {
     elysian_port_time_sleep(ms);
+}
+
+uint32_t elysian_time_elapsed(uint32_t tic_ms) {
+	uint32_t toc_ms;
+	uint32_t elapsed_ms;
+	
+	toc_ms = elysian_time_now();
+	elapsed_ms = (toc_ms >= tic_ms) ? toc_ms - tic_ms : toc_ms;
+	
+	return elapsed_ms;
 }
 
 void elysian_thread_yield(){
@@ -274,7 +284,7 @@ elysian_fs_memdev_t* elysian_fs_get_memdev(char* vrt_path){
 	
 	for (k = 0; k < sizeof(fs_memdevs) / sizeof(elysian_fs_memdev_t); k++) {
 		vrt_root_len = strlen(fs_memdevs[k].vrt_root) - vrt_root_offset;
-		ELYSIAN_LOG("Checking virtual path of memdev '%s'..", &fs_memdevs[k].vrt_root[vrt_root_offset]);
+		ELYSIAN_LOG("Comparing virtual root path of file '%s' with '%s'..", vrt_path, &fs_memdevs[k].vrt_root[vrt_root_offset]);
 		if((strlen(vrt_path) > vrt_root_len) && (memcmp(vrt_path, &fs_memdevs[k].vrt_root[vrt_root_offset], vrt_root_len) == 0) && (vrt_path[vrt_root_len] == '/')){
             ELYSIAN_LOG("Matches!");
 			return (elysian_fs_memdev_t*) &fs_memdevs[k];

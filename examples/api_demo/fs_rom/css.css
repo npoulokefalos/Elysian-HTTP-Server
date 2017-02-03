@@ -36,12 +36,12 @@ div.page_el_menu {
 	border-bottom-style:solid;
 	border-bottom-width:1px;
 	border-bottom-color:black;
-	background-color:rgb(85,85,85);
+	background-color:rgb(50,50,50);
 	line-height: 30px;
 }
 
 div.page_el_menu_item {
-	background-color:rgb(85,85,85);
+	background-color:rgb(50,50,50);
 	padding-right:10px;
 	float:left;
 	border-right-style:solid;
@@ -52,7 +52,7 @@ div.page_el_menu_item {
 }
 
 div.page_el_menu_item a{
-	background-color:rgb(85,85,85);
+	background-color:rgb(50,50,50);
 	color: white;
 	text-decoration:none;
 }
@@ -64,7 +64,7 @@ div.page_el_menu_item a:visited{
 }
 
 div.page_el_menu_item a:hover{
-	color: blue;
+	color: rgb(180,225,225);
 }
 
 div.page_el_menu_item a:active{

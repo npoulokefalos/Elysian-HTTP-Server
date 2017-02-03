@@ -133,7 +133,7 @@ elysian_err_t elysian_strstr_file(elysian_t* server, elysian_file_t* file, uint3
 	** Try to allocate a bigger buffer to speedup the search process.
 	** If we are out of memory we are going to work with tmp_buf.
 	*/
-	buf_sz = 8 * 512;
+	buf_sz = 2 * 512;
 	while(1){
 		buf = elysian_mem_malloc(server, buf_sz + 1);
 		if(!buf){

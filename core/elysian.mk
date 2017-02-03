@@ -11,4 +11,6 @@ ELYSIAN_SOURCE_C = \
 					strings_file.c \
 					strings.c \
 					isp.c \
-					elysian_port.c
+					elysian_port.c \
+					websockets.c \
+					sha1.c

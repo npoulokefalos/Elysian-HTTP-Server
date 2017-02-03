@@ -30,7 +30,7 @@
 ** The maximum interval that is not so big to be perceived 
 ** as sluggish by humans and not unnecessairy small either.
 */
-#define ELYSIAN_333_INTERVAL_MS		(333)
+#define ELYSIAN_INTERACTIVE_INTERVAL_MS		(333)
 
 #define ELYSIAN_STARVATION_ENABLED	(1)
 
@@ -125,18 +125,6 @@ elysian_schdlr_task_t* elysian_schdlr_get_lowest_priority_task(elysian_t* server
 	return lowest_priority_task;
 }
 
-
-
-uint32_t elysian_schdlr_elapsed_time(uint32_t tic_ms){
-	uint32_t toc_ms;
-	uint32_t elapsed_ms;
-	
-	toc_ms = elysian_time_now();
-	elapsed_ms = (toc_ms >= tic_ms) ? toc_ms - tic_ms : toc_ms;
-	
-	return elapsed_ms;
-}
-
 void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 	elysian_schdlr_t* schdlr = &server->scheduler;
 	elysian_client_t* new_client;
@@ -221,7 +209,7 @@ void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 		
 		if(fdset_size){
 #if (ELYSIAN_SOCKET_SELECT_SUPPORTED == 1)
-			elapsed_ms = elysian_schdlr_elapsed_time(tic_ms);
+			elapsed_ms = elysian_time_elapsed(tic_ms);
 			accept_ms = (interval_ms > elapsed_ms) ? (interval_ms - elapsed_ms) : 0;
 			err = elysian_socket_select(schdlr->socket_readset, fdset_size, accept_ms, schdlr->socket_readset_status);
 			if(err != ELYSIAN_ERR_OK){
@@ -382,7 +370,7 @@ void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 			/*
 			** No socket events were received
 			*/
-			elapsed_ms = elysian_schdlr_elapsed_time(tic_ms);
+			elapsed_ms = elysian_time_elapsed(tic_ms);
 			if(elapsed_ms >= interval_ms){
 				return;
 			}else{
@@ -400,7 +388,7 @@ void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 					** There is memory to process socket events, but no event received yet. 
 					** Backoff and retry.
 					*/
-					uint32_t ELYSIAN_POLLING_INTERVAL_MS = ELYSIAN_333_INTERVAL_MS;
+					uint32_t ELYSIAN_POLLING_INTERVAL_MS = ELYSIAN_INTERACTIVE_INTERVAL_MS;
 					backoff_ms = (backoff_ms == 0) ? 1 : backoff_ms * 2;
 					backoff_ms = (backoff_ms >  (interval_ms - elapsed_ms)) ? (interval_ms - elapsed_ms) : backoff_ms;
 					backoff_ms = (backoff_ms > ELYSIAN_POLLING_INTERVAL_MS) ? ELYSIAN_POLLING_INTERVAL_MS : backoff_ms;
@@ -446,9 +434,10 @@ void elysian_schdlr_exec_immediate_events(elysian_t* server, uint32_t* max_sleep
                 elysian_schdlr_throw_event(server, task, elysian_schdlr_EV_POLL);
             }
 			if(!task->timeout_delta){
-				//elysian_schdlr_set_task_state_timeout(task, ELYSIAN_TIME_INFINITE);
+				//elysian_schdlr_state_timeout_set(task, ELYSIAN_TIME_INFINITE);
+				task->timeout_delta = ELYSIAN_TIME_INFINITE;
 				ELYSIAN_LOG("Timeout reached!!!");
-				elysian_schdlr_throw_event(server, task, elysian_schdlr_EV_ABORT);
+				elysian_schdlr_throw_event(server, task, elysian_schdlr_EV_TIMER);
 			}
 			if(!task->state){
 				/*
@@ -499,7 +488,7 @@ void elysian_schdlr_exec_immediate_events(elysian_t* server, uint32_t* max_sleep
 		starvation_detected = 0;
 		if (server->starvation_detection_t0 == ELYSIAN_TIME_INFINITE) {
 			server->starvation_detection_t0 = elysian_time_now();
-		} else if(elysian_schdlr_elapsed_time(server->starvation_detection_t0) > ELYSIAN_333_INTERVAL_MS) {
+		} else if(elysian_time_elapsed(server->starvation_detection_t0) > ELYSIAN_INTERACTIVE_INTERVAL_MS) {
 			/*
 			** Srarvation detected, try to recover and initialize starvation detection procedure from the beginning
 			*/
@@ -588,7 +577,7 @@ uint32_t elysian_schdlr_time_correction(elysian_t* server, uint32_t* tic_ms){
     
     //toc_ms = elysian_time_now();
 	//calibration_delta = (toc_ms >= (*tic_ms)) ? toc_ms - (*tic_ms) : toc_ms;
-	calibration_delta = elysian_schdlr_elapsed_time(*tic_ms);
+	calibration_delta = elysian_time_elapsed(*tic_ms);
     if(!calibration_delta){
         return 0;
     }
@@ -601,6 +590,7 @@ uint32_t elysian_schdlr_time_correction(elysian_t* server, uint32_t* tic_ms){
             task->poll_delta = (task->poll_delta > calibration_delta) ? task->poll_delta - calibration_delta : 0;
         }
         if(task->timeout_delta != ELYSIAN_TIME_INFINITE){
+			ELYSIAN_LOG("######################### %u", task->timeout_delta);
             task->timeout_delta = (task->timeout_delta > calibration_delta) ? task->timeout_delta - calibration_delta : 0;
         }
         task = task->next;
@@ -682,7 +672,7 @@ void elysian_schdlr_state_poll_backoff(elysian_t* server){
 	ELYSIAN_ASSERT(task != NULL);
 	ELYSIAN_ASSERT(task->poll_delta_init != ELYSIAN_TIME_INFINITE);
 	
-#define MAX_POLL_BACKOFF (ELYSIAN_333_INTERVAL_MS)
+#define MAX_POLL_BACKOFF (ELYSIAN_INTERACTIVE_INTERVAL_MS)
 	new_delta = ((task->poll_delta_init == 0) ? 1 : (((task->poll_delta_init) < (MAX_POLL_BACKOFF / 2)) ? (task->poll_delta_init * 2) : (MAX_POLL_BACKOFF)));
 	
 	ELYSIAN_LOG("POLL DELTA %u -> %u", schdlr->current_task->poll_delta_init, new_delta);

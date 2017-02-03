@@ -738,6 +738,67 @@ int virtual_file_handler(elysian_t* server, elysian_file_hdl_action_e action,  v
 	return 0;
 }
 
+typedef struct{
+	uint32_t timer_count;
+} example_websocket_args_t;
+
+elysian_err_t websocket_connected_handler(elysian_t* server, void** vargs) {
+	example_websocket_args_t* args;
+	
+	ELYSIAN_LOG("websocket_connected_handler()");
+	
+	args = elysian_mem_malloc(server, sizeof(example_websocket_args_t));
+	if (!args) {
+		return ELYSIAN_ERR_FATAL;
+	}
+	
+	args->timer_count = 0;
+	*vargs = args;
+	
+	return ELYSIAN_ERR_OK;
+}
+
+elysian_err_t websocket_frame_handler(elysian_t* server, uint8_t* frame_data, uint32_t frame_len, void* vargs) {
+	//example_websocket_args_t* args = (example_websocket_args_t*) vargs;
+	elysian_err_t err;
+	
+	ELYSIAN_LOG("websocket_frame_handler()");
+	
+	err = elysian_websocket_send_text(server, (char*) frame_data, frame_len);
+	if (err != ELYSIAN_ERR_OK){
+		/* Frame transmission failed */
+	}
+	
+	return ELYSIAN_ERR_OK;
+}
+
+elysian_err_t websocket_timer_handler(elysian_t* server, void* vargs) {
+	example_websocket_args_t* args = (example_websocket_args_t*) vargs;
+	elysian_err_t err;
+	char frame_data[64];
+	
+	ELYSIAN_LOG("websocket_timer_handler()");
+	
+	elysian_sprintf(frame_data, "Timer handler #%u", args->timer_count++);
+	err = elysian_websocket_send_text(server, frame_data, strlen(frame_data));
+	if (err != ELYSIAN_ERR_OK){
+		/* Frame transmission failed */
+	}
+	
+	return ELYSIAN_ERR_OK;
+}
+
+elysian_err_t websocket_disconnected_handler(elysian_t* server, void* vargs) {
+	example_websocket_args_t* args = (example_websocket_args_t*) vargs;
+
+	if (args) {
+		elysian_mem_free(server, args);
+	}
+	
+	return ELYSIAN_ERR_OK;
+}
+
+
 
 const elysian_file_hdl_t hdl_fs[] = {
 	{.name = (char*) "/virtual_file.log", .handler = virtual_file_handler},
@@ -792,6 +853,24 @@ const elysian_mvc_controller_t mvc_controllers[] = {
 		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_NONE},
 };
 
+const elysian_websocket_controller_t webosocket_controllers[] = {
+	{.url = (char*) "/websockets_example", 
+	.timer_interval_ms = 500,
+	.connected_handler = websocket_connected_handler, 
+	.frame_handler = websocket_frame_handler, 
+	.timer_handler = websocket_timer_handler, 
+	.disconnected_handler = websocket_disconnected_handler},
+	
+	/* End of list */																	
+	{.url = (char*) NULL, 
+	.timer_interval_ms = 0,
+	.connected_handler = NULL, 
+	.frame_handler = NULL, 
+	.timer_handler = NULL, 
+	.disconnected_handler = NULL},
+};
+
+
 
 int main(){
 	uint8_t stop = 0;
@@ -800,10 +879,10 @@ int main(){
 	
     server = elysian_new();
 
-    elysian_start(server, 9000, mvc_controllers, rom_fs, hdl_fs, authentication_cb);
+    elysian_start(server, 9000, mvc_controllers, rom_fs, hdl_fs, webosocket_controllers, authentication_cb);
     
     while(!stop){
-        elysian_poll(server, 4000);
+        elysian_poll(server, 10000);
     }
     
 	elysian_stop(server);

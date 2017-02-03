@@ -453,14 +453,12 @@ elysian_err_t elysian_port_socket_select(elysian_socket_t* socket_readset[], uin
 	struct timeval timeval;
 	fd_set fd_readset;
     FD_ZERO(&fd_readset);
-    //ELYSIAN_LOG("----");
+
     for(index = 0; index < socket_readset_sz; index++){
-        //ELYSIAN_LOG("elysian_port_socket_select(timeout = %u, socket_readset[%d]->fd = %d, size = %d)", timeout_ms, index, socket_readset[index]->fd, socket_readset_sz);
         socket_readset_status[index] = 0;
         FD_SET(socket_readset[index]->fd, &fd_readset);
     }
-    //ELYSIAN_LOG("----");
-    
+
     timeval.tv_sec 		= (timeout_ms / 1000); 
     timeval.tv_usec 	= (timeout_ms % 1000) * 1000;
     
@@ -474,9 +472,7 @@ elysian_err_t elysian_port_socket_select(elysian_socket_t* socket_readset[], uin
         ELYSIAN_LOG("Select Timeout!\r\n");
     }else{
         /* Read/Write event */
-        //ELYSIAN_LOG("Select Event!\r\n");
         for(index = 0; index < socket_readset_sz; index++){
-            
             if (FD_ISSET(socket_readset[index]->fd, &fd_readset)){
                 //ELYSIAN_LOG("Socket[index = %d] %d can read!\r\n",index,socket_readset[index]->fd);
                 socket_readset_status[index] = 1;

@@ -92,8 +92,6 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 	ELYSIAN_LOG("URL = '%s'!", url);
     client->httpreq.url = url;
 	
-
-	
 	/*
 	** Get Transfer-Encoding
 	*/
@@ -198,7 +196,6 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 		client->httpreq.body_len = (uint32_t) atoi(header_value);
 		elysian_mem_free(server, header_value);
         
-#if 1
 		controller = elysian_mvc_controller_get(server, client->httpreq.url, client->httpreq.method);
 		if((controller) && (controller->flags & ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS)) {
 			max_http_body_size = ELYSIAN_MAX_HTTP_BODY_SIZE_KB_EXT;
@@ -210,13 +207,6 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 			err = ELYSIAN_ERR_FATAL;
             goto handle_error;
         }
-#else
-        if(client->httpreq.body_len > ELYSIAN_MAX_UPLOAD_SIZE_KB * 1024){
-			elysian_set_fatal_http_status_code(server, ELYSIAN_HTTP_STATUS_CODE_413);
-			err = ELYSIAN_ERR_FATAL;
-            goto handle_error;
-        }
-#endif
 	}
     ELYSIAN_LOG("Content-length = %u!", client->httpreq.body_len);
 	
@@ -231,7 +221,7 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
         client->httpreq.content_type = ELYSIAN_HTTP_CONTENT_TYPE_NA;
     }else{
         ELYSIAN_LOG("Content-Type = '%s'!", header_value);
-        if(strcmp(header_value, "application/x-www-form-urlencoded") == 0){
+        if(strcasecmp(header_value, "application/x-www-form-urlencoded") == 0){
             ELYSIAN_LOG("URL ENCODED!");
             client->httpreq.content_type = ELYSIAN_HTTP_CONTENT_TYPE_APPLICATION__X_WWW_FORM_URLENCODED;
         }else if(strncmp(header_value, "multipart/form-data", strlen("multipart/form-data")) == 0){
@@ -271,8 +261,67 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
         elysian_mem_free(server, header_value);
     }
 	
-
-    
+	/*
+	** Check for connection type
+	*/
+	err = elysian_http_request_get_header(server, "Connection" , &header_value);
+	if (err != ELYSIAN_ERR_OK) {
+        goto handle_error;
+    }
+	if (!header_value) {
+		client->httpreq.connection = ELYSIAN_HTTP_CONNECTION_CLOSE;
+    } else {
+		if (strcasecmp(header_value, "Keep-Alive") == 0) {
+			client->httpreq.connection = ELYSIAN_HTTP_CONNECTION_KEEPALIVE;
+		} else if (strcasecmp(header_value, "Upgrade") == 0) {
+			client->httpreq.connection = ELYSIAN_HTTP_CONNECTION_UPGRADE;
+		} else {
+			client->httpreq.connection = ELYSIAN_HTTP_CONNECTION_CLOSE;
+		}
+		elysian_mem_free(server, header_value);
+	}
+	
+	/*
+	** Check for connection upgrade
+	*/
+	if (client->httpreq.connection == ELYSIAN_HTTP_CONNECTION_UPGRADE) {
+		err = elysian_http_request_get_header(server, "Upgrade" , &header_value);
+		if (err != ELYSIAN_ERR_OK) {
+			goto handle_error;
+		}
+		if (!header_value) {
+			client->httpreq.connection_upgrade = ELYSIAN_HTTP_CONNECTION_UPGRADE_NO;
+		} else {
+			if (strcasecmp(header_value, "websocket") == 0) {
+				client->httpreq.connection_upgrade = ELYSIAN_HTTP_CONNECTION_UPGRADE_WEBSOCKET;
+			}
+			elysian_mem_free(server, header_value);
+		}
+	} else {
+		client->httpreq.connection_upgrade = ELYSIAN_HTTP_CONNECTION_UPGRADE_NO;
+	}
+	
+	/*
+	** Get WebSocket version
+	*/
+	if ((client->httpreq.connection == ELYSIAN_HTTP_CONNECTION_UPGRADE) && (client->httpreq.connection_upgrade == ELYSIAN_HTTP_CONNECTION_UPGRADE_WEBSOCKET)) {
+		err = elysian_http_request_get_header(server, "Sec-WebSocket-Version" , &header_value);
+		if (err != ELYSIAN_ERR_OK) {
+			goto handle_error;
+		}
+		if (!header_value) {
+			client->httpreq.websocket_version = ELYSIAN_WEBSOCKET_VERSION_NA;
+		} else {
+			if (strcasecmp(header_value, "13") == 0) {
+				client->httpreq.websocket_version = ELYSIAN_WEBSOCKET_VERSION_13;
+			} else {
+				client->httpreq.websocket_version = ELYSIAN_WEBSOCKET_VERSION_NA;
+			}
+			elysian_mem_free(server, header_value);
+		}
+	} else {
+		client->httpreq.websocket_version = ELYSIAN_WEBSOCKET_VERSION_NA;
+	}
 	
 	return ELYSIAN_ERR_OK;
 	
@@ -776,7 +825,16 @@ elysian_err_t elysian_http_response_build(elysian_t* server){
 		return err;
 	}
 	
-	err = elysian_http_add_response_header_line(server, "Connection", (client->mvc.keep_alive == 1) ? "keep-alive" : "close");
+	if (client->mvc.connection == ELYSIAN_HTTP_CONNECTION_KEEPALIVE) {
+		err = elysian_http_add_response_header_line(server, "Connection", "keep-alive");
+	} else if (client->mvc.connection == ELYSIAN_HTTP_CONNECTION_UPGRADE) {
+		err = elysian_http_add_response_header_line(server, "Connection", "upgrade");
+			if (client->mvc.connection_upgrade == ELYSIAN_HTTP_CONNECTION_UPGRADE_WEBSOCKET) {
+				err = elysian_http_add_response_header_line(server, "Upgrade", "websocket");
+			}
+	} else {
+		err = elysian_http_add_response_header_line(server, "Connection", "close");
+	}
 	if(err != ELYSIAN_ERR_OK){
 		return err;
 	}
@@ -1029,6 +1087,11 @@ const elysian_http_status_code_t elysian_http_status_codes[] = {
 		.code_msg = "Continue",
 		.code_body = ""
 		},
+	[ELYSIAN_HTTP_STATUS_CODE_101] = {
+			.code_num = 101,
+			.code_msg = "Switching Protocols",
+			.code_body = ""
+		},	
 	[ELYSIAN_HTTP_STATUS_CODE_200] = {
 		.code_num = 200,
 		.code_msg = "OK",
@@ -1119,7 +1182,7 @@ char* elysian_http_get_status_code_body(elysian_http_status_code_e status_code){
 /* --------------------------------------------------------------------------------------------------------------------------------
 | Basic Access Authentication
 -------------------------------------------------------------------------------------------------------------------------------- */
-#if 0
+#if 1
 static const char encoding_table[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
                                 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
                                 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
@@ -1130,7 +1193,7 @@ static const char encoding_table[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
                                 '4', '5', '6', '7', '8', '9', '+', '/'};
 static const int mod_table[] = {0, 2, 1};
 
-char* elysian_http_base64_encode(char *data) {
+char* elysian_http_base64_encode(elysian_t* server, char *data) {
 	uint32_t input_length;
 	uint32_t output_length;
 	int i, j;

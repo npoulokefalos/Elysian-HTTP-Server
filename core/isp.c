@@ -693,6 +693,215 @@ elysian_err_t elysian_isp_http_body_chunked_multipart(elysian_t* server, elysian
 	return err;
 }
 
+elysian_err_t elysian_isp_websocket(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_isp_websocket_t * args = &client->isp.websocket;
+	elysian_cbuf_t* cbuf_list_out_tmp;
+	elysian_websocket_frame_t* frame;
+	elysian_websocket_frame_t* rx_frame;
+	uint32_t split_size;
+	uint32_t cbuf_list_in_len;
+	elysian_err_t err;
+	
+	while(1) {
+		cbuf_list_in_len = elysian_cbuf_list_len(*cbuf_list_in);
+		ELYSIAN_LOG("[WEBSOCKET ISP, args->state = %u, len = %u]", args->state, cbuf_list_in_len);
+		switch (args->state) {
+			case 0: /* Frame header, first 2 bytes */
+			{
+				if (cbuf_list_in_len == 0) {
+					/* Don't return ELYSIAN_ERR_READ if there is no reception */
+					return ELYSIAN_ERR_OK;
+				}
+				split_size = 2;
+				if (cbuf_list_in_len < split_size) {
+					return ELYSIAN_ERR_READ;
+				}
+				err = elysian_cbuf_list_split(server, cbuf_list_in, split_size, &cbuf_list_out_tmp);
+				if (err != ELYSIAN_ERR_OK) {
+					return err;
+				} else {
+					elysian_cbuf_memcpy(cbuf_list_out_tmp, 0, split_size - 1, &args->header[0]);
+					elysian_cbuf_list_free(server, cbuf_list_out_tmp);
+					
+					if ((args->header[1] & 0x80) == 0) {
+						/* Unmasked packet */
+						return ELYSIAN_ERR_FATAL;
+					} else if ((args->header[0] & 0x70) != 0) {
+						/* Reserved bits used */
+						return ELYSIAN_ERR_FATAL;
+					} else {
+						if ((args->header[1] & 0x7F) < 126) {
+							/* This is the payload len */
+							args->payload_len = args->header[1] & 0x7F;
+							args->state = 3;
+						} else if ((args->header[1] & 0x7F) == 126) {
+							/* The following 2 bytes the payload len */
+							args->state = 1;
+						} else {
+							/* The following 8 bytes the payload len */
+							args->state = 2;
+						}
+					}
+				}
+			} break;
+			case 1: /* Frame header, next 2 bytes is payload size */
+			{
+				split_size = 2;
+				if (cbuf_list_in_len < split_size) {
+					return ELYSIAN_ERR_READ;
+				}
+				err = elysian_cbuf_list_split(server, cbuf_list_in, split_size, &cbuf_list_out_tmp);
+				if (err != ELYSIAN_ERR_OK) {
+					return err;
+				} else {
+					elysian_cbuf_memcpy(cbuf_list_out_tmp, 0, split_size - 1, &args->header[2]);
+					elysian_cbuf_list_free(server, cbuf_list_out_tmp);
+					args->payload_len = (args->header[2] << 8) | args->header[3];
+					args->state = 3;
+				}
+			} break;
+			case 2: /* Frame header, next 8 bytes is payload size */
+			{
+				split_size = 8;
+				if (cbuf_list_in_len < split_size) {
+					return ELYSIAN_ERR_READ;
+				}
+				err = elysian_cbuf_list_split(server, cbuf_list_in, split_size, &cbuf_list_out_tmp);
+				if (err != ELYSIAN_ERR_OK) {
+					return err;
+				} else {
+					elysian_cbuf_memcpy(cbuf_list_out_tmp, 0, split_size - 1, &args->header[2]);
+					elysian_cbuf_list_free(server, cbuf_list_out_tmp);
+					if (args->header[2] | args->header[3] | args->header[4] | args->header[5]) {
+						/* Huge frame */
+						ELYSIAN_LOG("!!!!!! HUGE frame received, aborting..\r\n");
+						return ELYSIAN_ERR_FATAL;
+					} else {
+						args->payload_len = (args->header[6] << 24) | (args->header[7] << 16) | (args->header[8] << 8) | args->header[9];
+						args->state = 3;
+					}
+				}
+			} break;	
+			case 3: /* Frame header, next 4 bytes are the masking key */
+			{
+				split_size = 4;
+				if (cbuf_list_in_len < split_size) {
+					return ELYSIAN_ERR_READ;
+				}
+				err = elysian_cbuf_list_split(server, cbuf_list_in, split_size, &cbuf_list_out_tmp);
+				if (err != ELYSIAN_ERR_OK) {
+					return err;
+				} else {
+					elysian_cbuf_memcpy(cbuf_list_out_tmp, 0, split_size - 1, &args->masking_key[0]);
+					elysian_cbuf_list_free(server, cbuf_list_out_tmp);
+					args->state = 4;
+				}
+			} break;
+			case 4: /* Frame header, next args->payload_len bytes are the payload */
+			{
+				ELYSIAN_LOG("Payload len is %u\r\n", args->payload_len);
+				split_size = args->payload_len;
+				if (args->payload_len >= ELYSIAN_MAX_MEMORY_USAGE_KB) {
+					return ELYSIAN_ERR_FATAL;
+				}
+				if (cbuf_list_in_len < args->payload_len) {
+					return ELYSIAN_ERR_READ;
+				}
+				/* payload_len may be zero */
+				frame = elysian_websocket_frame_allocate(server,  1 /* opcode */ + split_size /* >=0 */ + 1 /* '/0' */);
+				if (!frame) {
+					return ELYSIAN_ERR_POLL;
+				}
+				frame->len =  1 /* opcode */ + split_size /* >=0 */;
+				frame->data[frame->len] = '\0';
+				frame->data[0] = args->header[0] & 0x0F;
+				frame->next = NULL;
+				if (split_size) {
+					err = elysian_cbuf_list_split(server, cbuf_list_in, split_size, &cbuf_list_out_tmp);
+					if (err != ELYSIAN_ERR_OK) {
+						elysian_websocket_frame_deallocate(server, frame);
+						return err;
+					} else {
+						elysian_cbuf_memcpy(cbuf_list_out_tmp, 0, split_size - 1, &frame->data[1]);
+						elysian_cbuf_list_free(server, cbuf_list_out_tmp);
+					}
+				}
+				/* Unmask the frame */
+				uint32_t payload_len = frame->len - 1 /* Opcode */;
+				uint8_t* payload = &frame->data[1];
+				uint32_t k = 0;
+				while (payload_len > 0){
+					*payload = *payload ^ args->masking_key[k % 4]; k++;
+					payload_len--;
+					payload++;
+				}
+				
+				/* Add frame to rx queue */
+				if (!client->websocket.rx_frames) {
+					client->websocket.rx_frames = frame;
+				} else {
+					rx_frame = client->websocket.rx_frames;
+					while (rx_frame) {
+						if (rx_frame->next == NULL) {
+							rx_frame->next = frame;
+							break;
+						} else {
+							rx_frame = rx_frame->next;
+						}
+					}
+				}
+				
+				/*
+				** At this point:
+				** cbuf_payload != NUll: frame payload len > 0
+				** cbuf_payload == NUll: frame payload len is 0
+				*/
+				uint8_t opcode = args->header[0] & 0x0F;
+				switch (opcode) {
+					case 0x0:
+					{
+						/* Continuation frame */
+					} break;
+					case 0x1:
+					{
+						/* Text frame */
+					} break;
+					case 0x2:
+					{
+						/* Binary frame */
+					} break;
+					case 0x8:
+					{
+						/* Connection close */
+					} break;
+					case 0x9:
+					{
+						/* Ping frame */
+					} break;
+					case 0xA:
+					{
+						/* Pong frame */
+					} break;
+					default:
+					{
+						/* Reserved */
+					} break;
+				}
+				
+				args->state = 0;
+			} break;
+			case 5: /* Frame received, args->payload has te payload and args->payload_len the length */
+			{
+				//ELYSIAN_LOG("Got message '%s'\r\n", &cbuf_payload->data[1]);
+				while(1){}
+			} break;
+		}
+	}
+	
+	return ELYSIAN_ERR_FATAL;
+}
+
 void elysian_isp_cleanup(elysian_t* server) {
 	elysian_req_param_t* param_next;
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);

@@ -294,6 +294,34 @@ void elysian_cbuf_strcpy(elysian_cbuf_t* cbuf, uint32_t index0, uint32_t index1,
     
     str[index] = '\0';
 }
+
+void elysian_cbuf_memcpy(elysian_cbuf_t* cbuf, uint32_t index0, uint32_t index1, uint8_t* buf) {
+    uint32_t copy_len;
+    uint32_t index;
+
+    ELYSIAN_ASSERT(index0 <= index1);
+    
+	memset(buf, 0, index1 - index0 + 1);
+
+	while (cbuf) {
+		if (index0 < cbuf->len){break;}
+		index0 -= cbuf->len;
+        index1 -= cbuf->len;
+		cbuf = cbuf->next;
+	}
+    
+    copy_len = index1 - index0 + 1;
+	for(index = 0; index < copy_len; index++){
+        ELYSIAN_ASSERT(cbuf != NULL);
+        
+		buf[index] = cbuf->data[index0++];
+
+		if(index0 == cbuf->len){
+            index0 = 0;
+			cbuf = cbuf->next;
+		}
+	}
+}
 #endif
 
 uint32_t elysian_cbuf_strstr(elysian_cbuf_t* cbuf0, uint32_t index, char* str, uint8_t matchCase){
