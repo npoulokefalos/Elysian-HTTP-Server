@@ -516,6 +516,7 @@ elysian_err_t elysian_websocket_ping_timer(elysian_t* server) {
 	} else {
 		client->websocket.flags &=~ ELYSIAN_WEBSOCKET_FLAG_PONG_RECEIVED;
 		client->websocket.flags |= ELYSIAN_WEBSOCKET_FLAG_PING_PENDING;
+		elysian_schdlr_state_timer2_set(server, ELYSIAN_WEBSOCKET_TIMEOUT_PING_MS);
 	}
 
 	return ELYSIAN_ERR_OK;
@@ -525,6 +526,8 @@ elysian_err_t elysian_websocket_connected(elysian_t* server) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	elysian_err_t err;
 
+	elysian_schdlr_state_timer2_set(server, ELYSIAN_WEBSOCKET_TIMEOUT_PING_MS);
+	
 	client->websocket.flags |= ELYSIAN_WEBSOCKET_FLAG_PING_PENDING;
 	client->websocket.flags |= ELYSIAN_WEBSOCKET_FLAG_PONG_RECEIVED;
 	client->websocket.timer_interval_ms = ELYSIAN_TIME_INFINITE;

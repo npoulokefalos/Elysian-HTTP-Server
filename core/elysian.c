@@ -1290,6 +1290,18 @@ void elysian_state_websocket(elysian_t* server, elysian_schdlr_ev_t ev) {
 			elysian_schdlr_state_poll_enable(server);
 			
 		} break;
+		case elysian_schdlr_EV_TIMER2:
+		{
+			err = elysian_websocket_ping_timer(server);
+			if (err != ELYSIAN_ERR_OK) {
+				elysian_schdlr_state_set(server, elysian_state_http_disconnect);
+				return;
+			}
+			
+			/* Timer might have generated Tx packets, enable poll */
+			elysian_schdlr_state_poll_enable(server);
+			
+		} break;
         case elysian_schdlr_EV_ABORT:
         {
 			elysian_schdlr_state_set(server, elysian_state_http_disconnect);

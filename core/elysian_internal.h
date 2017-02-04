@@ -108,7 +108,7 @@
 #define ELYSIAN_CBUF_LEN (384)
 
 
-#define ELYSIAN_TIME_INFINITE  (uint32_t)(-1)
+#define ELYSIAN_TIME_INFINITE  			(uint32_t)(-1)
 
 #define ELYSIAN_MVC_PARAM_HTTP_HEADERS		"__elysian_mvc_param_http_headers__"
 #define ELYSIAN_MVC_PARAM_HTTP_BODY			"__elysian_mvc_param_http_body__"
