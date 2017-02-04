@@ -542,6 +542,8 @@ elysian_err_t elysian_websocket_connected(elysian_t* server) {
 	if (client->websocket.controller->connected_handler) {
 		err = client->websocket.controller->connected_handler(server, &client->websocket.handler_args);
 		if (err != ELYSIAN_ERR_OK) {
+			/* Don't call disconnected handler if application blocked connection */
+			client->websocket.controller = NULL;
 			return ELYSIAN_ERR_FATAL;
 		} else {
 			return ELYSIAN_ERR_OK;

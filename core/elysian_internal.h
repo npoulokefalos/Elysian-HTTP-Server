@@ -1012,7 +1012,7 @@ elysian_err_t elysian_websocket_ping_timer(elysian_t* server);
 
 typedef struct elysian_websocket_t elysian_websocket_t;
 struct elysian_websocket_t {
-	elysian_websocket_controller_t* controller;
+	const elysian_websocket_controller_t* controller;
 	void* handler_args;
 	
 	elysian_websocket_frame_t* rx_frames;
