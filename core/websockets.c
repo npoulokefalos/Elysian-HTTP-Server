@@ -480,7 +480,7 @@ elysian_err_t elysian_websocket_timer_config(elysian_t* server, uint32_t timer_i
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	if (timer_interval_ms) {
 		client->websocket.timer_interval_ms = timer_interval_ms;
-		elysian_schdlr_state_timeout_set(server, client->websocket.timer_interval_ms);
+		elysian_schdlr_state_timer1_set(server, client->websocket.timer_interval_ms);
 		return ELYSIAN_ERR_OK;
 	} else {
 		return ELYSIAN_ERR_FATAL;

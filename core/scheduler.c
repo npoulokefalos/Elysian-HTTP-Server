@@ -52,7 +52,7 @@ void elysian_schdlr_throw_event(elysian_t* server, elysian_schdlr_task_t* task, 
 
 		schdlr->current_task = task;
         elysian_schdlr_state_poll_set(server, ELYSIAN_TIME_INFINITE);
-		elysian_schdlr_state_timeout_set(server, ELYSIAN_TIME_INFINITE);
+		elysian_schdlr_state_timer1_set(server, ELYSIAN_TIME_INFINITE);
         elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_NORMAL);
 		schdlr->current_task = NULL;
 		
@@ -82,7 +82,7 @@ void elysian_schdlr_throw_event(elysian_t* server, elysian_schdlr_task_t* task, 
     }
 
     /* Not an error but its a good practice to set a timeout.. */
-    ELYSIAN_ASSERT(task->timeout_delta != ELYSIAN_TIME_INFINITE);
+    ELYSIAN_ASSERT(task->timer1_delta != ELYSIAN_TIME_INFINITE);
 }
 
 #define ELYSIAN_NOMEM_SLEEP_INTERVAL_MS	(33)
@@ -249,7 +249,7 @@ void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 							
 							schdlr->current_task = new_task;
 							elysian_schdlr_state_poll_set(server, ELYSIAN_TIME_INFINITE);
-							elysian_schdlr_state_timeout_set(server, ELYSIAN_TIME_INFINITE);
+							elysian_schdlr_state_timer1_set(server, ELYSIAN_TIME_INFINITE);
 							elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_NORMAL);
 							schdlr->current_task = NULL;
 							
@@ -433,11 +433,11 @@ void elysian_schdlr_exec_immediate_events(elysian_t* server, uint32_t* max_sleep
             if(!task->poll_delta){
                 elysian_schdlr_throw_event(server, task, elysian_schdlr_EV_POLL);
             }
-			if(!task->timeout_delta){
+			if(!task->timer1_delta){
 				//elysian_schdlr_state_timeout_set(task, ELYSIAN_TIME_INFINITE);
-				task->timeout_delta = ELYSIAN_TIME_INFINITE;
+				task->timer1_delta = ELYSIAN_TIME_INFINITE;
 				ELYSIAN_LOG("Timeout reached!!!");
-				elysian_schdlr_throw_event(server, task, elysian_schdlr_EV_TIMER);
+				elysian_schdlr_throw_event(server, task, elysian_schdlr_EV_TIMER1);
 			}
 			if(!task->state){
 				/*
@@ -450,7 +450,7 @@ void elysian_schdlr_exec_immediate_events(elysian_t* server, uint32_t* max_sleep
 			** Calculate max sleeping interval
 			*/
 			*max_sleep_ms = (*max_sleep_ms > task->poll_delta) ? task->poll_delta : *max_sleep_ms;
-			*max_sleep_ms = (*max_sleep_ms > task->timeout_delta) ? task->timeout_delta : *max_sleep_ms;
+			*max_sleep_ms = (*max_sleep_ms > task->timer1_delta) ? task->timer1_delta : *max_sleep_ms;
 		
 #if (ELYSIAN_STARVATION_ENABLED == 1)
 			if (task->poll_delta != ELYSIAN_TIME_INFINITE) {
@@ -589,9 +589,9 @@ uint32_t elysian_schdlr_time_correction(elysian_t* server, uint32_t* tic_ms){
         if(task->poll_delta != ELYSIAN_TIME_INFINITE){
             task->poll_delta = (task->poll_delta > calibration_delta) ? task->poll_delta - calibration_delta : 0;
         }
-        if(task->timeout_delta != ELYSIAN_TIME_INFINITE){
-			ELYSIAN_LOG("######################### %u", task->timeout_delta);
-            task->timeout_delta = (task->timeout_delta > calibration_delta) ? task->timeout_delta - calibration_delta : 0;
+        if(task->timer1_delta != ELYSIAN_TIME_INFINITE){
+			ELYSIAN_LOG("######################### %u", task->timer1_delta);
+            task->timer1_delta = (task->timer1_delta > calibration_delta) ? task->timer1_delta - calibration_delta : 0;
         }
         task = task->next;
     }
@@ -679,19 +679,19 @@ void elysian_schdlr_state_poll_backoff(elysian_t* server){
     elysian_schdlr_state_poll_set(server, new_delta);
 }
 
-void elysian_schdlr_state_timeout_set(elysian_t* server, uint32_t timeout_delta){
+void elysian_schdlr_state_timer1_set(elysian_t* server, uint32_t timer_delta){
 	elysian_schdlr_t* schdlr = &server->scheduler;
 	elysian_schdlr_task_t* task = schdlr->current_task;
     ELYSIAN_ASSERT(task != NULL);
-    task->timeout_delta = timeout_delta;
-	task->timeout_delta_init = task->timeout_delta;
+    task->timer1_delta = timer_delta;
+	task->timer1_delta_init = task->timer1_delta;
 }
 
-void elysian_schdlr_state_timeout_reset(elysian_t* server){
+void elysian_schdlr_state_timer1_reset(elysian_t* server){
 	elysian_schdlr_t* schdlr = &server->scheduler;
 	elysian_schdlr_task_t* task = schdlr->current_task;
     ELYSIAN_ASSERT(task != NULL);
-    task->timeout_delta = task->timeout_delta_init;
+    task->timer1_delta = task->timer1_delta_init;
 }
 
 void elysian_schdlr_state_priority_set(elysian_t* server, elysian_schdlr_task_prio_t priority){
