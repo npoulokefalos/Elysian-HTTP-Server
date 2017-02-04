@@ -5,60 +5,62 @@
 <link rel="stylesheet" type="text/css" href="../fs_rom/css.css">
 
 	<script type="text/javascript">
+		var log_count = 0;
+		
+		function log(msg) {
+			document.getElementById("websocket_result").innerHTML =  document.getElementById("websocket_result").innerHTML + "[" + (new Date().getTime() % 3600000) + "] " + msg + "&#13;&#10;";
+
+			document.getElementById("websocket_result").scrollTop = document.getElementById("websocket_result").scrollHeight;
+			log_count++;
+			if (log_count > 100) {
+				log_count = 0;
+				document.getElementById("websocket_result").innerHTML = "";
+			}
+		}
+		
          function WebSocketTest()
          {
             if ("WebSocket" in window)
             {
-               //alert("WebSocket is supported by your Browser!");
-               
-               // Let us open a web socket
-               //var ws = new WebSocket("ws://localhost:9001/websockets_example");
 				var_ws_open = 0;
 				var l = window.location;
 				var ws = new WebSocket(((l.protocol === "https:") ? "wss://" : "ws://") + l.host + "/websockets_example");
 
 				function send_message() {
+					var msg = "Message to send";
 					if (var_ws_open) {
-						ws.send("Message to send");
+						ws.send(msg);
+						log("Sent: '" + msg + "'");
 					}
 				}
 				
-
-
                ws.onopen = function()
                {
-				  var_ws_open = 1;
-                  // Web Socket is connected, send data using send()
-                  ws.send("Message to send");
-				  
-				var delay = 1000; //1 second
-				setInterval(send_message, delay);
-				
-                  //alert("Message is sent...");
+					log("Connection Established!");
+			   
+					var_ws_open = 1;
+					ws.send("Message to send");
+
+					var delay = 1000; //1 second
+					setInterval(send_message, delay);
                };
 				
                ws.onmessage = function (evt) 
                { 
-                  var received_msg = evt.data;
-                  //alert("Message is received..." + received_msg);
-				  document.getElementById("websocket_result").innerHTML =  document.getElementById("websocket_result").innerHTML + "[" + (new Date().getTime() % 3600000) + "] Server message: '" + received_msg + "'" + "&#13;&#10;";
-				  
-				  document.getElementById("websocket_result").scrollTop = document.getElementById("websocket_result").scrollHeight;
-
+					var received_msg = evt.data;
+					log("Received: '" + received_msg + "'");
                };
 				
                ws.onclose = function()
                { 
-                  // websocket is closed.
-				  var_ws_open = 0;
-                  //alert("Connection is closed..."); 
+					var_ws_open = 0;
+					log("Connection Closed");
                };
             }
             
             else
             {
-               // The browser doesn't support WebSocket
-               //alert("WebSocket NOT supported by your Browser!");
+               log("Websockets are NOT supported by your Browser!");
             }
          }
       </script>
@@ -107,8 +109,8 @@
 	
 	Once a WebSocket connection is established, it remains open until either the client or the Web Server decide to close it. <br/><br/>
 	
-	This particular example implements simple echo functionality. Once the websocket connection is established, the user can send random
-	text to the Web Server. The Server will echo back the received message. In addition, every 5sec, the server will transmit application specific messages.
+	This particular example implements simple echo functionality. Once the websocket connection is established, the Web Browser will start sending custom
+	text every 1 sec. The Web Server will echo back the received message. In addition, every 1500 msec, the Web Server will autonomously transmit application specific messages.
 </div>
 
 <div id="page_el_main">

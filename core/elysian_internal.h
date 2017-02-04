@@ -1018,6 +1018,7 @@ struct elysian_websocket_t {
 	elysian_websocket_flag_e flags;
 	
 	uint32_t rx_path_healthy_ms;
+	uint32_t timer_interval_ms;
 	
 	//uint8_t pong_received;
 	//uint16_t timer_ms;

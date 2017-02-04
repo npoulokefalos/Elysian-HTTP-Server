@@ -211,7 +211,7 @@ elysian_err_t elysian_websocket_process_tx (elysian_t* server) {
 	uint32_t actual_sent_len;
 	elysian_err_t err;
 	
-	ELYSIAN_LOG("elysian_websocket_process_rx()");
+	ELYSIAN_LOG("elysian_websocket_process_tx()");
 	
 	/* Inject a close frame if the application requested a disconnection or if the peer sent a close frame */
 	if ((client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING) && (client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_CLOSE_PENDING)) {
@@ -293,6 +293,8 @@ elysian_err_t elysian_websocket_process_rx(elysian_t* server) {
 	uint8_t poll_request = 0;
 	uint8_t ignore_frame;
 	
+	ELYSIAN_LOG("elysian_websocket_process_rx()");
+	
 	/* Avoid processing if a close frame was received or disconnection was requested */
 	if (client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING) {
 		return ELYSIAN_ERR_OK;
@@ -318,6 +320,7 @@ elysian_err_t elysian_websocket_process_rx(elysian_t* server) {
 		} break;
 		default:
 		{
+			ELYSIAN_LOG("IPS error, disconnecting!");
 			return ELYSIAN_ERR_FATAL;
 		} break;
 	};
@@ -473,6 +476,17 @@ elysian_err_t elysian_websocket_process(elysian_t* server) {
 	}
 }
 
+elysian_err_t elysian_websocket_timer_config(elysian_t* server, uint32_t timer_interval_ms) {
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	if (timer_interval_ms) {
+		client->websocket.timer_interval_ms = timer_interval_ms;
+		elysian_schdlr_state_timeout_set(server, client->websocket.timer_interval_ms);
+		return ELYSIAN_ERR_OK;
+	} else {
+		return ELYSIAN_ERR_FATAL;
+	}
+}
+
 elysian_err_t elysian_websocket_app_timer(elysian_t* server) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	elysian_err_t err;
@@ -511,9 +525,10 @@ elysian_err_t elysian_websocket_connected(elysian_t* server) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	elysian_err_t err;
 
-	client->websocket.rx_path_healthy_ms = ELYSIAN_TIME_INFINITE;
 	client->websocket.flags |= ELYSIAN_WEBSOCKET_FLAG_PING_PENDING;
 	client->websocket.flags |= ELYSIAN_WEBSOCKET_FLAG_PONG_RECEIVED;
+	client->websocket.timer_interval_ms = ELYSIAN_TIME_INFINITE;
+	client->websocket.rx_path_healthy_ms = ELYSIAN_TIME_INFINITE;
 	
 	client->websocket.controller = elysian_websocket_controller_get(server, client->httpreq.url);
 	if (!client->websocket.controller) {

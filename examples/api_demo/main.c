@@ -752,6 +752,9 @@ elysian_err_t websocket_connected_handler(elysian_t* server, void** vargs) {
 		return ELYSIAN_ERR_FATAL;
 	}
 	
+	/* Start timer */
+	elysian_websocket_timer_config(server, 500);
+	
 	args->timer_count = 0;
 	*vargs = args;
 	
@@ -778,6 +781,9 @@ elysian_err_t websocket_timer_handler(elysian_t* server, void* vargs) {
 	char frame_data[64];
 	
 	ELYSIAN_LOG("websocket_timer_handler()");
+	
+	/* Restart timer */
+	elysian_websocket_timer_config(server, 1500);
 	
 	elysian_sprintf(frame_data, "Timer handler #%u", args->timer_count++);
 	err = elysian_websocket_send_text(server, frame_data, strlen(frame_data));

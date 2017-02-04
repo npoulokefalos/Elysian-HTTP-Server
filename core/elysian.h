@@ -163,6 +163,7 @@ elysian_err_t elysian_mvc_httpreq_onservice_handler(elysian_t* server, elysian_h
  ======================================================================================================================================*/
 elysian_err_t elysian_websocket_send_text(elysian_t* server,  char* frame_data, uint32_t frame_len);
 elysian_err_t elysian_websocket_send_binary(elysian_t* server, uint8_t* frame_data, uint32_t frame_len);
+elysian_err_t elysian_websocket_timer_config(elysian_t* server, uint32_t timer_interval_ms);
 
 /*======================================================================================================================================
  Memory Management API                                          															

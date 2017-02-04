@@ -802,7 +802,7 @@ elysian_err_t elysian_isp_websocket(elysian_t* server, elysian_cbuf_t** cbuf_lis
 			{
 				ELYSIAN_LOG("Payload len is %u\r\n", args->payload_len);
 				split_size = args->payload_len;
-				if (args->payload_len >= ELYSIAN_MAX_MEMORY_USAGE_KB) {
+				if (args->payload_len >= ELYSIAN_MAX_MEMORY_USAGE_KB * 1024) {
 					return ELYSIAN_ERR_FATAL;
 				}
 				if (cbuf_list_in_len < args->payload_len) {
@@ -851,44 +851,7 @@ elysian_err_t elysian_isp_websocket(elysian_t* server, elysian_cbuf_t** cbuf_lis
 						}
 					}
 				}
-				
-				/*
-				** At this point:
-				** cbuf_payload != NUll: frame payload len > 0
-				** cbuf_payload == NUll: frame payload len is 0
-				*/
-				uint8_t opcode = args->header[0] & 0x0F;
-				switch (opcode) {
-					case 0x0:
-					{
-						/* Continuation frame */
-					} break;
-					case 0x1:
-					{
-						/* Text frame */
-					} break;
-					case 0x2:
-					{
-						/* Binary frame */
-					} break;
-					case 0x8:
-					{
-						/* Connection close */
-					} break;
-					case 0x9:
-					{
-						/* Ping frame */
-					} break;
-					case 0xA:
-					{
-						/* Pong frame */
-					} break;
-					default:
-					{
-						/* Reserved */
-					} break;
-				}
-				
+	
 				args->state = 0;
 			} break;
 			case 5: /* Frame received, args->payload has te payload and args->payload_len the length */

@@ -47,7 +47,7 @@
 	<i>HTTP pipelining</i> is a feature of persistent connections. It allows the Browser to send a new request on the same connection without waiting for the response of the previous one.
 	These back to back HTTP requests result in a dramatic improvement in page loading times. <br/><br/>
 	
-	To take advantage of both features, Elysian will keep an HTTP connection open for a few seconds after completing all transactions so it can be reused for future HTTP requests.
+	When serving multiple HTTP Requests (like the approximately 10 HTTP Requests triggered from this page), Elysian will take advantage of both features to minimize transaction delays.
 </div>
 
 <div id="page_el_main">

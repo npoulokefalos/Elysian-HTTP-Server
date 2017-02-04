@@ -1225,8 +1225,6 @@ void elysian_state_websocket(elysian_t* server, elysian_schdlr_ev_t ev) {
     switch(ev){
         case elysian_schdlr_EV_ENTRY:
         {    
-			/* Throw an immediate timer event */
-            elysian_schdlr_state_timeout_set(server, 1);
             elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_HIGH);
 			
 			ELYSIAN_ASSERT(client->websocket.controller == NULL);
@@ -1262,16 +1260,12 @@ void elysian_state_websocket(elysian_t* server, elysian_schdlr_ev_t ev) {
         }break;
         case elysian_schdlr_EV_POLL:
         {
-
 			err = elysian_websocket_process(server);
 			switch(err){
                 case ELYSIAN_ERR_OK:
 					/* No pending operations */
 					elysian_schdlr_state_poll_disable(server);
 					break;
-				//case ELYSIAN_ERR_READ:
-					/* There are not fully received frames, should wait new elysian_schdlr_EV_READ event */
-                //     break;
                 case ELYSIAN_ERR_POLL:
 					/* Pending Rx frames exist */
 					elysian_schdlr_state_poll_backoff(server);
@@ -1283,12 +1277,9 @@ void elysian_state_websocket(elysian_t* server, elysian_schdlr_ev_t ev) {
 					return;
                     break;
             };		  
-
         }break;
 		case elysian_schdlr_EV_TIMER:
 		{
-			elysian_schdlr_state_timeout_set(server, 1500);
-			
 			err = elysian_websocket_app_timer(server);
 			if (err != ELYSIAN_ERR_OK) {
 				elysian_schdlr_state_set(server, elysian_state_http_disconnect);
