@@ -1,6 +1,6 @@
 #include "elysian.h"
 
-#define ELYSIAN_WEBSOCKET_TIMEOUT_PING_MS			(5000)
+#define ELYSIAN_WEBSOCKET_TIMEOUT_PING_MS			(10000)
 #define ELYSIAN_WEBSOCKET_TIMEOUT_RX_HEALTHY_MS		(5000)
 
 char* elysian_http_base64_encode(elysian_t* server, char *data) ;
@@ -571,7 +571,7 @@ elysian_err_t elysian_websocket_cleanup(elysian_t* server) {
 	
 	if (client->websocket.controller) {
 		if (client->websocket.controller->disconnected_handler) {
-			client->websocket.controller->disconnected_handler(server, &client->websocket.handler_args);
+			client->websocket.controller->disconnected_handler(server, client->websocket.handler_args);
 		}
 		client->websocket.controller = NULL;
 	}

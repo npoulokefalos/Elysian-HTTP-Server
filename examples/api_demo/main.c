@@ -746,7 +746,7 @@ elysian_err_t websocket_connected_handler(elysian_t* server, void** vargs) {
 	example_websocket_args_t* args;
 	
 	ELYSIAN_LOG("websocket_connected_handler()");
-	
+
 	args = elysian_mem_malloc(server, sizeof(example_websocket_args_t));
 	if (!args) {
 		return ELYSIAN_ERR_FATAL;
@@ -797,6 +797,8 @@ elysian_err_t websocket_timer_handler(elysian_t* server, void* vargs) {
 elysian_err_t websocket_disconnected_handler(elysian_t* server, void* vargs) {
 	example_websocket_args_t* args = (example_websocket_args_t*) vargs;
 
+	ELYSIAN_LOG("websocket_disconnected_handler()");
+	
 	if (args) {
 		elysian_mem_free(server, args);
 	}
