@@ -707,8 +707,8 @@ typedef enum{
     elysian_schdlr_EV_ENTRY,
     elysian_schdlr_EV_READ, 
     elysian_schdlr_EV_POLL,
-    //elysian_schdlr_EV_CLOSED,
     elysian_schdlr_EV_TIMER1,
+	elysian_schdlr_EV_TIMER2,
     elysian_schdlr_EV_ABORT,
 }elysian_schdlr_ev_t;
 
@@ -723,21 +723,22 @@ typedef void (*elysian_schdlr_state_t)(elysian_t* server, elysian_schdlr_ev_t ev
 
 typedef struct elysian_schdlr_task_t elysian_schdlr_task_t;
 struct elysian_schdlr_task_t{
-    elysian_schdlr_state_t state;
-    elysian_schdlr_state_t new_state;
+	elysian_schdlr_state_t state;
+	elysian_schdlr_state_t new_state;
 	elysian_schdlr_task_prio_t priority;
-    uint32_t timer1_delta;
+
+	uint32_t poll_delta;
+	uint32_t poll_delta_init;
+	uint32_t timer1_delta;
 	uint32_t timer1_delta_init;
-    uint32_t poll_delta;
-    uint32_t poll_delta_init;
-    
-    elysian_client_t* client;
-    elysian_cbuf_t* cbuf_list;
-    
+	uint32_t timer2_delta;
+	uint32_t timer2_delta_init;
+
+	elysian_client_t* client;
+	elysian_cbuf_t* cbuf_list;
+
 	elysian_schdlr_task_t* next;
-    elysian_schdlr_task_t* prev;
-	
-	uint8_t last_malloc_succeed;
+	elysian_schdlr_task_t* prev;
 };
 
 //typedef struct elysian_schdlr_t elysian_schdlr_t;
@@ -775,6 +776,8 @@ void elysian_schdlr_state_poll_disable(elysian_t* server);
 void elysian_schdlr_state_poll_backoff(elysian_t* server);
 void elysian_schdlr_state_timer1_set(elysian_t* server, uint32_t timer_delta);
 void elysian_schdlr_state_timer1_reset(elysian_t* server);
+void elysian_schdlr_state_timer2_set(elysian_t* server, uint32_t timer_delta);
+void elysian_schdlr_state_timer2_reset(elysian_t* server);
 void elysian_schdlr_state_priority_set(elysian_t* server, elysian_schdlr_task_prio_t priority);
 elysian_cbuf_t* elysian_schdlr_state_socket_read(elysian_t* server);
 
