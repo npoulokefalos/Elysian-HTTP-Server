@@ -368,8 +368,8 @@ struct elysian_file_ext_t{
 #endif
 };
 
-typedef struct elysian_file_def_rom_t elysian_file_def_rom_t;
-struct elysian_file_def_rom_t {
+typedef struct elysian_file_rom_def_t elysian_file_rom_def_t;
+struct elysian_file_rom_def_t {
 	const char* name;
     const uint8_t* ptr;
     const uint32_t size;
@@ -377,12 +377,12 @@ struct elysian_file_def_rom_t {
 
 typedef struct elysian_file_rom_t elysian_file_rom_t;
 struct elysian_file_rom_t {
-	const elysian_file_def_rom_t* def;
+	const elysian_file_rom_def_t* def;
     uint32_t pos;
 };
 
-typedef struct elysian_file_def_vrt_t elysian_file_def_vrt_t;
-struct elysian_file_def_vrt_t {
+typedef struct elysian_file_vrt_def_t elysian_file_vrt_def_t;
+struct elysian_file_vrt_def_t {
 	const char* name;
 	elysian_err_t 	(*open_handler)(elysian_t* server, void** varg);
 	int 			(*read_handler)(elysian_t* server, void* varg, uint8_t* buf, uint32_t buf_size);
@@ -392,7 +392,7 @@ struct elysian_file_def_vrt_t {
 
 typedef struct elysian_file_vrt_t elysian_file_vrt_t;
 struct elysian_file_vrt_t{
-	const elysian_file_def_vrt_t* def;
+	const elysian_file_vrt_def_t* def;
     void* varg;
     uint32_t pos;
 };
@@ -600,10 +600,7 @@ typedef struct elysian_mvc_controller_t elysian_mvc_controller_t;
 struct elysian_mvc_controller_t{
     const char* url;
     elysian_mvc_controller_handler_t handler;
-    //uint8_t http_methods_mask;
 	elysian_mvc_controller_flag_e flags;
-
-    //elysian_mvc_controller_t* next;
 };
 
 

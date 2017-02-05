@@ -804,7 +804,7 @@ elysian_err_t websocket_disconnected_handler(elysian_t* server, void* varg) {
 }
 
 
-const elysian_mvc_controller_t mvc_controllers[] = {
+const elysian_mvc_controller_t mvc_controller_def[] = {
 	/*
 	** Controllers for files stored to ROM memory device
 	*/
@@ -850,7 +850,7 @@ const elysian_mvc_controller_t mvc_controllers[] = {
 		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_NONE},
 };
 
-const elysian_file_def_vrt_t file_def_vrt[] = {
+const elysian_file_vrt_def_t file_vrt_def[] = {
 	{.name = (char*) "/virtual_file.log", 
 	.open_handler = virtual_file_open_handler,
 	.read_handler = virtual_file_read_handler,
@@ -889,7 +889,7 @@ int main(){
 	
     server = elysian_new();
 
-    elysian_start(server, 9000, mvc_controllers, file_def_rom, file_def_vrt, webosocket_def, authentication_cb);
+    elysian_start(server, 9000, mvc_controller_def, file_rom_def, file_vrt_def, webosocket_def, authentication_cb);
     
     while(!stop){
         elysian_poll(server, 10000);

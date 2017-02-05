@@ -297,7 +297,7 @@ elysian_err_t elysian_fs_ram_fremove(elysian_t* server, char* abs_path){
 /* -----------------------------------------------------------------------------------------------------------
  ROM filesystem
 ----------------------------------------------------------------------------------------------------------- */
-static const elysian_file_def_rom_t fs_def_rom_empty_file = {
+static const elysian_file_rom_def_t file_rom_def_empty_file = {
 	.name = (char*) ELYSIAN_FS_EMPTY_FILE_ABS_PATH, 
 	.ptr = (uint8_t*) "", 
 	.size = 0
@@ -316,7 +316,7 @@ static const char elysian_default_http_status_page[] =
 "</body>"
 "</html>";
 										
-static const elysian_file_def_rom_t fs_def_rom_http_status_page = {
+static const elysian_file_rom_def_t file_rom_def_http_status_page = {
 	.name = (char*) ELYSIAN_FS_HTTP_STATUS_PAGE_ABS_PATH, 
 	.ptr = (uint8_t*) elysian_default_http_status_page, 
 	.size = sizeof(elysian_default_http_status_page) - 1
@@ -331,11 +331,11 @@ elysian_err_t elysian_fs_rom_fopen(elysian_t* server, char* abs_path, elysian_fi
 		return ELYSIAN_ERR_FATAL;
 	}
 	
-	if (server->file_def_rom) {
-		for(i = 0; server->file_def_rom[i].name != NULL; i++){
-			printf("checking with %s --------- %s\r\n",  abs_path, server->file_def_rom[i].name);
-			if(strcmp(abs_path, server->file_def_rom[i].name) == 0){
-				(file)->descriptor.rom.def = &server->file_def_rom[i];
+	if (server->file_rom_def) {
+		for(i = 0; server->file_rom_def[i].name != NULL; i++){
+			printf("checking with %s --------- %s\r\n",  abs_path, server->file_rom_def[i].name);
+			if(strcmp(abs_path, server->file_rom_def[i].name) == 0){
+				(file)->descriptor.rom.def = &server->file_rom_def[i];
 				(file)->descriptor.rom.pos = 0;
 				return ELYSIAN_ERR_OK;
 			}
@@ -345,7 +345,7 @@ elysian_err_t elysian_fs_rom_fopen(elysian_t* server, char* abs_path, elysian_fi
 	/* Try to match with the empty file */
 	if (strcmp(abs_path, ELYSIAN_FS_HTTP_STATUS_PAGE_ABS_PATH) == 0) {
 		printf("checking with %s --------- %s\r\n",  abs_path, ELYSIAN_FS_HTTP_STATUS_PAGE_ABS_PATH);
-		(file)->descriptor.rom.def = &fs_def_rom_http_status_page;
+		(file)->descriptor.rom.def = &file_rom_def_http_status_page;
 		(file)->descriptor.rom.pos = 0;
 		return ELYSIAN_ERR_OK;
 	}
@@ -353,7 +353,7 @@ elysian_err_t elysian_fs_rom_fopen(elysian_t* server, char* abs_path, elysian_fi
 	/* Try to match with the empty file */
 	if (strcmp(abs_path, ELYSIAN_FS_EMPTY_FILE_ABS_PATH) == 0) {
 		printf("checking with %s --------- %s\r\n",  abs_path, ELYSIAN_FS_EMPTY_FILE_ABS_PATH);
-		(file)->descriptor.rom.def = &fs_def_rom_empty_file;
+		(file)->descriptor.rom.def = &file_rom_def_empty_file;
 		(file)->descriptor.rom.pos = 0;
 		return ELYSIAN_ERR_OK;
 	}
@@ -420,11 +420,11 @@ elysian_err_t elysian_fs_vrt_fopen(elysian_t* server, char* abs_path, elysian_fi
 		return ELYSIAN_ERR_FATAL;
 	}
 
-	if (server->file_def_vrt) {
-		for(i = 0; server->file_def_vrt[i].name != NULL; i++){
-			printf("checking with %s --------- %s\r\n",  abs_path, server->file_def_vrt[i].name);
-			if(strcmp(abs_path, server->file_def_vrt[i].name) == 0){
-				file->descriptor.vrt.def = &server->file_def_vrt[i];
+	if (server->file_vrt_def) {
+		for(i = 0; server->file_vrt_def[i].name != NULL; i++){
+			printf("checking with %s --------- %s\r\n",  abs_path, server->file_vrt_def[i].name);
+			if(strcmp(abs_path, server->file_vrt_def[i].name) == 0){
+				file->descriptor.vrt.def = &server->file_vrt_def[i];
 				file->descriptor.vrt.pos = 0;
 				file->descriptor.vrt.varg = NULL;
 				err = (file)->descriptor.vrt.def->open_handler(server, &file->descriptor.vrt.varg);

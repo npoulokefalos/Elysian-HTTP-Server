@@ -425,17 +425,17 @@ elysian_mvc_controller_t* elysian_mvc_controller_get(elysian_t* server, char* ur
     int i;
     ELYSIAN_LOG("Searching user defined controller for url '%s' and method '%s'", url, elysian_http_get_method_name(method_id));
 	
-	if (server->controllers) {
-		for (i = 0; (server->controllers[i].url != NULL) && (server->controllers[i].handler != NULL); i++) {
-			ELYSIAN_LOG("Trying to match with controller %s", server->controllers[i].url);
-			if (strcmp(server->controllers[i].url, url) == 0) {
-				ELYSIAN_LOG("flag = %u, method id = %u", server->controllers[i].flags, method_id);
-				if ( (server->controllers[i].flags & ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET) && ((method_id == ELYSIAN_HTTP_METHOD_GET) || (method_id == ELYSIAN_HTTP_METHOD_HEAD))) {
-					return &server->controllers[i];
-				} else if ((server->controllers[i].flags & ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST) && (method_id == ELYSIAN_HTTP_METHOD_POST)) {
-					return &server->controllers[i];
-				} else if ((server->controllers[i].flags & ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT) && (method_id == ELYSIAN_HTTP_METHOD_PUT)) {
-					return &server->controllers[i];
+	if (server->controller_def) {
+		for (i = 0; (server->controller_def[i].url != NULL) && (server->controller_def[i].handler != NULL); i++) {
+			ELYSIAN_LOG("Trying to match with controller %s", server->controller_def[i].url);
+			if (strcmp(server->controller_def[i].url, url) == 0) {
+				ELYSIAN_LOG("flag = %u, method id = %u", server->controller_def[i].flags, method_id);
+				if ( (server->controller_def[i].flags & ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET) && ((method_id == ELYSIAN_HTTP_METHOD_GET) || (method_id == ELYSIAN_HTTP_METHOD_HEAD))) {
+					return &server->controller_def[i];
+				} else if ((server->controller_def[i].flags & ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST) && (method_id == ELYSIAN_HTTP_METHOD_POST)) {
+					return &server->controller_def[i];
+				} else if ((server->controller_def[i].flags & ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT) && (method_id == ELYSIAN_HTTP_METHOD_PUT)) {
+					return &server->controller_def[i];
 				}else {
 					return NULL;
 				}
