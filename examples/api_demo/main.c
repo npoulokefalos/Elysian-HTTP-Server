@@ -804,7 +804,7 @@ elysian_err_t websocket_disconnected_handler(elysian_t* server, void* varg) {
 }
 
 
-const elysian_mvc_controller_t mvc_controller_def[] = {
+const elysian_mvc_controller_def_t mvc_controller_def[] = {
 	/*
 	** Controllers for files stored to ROM memory device
 	*/

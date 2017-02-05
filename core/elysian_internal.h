@@ -596,8 +596,8 @@ typedef elysian_err_t (*elysian_mvc_controller_handler_t)(elysian_t* server);
 	
 
 
-typedef struct elysian_mvc_controller_t elysian_mvc_controller_t;
-struct elysian_mvc_controller_t{
+typedef struct elysian_mvc_controller_def_t elysian_mvc_controller_def_t;
+struct elysian_mvc_controller_def_t{
     const char* url;
     elysian_mvc_controller_handler_t handler;
 	elysian_mvc_controller_flag_e flags;
@@ -649,7 +649,7 @@ elysian_err_t elysian_mvc_post_configure(elysian_t* server);
 uint8_t elysian_mvc_isconfigured(elysian_t* server);
 elysian_err_t elysian_mvc_clear(elysian_t* server);
 
-elysian_mvc_controller_t* elysian_mvc_controller_get(elysian_t* server, char* url, elysian_http_method_e method_id);
+elysian_mvc_controller_def_t* elysian_mvc_controller_def_get(elysian_t* server, char* url, elysian_http_method_e method_id);
 elysian_mvc_attribute_t* elysian_mvc_attribute_get(elysian_t* server, char* name);
 
 

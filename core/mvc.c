@@ -86,10 +86,10 @@ elysian_err_t elysian_mvc_clear(elysian_t* server){
 }
 
 elysian_err_t elysian_websockets_controller(elysian_t* server);
-static const elysian_mvc_controller_t elysian_mvc_controller_def_websockets = {.url = (char*) "", .handler = elysian_websockets_controller, .flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET};
+static const elysian_mvc_controller_def_t elysian_mvc_controller_def_websockets = {.url = (char*) "", .handler = elysian_websockets_controller, .flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET};
 
 elysian_err_t elysian_http_status_page_controller(elysian_t* server);
-static const elysian_mvc_controller_t elysian_mvc_controller_def_http_status_page = {.url = (char*) "", .handler = elysian_http_status_page_controller, .flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET};
+static const elysian_mvc_controller_def_t elysian_mvc_controller_def_http_status_page = {.url = (char*) "", .handler = elysian_http_status_page_controller, .flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET};
 
 elysian_err_t elysian_http_status_page_controller(elysian_t* server){
 	elysian_client_t* client = elysian_mvc_client(server);
@@ -127,7 +127,7 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_err_t err;
 	elysian_mvc_alloc_t* alloc_next;
-    elysian_mvc_controller_t* controller;
+    elysian_mvc_controller_def_t* controller_def;
 	elysian_req_param_t* param_next;
 	
 	ELYSIAN_ASSERT(client->mvc.view == NULL);
@@ -137,7 +137,7 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 	/* -----------------------------------------------------------------------------------------------------
 	** Initialize MVC
 	----------------------------------------------------------------------------------------------------- */
-	controller = NULL;
+	controller_def = NULL;
 	client->mvc.connection = ELYSIAN_HTTP_CONNECTION_KEEPALIVE;
 	client->mvc.connection_upgrade = ELYSIAN_HTTP_CONNECTION_UPGRADE_NO;
 	if (client->httpresp.current_status_code != ELYSIAN_HTTP_STATUS_CODE_NA) {
@@ -145,7 +145,7 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 		** Status code has been decided automatically by the Web Server (for example due to internal error).
 		** Don't query applcation layer for extra information.
 		*/
-		controller = (elysian_mvc_controller_t*) &elysian_mvc_controller_def_http_status_page;
+		controller_def = (elysian_mvc_controller_def_t*) &elysian_mvc_controller_def_http_status_page;
 	} else {
 		/*
 		** Initialize MVC according to HTTP request. Let user bypass it according to preference.
@@ -174,17 +174,17 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 		/* Get the appropriate constroller for the specific URL */
 		if ((client->httpreq.connection == ELYSIAN_HTTP_CONNECTION_UPGRADE) && (client->httpreq.connection_upgrade == ELYSIAN_HTTP_CONNECTION_UPGRADE_WEBSOCKET)) {
 			/* Automatically assign websocket controller */
-			controller = (elysian_mvc_controller_t*) &elysian_mvc_controller_def_websockets;
+			controller_def = (elysian_mvc_controller_def_t*) &elysian_mvc_controller_def_websockets;
 		} else {
 			/* Assign application defined controller */
-			controller = elysian_mvc_controller_get(server, client->httpreq.url, client->httpreq.method);
+			controller_def = elysian_mvc_controller_def_get(server, client->httpreq.url, client->httpreq.method);
 		}
 	}
 
-	if (controller) {
+	if (controller_def) {
 		ELYSIAN_LOG("Calling MVC controller..");
 
-		err = controller->handler(server);
+		err = controller_def->handler(server);
 		if((err != ELYSIAN_ERR_OK) && (err != ELYSIAN_ERR_POLL) && (err != ELYSIAN_ERR_FATAL)) {
 			/*
 			** Any not permitted errors are converted to ELYSIAN_ERR_FATAL.
@@ -421,7 +421,7 @@ elysian_err_t elysian_mvc_httpresp_header_add(elysian_t* server, char* header_na
 /* --------------------------------------------------------------------------------------------------------------------------------
 | Controllers
 -------------------------------------------------------------------------------------------------------------------------------- */
-elysian_mvc_controller_t* elysian_mvc_controller_get(elysian_t* server, char* url, elysian_http_method_e method_id) {
+elysian_mvc_controller_def_t* elysian_mvc_controller_def_get(elysian_t* server, char* url, elysian_http_method_e method_id) {
     int i;
     ELYSIAN_LOG("Searching user defined controller for url '%s' and method '%s'", url, elysian_http_get_method_name(method_id));
 	

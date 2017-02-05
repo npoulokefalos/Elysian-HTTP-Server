@@ -49,7 +49,7 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
     elysian_err_t err;
 	char* multipart_boundary;
 	elysian_http_method_e method;
-	elysian_mvc_controller_t* controller;
+	elysian_mvc_controller_def_t* controller_def;
 	char* url;
 	uint32_t max_http_body_size;
 	
@@ -196,8 +196,8 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 		client->httpreq.body_len = (uint32_t) atoi(header_value);
 		elysian_mem_free(server, header_value);
         
-		controller = elysian_mvc_controller_get(server, client->httpreq.url, client->httpreq.method);
-		if((controller) && (controller->flags & ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS)) {
+		controller_def = elysian_mvc_controller_def_get(server, client->httpreq.url, client->httpreq.method);
+		if((controller_def) && (controller_def->flags & ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS)) {
 			max_http_body_size = ELYSIAN_MAX_HTTP_BODY_SIZE_KB_EXT;
 		} else {
 			max_http_body_size = ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM;

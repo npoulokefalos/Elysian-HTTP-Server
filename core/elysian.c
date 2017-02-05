@@ -118,7 +118,7 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server){
     char* filename_template;
     uint32_t actual_write_sz;
     elysian_err_t err;
-	elysian_mvc_controller_t* controller;
+	elysian_mvc_controller_def_t* controller_def;
 
     if (client->isp.func == elysian_isp_http_headers) {
         file = &client->httpreq.headers_file;
@@ -127,8 +127,8 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server){
     } else {
         file = &client->httpreq.body_file;
         filename = client->httpreq.body_filename;
-		controller = elysian_mvc_controller_get(server, client->httpreq.url, client->httpreq.method);
-		if((controller) && (controller->flags & ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS)) {
+		controller_def = elysian_mvc_controller_def_get(server, client->httpreq.url, client->httpreq.method);
+		if((controller_def) && (controller_def->flags & ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS)) {
 			filename_template = ELYSIAN_FS_EXT_VRT_ROOT"/b_%u";
 		} else {
 			filename_template = ELYSIAN_FS_RAM_VRT_ROOT"/b_%u";
@@ -1540,7 +1540,7 @@ elysian_t* elysian_new(){
     return server;
 }
 
-elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_mvc_controller_t controller_def[], const elysian_file_rom_def_t file_rom_def[], const elysian_file_vrt_def_t file_vrt_def[], const elysian_websocket_def_t websocket_def[], elysian_authentication_cb_t authentication_cb) {
+elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_mvc_controller_def_t controller_def[], const elysian_file_rom_def_t file_rom_def[], const elysian_file_vrt_def_t file_vrt_def[], const elysian_websocket_def_t websocket_def[], elysian_authentication_cb_t authentication_cb) {
     elysian_err_t err;
 	
 #if defined(ELYSIAN_OS_ENV_UNIX)
@@ -1548,7 +1548,7 @@ elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_mvc_
 		ELYSIAN_LOG("Could not ignore the SIGPIPE signal!")
 	}
 #endif
-	server->controller_def = (elysian_mvc_controller_t*) controller_def;
+	server->controller_def = (elysian_mvc_controller_def_t*) controller_def;
 	server->file_rom_def = (elysian_file_rom_def_t*) file_rom_def;
 	server->file_vrt_def = (elysian_file_vrt_def_t*) file_vrt_def;
 	server->websocket_def = (elysian_websocket_def_t*) websocket_def;
