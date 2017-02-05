@@ -55,13 +55,6 @@ elysian_err_t elysian_mvc_clear(elysian_t* server){
         client->mvc.view = NULL;
     }
     
-#if 0
-	if (client->mvc.redirection_url) {
-		elysian_mem_free(server, client->mvc.redirection_url);
-		client->mvc.redirection_url = NULL;
-	}
-#endif
-	
 	while (client->mvc.httpresp_headers) {
 		httpresp_header_next = client->mvc.httpresp_headers->next;
 		elysian_mem_free(server, client->mvc.httpresp_headers->header);
@@ -152,22 +145,7 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 		** Status code has been decided automatically by the Web Server (for example due to internal error).
 		** Don't query applcation layer for extra information.
 		*/
-		//char status_code_page_name[32];
-		//elysian_sprintf(status_code_page_name, ELYSIAN_FS_ROM_VRT_ROOT"/%u.html", elysian_http_get_status_code_num(client->httpresp.current_status_code));
-		//err = elysian_mvc_view_set(server, status_code_page_name);
-		//if (err != ELYSIAN_ERR_OK) { 
-		//	ELYSIAN_ASSERT((err == ELYSIAN_ERR_POLL) || (err == ELYSIAN_ERR_FATAL));
-		//	return err;
-		//}
-		
-		//elysian_mvc_transfer_encoding_set(server, ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY);
-		//elysian_mvc_status_code_set(server, client->httpresp.current_status_code);
-		//client->mvc.range_start = ELYSIAN_HTTP_RANGE_WF;
-		//client->mvc.range_end = ELYSIAN_HTTP_RANGE_WF;
-		//ELYSIAN_LOG("MVC configured automatically with view '%s' and HTTP status code %u", client->mvc.view, elysian_http_get_status_code_num(client->mvc.status_code));
-		
 		controller = (elysian_mvc_controller_t*) &elysian_mvc_controller_def_http_status_page;
-		//return ELYSIAN_ERR_OK;
 	} else {
 		/*
 		** Initialize MVC according to HTTP request. Let user bypass it according to preference.
@@ -180,39 +158,31 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 		
 		elysian_mvc_transfer_encoding_set(server, ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY);
 		if ((client->httpreq.range_start == ELYSIAN_HTTP_RANGE_WF) && (client->httpreq.range_end == ELYSIAN_HTTP_RANGE_WF)) {
-			/*
-			** None-partial HTTP request
-			*/
+			/* None-partial HTTP request */
 			elysian_mvc_status_code_set(server, ELYSIAN_HTTP_STATUS_CODE_200);
 			client->mvc.range_start = ELYSIAN_HTTP_RANGE_WF;
 			client->mvc.range_end = ELYSIAN_HTTP_RANGE_WF;
 		} else {
-			/*
-			** Partial HTTP request
-			*/
+			/* Partial HTTP request */
 			elysian_mvc_status_code_set(server, ELYSIAN_HTTP_STATUS_CODE_206);
 			client->mvc.range_start = client->httpreq.range_start;
 			client->mvc.range_end = client->httpreq.range_end;
 		}
 		
 		ELYSIAN_LOG("MVC initialized with view '%s' and HTTP status code %u", client->mvc.view, elysian_http_get_status_code_num(client->mvc.status_code));
-	}
-	
-	/* -----------------------------------------------------------------------------------------------------
-	** Assign the appropriate application controller
-	----------------------------------------------------------------------------------------------------- */
-	if (!controller) {
+		
+		/* Get the appropriate constroller for the specific URL */
 		if ((client->httpreq.connection == ELYSIAN_HTTP_CONNECTION_UPGRADE) && (client->httpreq.connection_upgrade == ELYSIAN_HTTP_CONNECTION_UPGRADE_WEBSOCKET)) {
+			/* Automatically assign websocket controller */
 			controller = (elysian_mvc_controller_t*) &elysian_mvc_controller_def_websockets;
+		} else {
+			/* Assign application defined controller */
+			controller = elysian_mvc_controller_get(server, client->httpreq.url, client->httpreq.method);
 		}
-	}
-	
-	if (!controller) {
-		controller = elysian_mvc_controller_get(server, client->httpreq.url, client->httpreq.method);
 	}
 
 	if (controller) {
-		ELYSIAN_LOG("Calling user defined controller..");
+		ELYSIAN_LOG("Calling MVC controller..");
 
 		err = controller->handler(server);
 		if((err != ELYSIAN_ERR_OK) && (err != ELYSIAN_ERR_POLL) && (err != ELYSIAN_ERR_FATAL)) {

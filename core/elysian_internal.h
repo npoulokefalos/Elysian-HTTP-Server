@@ -469,8 +469,8 @@ void elysian_str_trim(elysian_t* server, char* str, char* ignore_prefix_chars, c
 /* 
 ** Websockets
 */
-typedef struct elysian_websocket_controller_t elysian_websocket_controller_t;
-struct elysian_websocket_controller_t{
+typedef struct elysian_websocket_def_t elysian_websocket_def_t;
+struct elysian_websocket_def_t{
     const char* url;
     elysian_err_t (*connected_handler)(elysian_t* server, void** varg);
 	elysian_err_t (*frame_handler)(elysian_t* server, void* varg, uint8_t* frame_data, uint32_t frame_len);
@@ -1019,7 +1019,7 @@ elysian_err_t elysian_websocket_ping_timer(elysian_t* server);
 
 typedef struct elysian_websocket_t elysian_websocket_t;
 struct elysian_websocket_t {
-	const elysian_websocket_controller_t* controller;
+	const elysian_websocket_def_t* def;
 	void* handler_args;
 	
 	elysian_websocket_frame_t* rx_frames;

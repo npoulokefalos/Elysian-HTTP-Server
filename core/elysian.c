@@ -1227,7 +1227,7 @@ void elysian_state_websocket(elysian_t* server, elysian_schdlr_ev_t ev) {
         {    
             elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_HIGH);
 			
-			ELYSIAN_ASSERT(client->websocket.controller == NULL);
+			ELYSIAN_ASSERT(client->websocket.def == NULL);
 			
 			/* This should be called before cleanup, since we need to retrieve 
 			the websocket controller from the HTTP req URL */
@@ -1534,13 +1534,13 @@ elysian_t* elysian_new(){
     }
     
     server->controllers = NULL;
-	server->fs_def_rom = NULL;
-	server->fs_def_vrt = NULL;
+	server->file_def_rom = NULL;
+	server->file_def_vrt = NULL;
 
     return server;
 }
 
-elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_mvc_controller_t controllers[], const elysian_file_def_rom_t fs_def_rom[], const elysian_file_def_vrt_t fs_def_vrt[], const elysian_websocket_controller_t websocket_controllers[], elysian_authentication_cb_t authentication_cb) {
+elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_mvc_controller_t controllers[], const elysian_file_def_rom_t file_def_rom[], const elysian_file_def_vrt_t file_def_vrt[], const elysian_websocket_def_t websocket_def[], elysian_authentication_cb_t authentication_cb) {
     elysian_err_t err;
 	
 #if defined(ELYSIAN_OS_ENV_UNIX)
@@ -1549,9 +1549,9 @@ elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_mvc_
 	}
 #endif
 	server->controllers = (elysian_mvc_controller_t*) controllers;
-	server->fs_def_rom = (elysian_file_def_rom_t*) fs_def_rom;
-	server->fs_def_vrt = (elysian_file_def_vrt_t*) fs_def_vrt;
-	server->websocket_controllers = (elysian_websocket_controller_t*) websocket_controllers;
+	server->file_def_rom = (elysian_file_def_rom_t*) file_def_rom;
+	server->file_def_vrt = (elysian_file_def_vrt_t*) file_def_vrt;
+	server->websocket_def = (elysian_websocket_def_t*) websocket_def;
 	
 	server->listening_port = port;
 	server->authentication_cb = authentication_cb;

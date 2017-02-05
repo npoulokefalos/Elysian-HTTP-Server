@@ -6,14 +6,14 @@
 char* elysian_http_base64_encode(elysian_t* server, char *data) ;
 void SHA1(char *hash_out,const char *str,int len);
 
-elysian_websocket_controller_t* elysian_websocket_controller_get(elysian_t* server, char* url) {
+elysian_websocket_def_t* elysian_websocket_def_get(elysian_t* server, char* url) {
 	int k;
-	if (server->websocket_controllers) {
-		for (k = 0; (server->websocket_controllers[k].url != NULL) && (server->websocket_controllers[k].connected_handler != NULL); k++) {
-			ELYSIAN_LOG("Trying to match with websocket controller %s", server->websocket_controllers[k].url);
-			if (strcmp(server->websocket_controllers[k].url, url) == 0) {
+	if (server->websocket_def) {
+		for (k = 0; (server->websocket_def[k].url != NULL) && (server->websocket_def[k].connected_handler != NULL); k++) {
+			ELYSIAN_LOG("Trying to match with websocket controller %s", server->websocket_def[k].url);
+			if (strcmp(server->websocket_def[k].url, url) == 0) {
 				ELYSIAN_LOG("Match!")
-				return (elysian_websocket_controller_t*) &server->websocket_controllers[k];
+				return (elysian_websocket_def_t*) &server->websocket_def[k];
 			}
 		}
 	}
@@ -22,7 +22,7 @@ elysian_websocket_controller_t* elysian_websocket_controller_get(elysian_t* serv
 
 elysian_err_t elysian_websockets_controller(elysian_t* server) {
 	elysian_client_t* client = elysian_mvc_client(server);
-	elysian_websocket_controller_t* websocket_controller;
+	elysian_websocket_def_t* websocket_def;
     elysian_err_t err;
 
     ELYSIAN_LOG("[[ %s ]]", __func__);
@@ -30,8 +30,8 @@ elysian_err_t elysian_websockets_controller(elysian_t* server) {
 	/*
 	** Check if the application has registered any websocket controllers
 	*/
-	websocket_controller = elysian_websocket_controller_get(server, client->httpreq.url);
-	if (!websocket_controller) {
+	websocket_def = elysian_websocket_def_get(server, client->httpreq.url);
+	if (!websocket_def) {
 		/*
 		** If the requested service is not available, the server MUST send an
 		** appropriate HTTP error code (such as 404 Not Found) and abort
@@ -394,8 +394,8 @@ elysian_err_t elysian_websocket_process_rx(elysian_t* server) {
 			}
 			
 			if (!ignore_frame) {
-				if ((rx_frame->len > 1) && (client->websocket.controller->frame_handler)) {
-					err = client->websocket.controller->frame_handler(server, client->websocket.handler_args, &rx_frame->data[1], rx_frame->len - 1);
+				if ((rx_frame->len > 1) && (client->websocket.def->frame_handler)) {
+					err = client->websocket.def->frame_handler(server, client->websocket.handler_args, &rx_frame->data[1], rx_frame->len - 1);
 					if (err != ELYSIAN_ERR_OK) {
 						/* Application rquested disconnection */
 						client->websocket.flags |= ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING;
@@ -496,8 +496,8 @@ elysian_err_t elysian_websocket_app_timer(elysian_t* server) {
 		return ELYSIAN_ERR_OK;
 	}
 	
-	if (client->websocket.controller->timer_handler) {
-		err = client->websocket.controller->timer_handler(server, client->websocket.handler_args);
+	if (client->websocket.def->timer_handler) {
+		err = client->websocket.def->timer_handler(server, client->websocket.handler_args);
 		if (err != ELYSIAN_ERR_OK) {
 			/* Application rquested disconnection */
 			client->websocket.flags |= ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING;
@@ -533,17 +533,17 @@ elysian_err_t elysian_websocket_connected(elysian_t* server) {
 	client->websocket.timer_interval_ms = ELYSIAN_TIME_INFINITE;
 	client->websocket.rx_path_healthy_ms = ELYSIAN_TIME_INFINITE;
 	
-	client->websocket.controller = elysian_websocket_controller_get(server, client->httpreq.url);
-	if (!client->websocket.controller) {
+	client->websocket.def = elysian_websocket_def_get(server, client->httpreq.url);
+	if (!client->websocket.def) {
 		ELYSIAN_ASSERT(0);
 		return ELYSIAN_ERR_FATAL;
 	}
 	
-	if (client->websocket.controller->connected_handler) {
-		err = client->websocket.controller->connected_handler(server, &client->websocket.handler_args);
+	if (client->websocket.def->connected_handler) {
+		err = client->websocket.def->connected_handler(server, &client->websocket.handler_args);
 		if (err != ELYSIAN_ERR_OK) {
 			/* Don't call disconnected handler if application blocked connection */
-			client->websocket.controller = NULL;
+			client->websocket.def = NULL;
 			return ELYSIAN_ERR_FATAL;
 		} else {
 			return ELYSIAN_ERR_OK;
@@ -558,7 +558,7 @@ elysian_err_t elysian_websocket_connected(elysian_t* server) {
 elysian_err_t elysian_websocket_init(elysian_t* server) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 
-	client->websocket.controller = NULL;
+	client->websocket.def = NULL;
 	client->websocket.handler_args = NULL;
 	client->websocket.flags = 0;
 	client->websocket.rx_frames = NULL;
@@ -571,11 +571,11 @@ elysian_err_t elysian_websocket_cleanup(elysian_t* server) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	elysian_websocket_frame_t* frame;
 	
-	if (client->websocket.controller) {
-		if (client->websocket.controller->disconnected_handler) {
-			client->websocket.controller->disconnected_handler(server, client->websocket.handler_args);
+	if (client->websocket.def) {
+		if (client->websocket.def->disconnected_handler) {
+			client->websocket.def->disconnected_handler(server, client->websocket.handler_args);
 		}
-		client->websocket.controller = NULL;
+		client->websocket.def = NULL;
 	}
 	
 	while (client->websocket.tx_frames) {

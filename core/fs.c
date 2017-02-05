@@ -331,11 +331,11 @@ elysian_err_t elysian_fs_rom_fopen(elysian_t* server, char* abs_path, elysian_fi
 		return ELYSIAN_ERR_FATAL;
 	}
 	
-	if (server->fs_def_rom) {
-		for(i = 0; server->fs_def_rom[i].name != NULL; i++){
-			printf("checking with %s --------- %s\r\n",  abs_path, server->fs_def_rom[i].name);
-			if(strcmp(abs_path, server->fs_def_rom[i].name) == 0){
-				(file)->descriptor.rom.def = &server->fs_def_rom[i];
+	if (server->file_def_rom) {
+		for(i = 0; server->file_def_rom[i].name != NULL; i++){
+			printf("checking with %s --------- %s\r\n",  abs_path, server->file_def_rom[i].name);
+			if(strcmp(abs_path, server->file_def_rom[i].name) == 0){
+				(file)->descriptor.rom.def = &server->file_def_rom[i];
 				(file)->descriptor.rom.pos = 0;
 				return ELYSIAN_ERR_OK;
 			}
@@ -420,11 +420,11 @@ elysian_err_t elysian_fs_vrt_fopen(elysian_t* server, char* abs_path, elysian_fi
 		return ELYSIAN_ERR_FATAL;
 	}
 
-	if (server->fs_def_vrt) {
-		for(i = 0; server->fs_def_vrt[i].name != NULL; i++){
-			printf("checking with %s --------- %s\r\n",  abs_path, server->fs_def_vrt[i].name);
-			if(strcmp(abs_path, server->fs_def_vrt[i].name) == 0){
-				file->descriptor.vrt.def = &server->fs_def_vrt[i];
+	if (server->file_def_vrt) {
+		for(i = 0; server->file_def_vrt[i].name != NULL; i++){
+			printf("checking with %s --------- %s\r\n",  abs_path, server->file_def_vrt[i].name);
+			if(strcmp(abs_path, server->file_def_vrt[i].name) == 0){
+				file->descriptor.vrt.def = &server->file_def_vrt[i];
 				file->descriptor.vrt.pos = 0;
 				file->descriptor.vrt.varg = NULL;
 				err = (file)->descriptor.vrt.def->open_handler(server, &file->descriptor.vrt.varg);

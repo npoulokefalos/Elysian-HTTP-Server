@@ -58,9 +58,9 @@ struct elysian_t{
 	uint16_t listening_port;
     elysian_schdlr_t scheduler;
     elysian_mvc_controller_t* controllers;
-    elysian_file_def_rom_t* fs_def_rom;
-	elysian_file_def_vrt_t* fs_def_vrt;
-	elysian_websocket_controller_t* websocket_controllers;
+    elysian_file_def_rom_t* file_def_rom;
+	elysian_file_def_vrt_t* file_def_vrt;
+	elysian_websocket_def_t* websocket_def;
 	elysian_authentication_cb_t authentication_cb;
 	uint32_t starvation_detection_t0;
 };
@@ -88,7 +88,7 @@ elysian_t* elysian_new(void);
 ** @retval  	ELYSIAN_ERR_OK		On success
 ** @retval  	ELYSIAN_ERR_FATAL	On failure
  */
-elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_mvc_controller_t controllers[], const elysian_file_def_rom_t fs_def_rom[], const elysian_file_def_vrt_t fs_def_vrt[], const elysian_websocket_controller_t webosocket_controllers[], elysian_authentication_cb_t authentication_cb);
+elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_mvc_controller_t controllers[], const elysian_file_def_rom_t file_def_rom[], const elysian_file_def_vrt_t file_def_vrt[], const elysian_websocket_def_t webosocket_def[], elysian_authentication_cb_t authentication_cb);
 
 /* 
 ** @brief 		Executes the server shceduler for the particular interval.
