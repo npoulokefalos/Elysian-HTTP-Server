@@ -8,6 +8,12 @@ $(info Usage "make plat=linux" [for Linux or Cygwin] or "make plat=windows" [for
 $(error Exiting)
 endif
 
+$(info )
+$(info --------------------------------------------------------------------------------)
+$(info Note: To generate the ROM file structure issue 'python fs_rom/makefsdata.py')
+$(info --------------------------------------------------------------------------------)
+$(info )
+
 ifeq ($(plat),windows)
 	# Windows
 	FLAGS=-lws2_32

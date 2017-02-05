@@ -209,7 +209,7 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 		if((controller_def) && (controller_def->flags & ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS)) {
 			max_http_body_size = ELYSIAN_MAX_HTTP_BODY_SIZE_KB_EXT;
 		} else {
-			max_http_body_size = ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM;
+			max_http_body_size = ELYSIAN_MAX_MEMORY_USAGE_KB > ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM ? ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM : ELYSIAN_MAX_MEMORY_USAGE_KB;
 		}
 		if(client->httpreq.body_len > max_http_body_size * 1024){
 			elysian_set_fatal_http_status_code(server, ELYSIAN_HTTP_STATUS_CODE_413);
