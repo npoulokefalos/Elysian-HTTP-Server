@@ -59,7 +59,7 @@ struct elysian_t{
     elysian_schdlr_t scheduler;
     elysian_mvc_controller_t* controllers;
     elysian_file_rom_t* rom_fs;
-	elysian_file_hdl_t* hdl_fs;
+	elysian_file_def_hdl_t* hdl_fs;
 	elysian_websocket_controller_t* websocket_controllers;
 	elysian_authentication_cb_t authentication_cb;
 	uint32_t starvation_detection_t0;
@@ -88,7 +88,7 @@ elysian_t* elysian_new(void);
 ** @retval  	ELYSIAN_ERR_OK		On success
 ** @retval  	ELYSIAN_ERR_FATAL	On failure
  */
-elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_mvc_controller_t controllers[], const elysian_file_rom_t rom_fs[], const elysian_file_hdl_t hdl_fs[], const elysian_websocket_controller_t webosocket_controllers[], elysian_authentication_cb_t authentication_cb);
+elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_mvc_controller_t controllers[], const elysian_file_rom_t rom_fs[], const elysian_file_def_hdl_t hdl_fs[], const elysian_websocket_controller_t webosocket_controllers[], elysian_authentication_cb_t authentication_cb);
 
 /* 
 ** @brief 		Executes the server shceduler for the particular interval.

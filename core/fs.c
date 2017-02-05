@@ -395,7 +395,7 @@ elysian_err_t elysian_fs_rom_fremove(elysian_t* server, char* abs_path){
  Web Server internal filesystem
 ----------------------------------------------------------------------------------------------------------- */
 elysian_err_t elysian_fs_hdl_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file) {
-	int ret;
+	elysian_err_t err;
     uint32_t i;
     
     ELYSIAN_LOG("Opening file <%s>..", abs_path);
@@ -408,11 +408,11 @@ elysian_err_t elysian_fs_hdl_fopen(elysian_t* server, char* abs_path, elysian_fi
 		for(i = 0; server->hdl_fs[i].name != NULL; i++){
 			printf("checking with %s --------- %s\r\n",  abs_path, server->hdl_fs[i].name);
 			if(strcmp(abs_path, server->hdl_fs[i].name) == 0){
-				file->descriptor.hdl.handler = server->hdl_fs[i].handler;
+				file->descriptor.hdl.def = &server->hdl_fs[i];
 				file->descriptor.hdl.pos = 0;
 				file->descriptor.hdl.varg = NULL;
-				ret = (file)->descriptor.hdl.handler(server, ELYSISIAN_FILE_HDL_ACTION_FOPEN, &file->descriptor.hdl.varg, NULL, 0);
-				if(ret == 0) {
+				err = (file)->descriptor.hdl.def->open_handler(server, &file->descriptor.hdl.varg);
+				if(err == ELYSIAN_ERR_OK) {
 					return ELYSIAN_ERR_OK;
 				} else {
 					return ELYSIAN_ERR_FATAL;
@@ -430,16 +430,16 @@ elysian_err_t elysian_fs_hdl_fsize(elysian_t* server, elysian_file_t* file, uint
 	uint32_t read_size;
 	int read_size_actual;
 	uint32_t initial_seekpos;
-	int ret;
-	
+	elysian_err_t err;
+
 	*filesize = 0;
 	initial_seekpos = file_hdl->pos;
 	if (file_hdl->pos) {
-		ret = file_hdl->handler(server, ELYSISIAN_FILE_HDL_ACTION_FSEEK0, &file->descriptor.hdl.varg, NULL, 0);
-		if (ret) {
-			return ELYSIAN_ERR_FATAL;
-		} else {
+		err = file_hdl->def->seekreset_handler(server, file->descriptor.hdl.varg);
+		if (err == ELYSIAN_ERR_OK) {
 			file_hdl->pos = 0;
+		} else {
+			return ELYSIAN_ERR_FATAL;
 		}
 	} 
 	
@@ -456,11 +456,11 @@ elysian_err_t elysian_fs_hdl_fsize(elysian_t* server, elysian_file_t* file, uint
 	} while (read_size_actual != 0);
 
 	if (file_hdl->pos) {
-		ret = file_hdl->handler(server, ELYSISIAN_FILE_HDL_ACTION_FSEEK0, &file->descriptor.hdl.varg, NULL, 0);
-		if (ret) {
-			return ELYSIAN_ERR_FATAL;
-		} else {
+		err = file_hdl->def->seekreset_handler(server, file->descriptor.hdl.varg);
+		if (err == ELYSIAN_ERR_OK) {
 			file_hdl->pos = 0;
+		} else {
+			return ELYSIAN_ERR_FATAL;
 		}
 	} 
 	
@@ -482,15 +482,14 @@ elysian_err_t elysian_fs_hdl_fseek(elysian_t* server, elysian_file_t* file, uint
 	uint32_t read_size;
 	int read_size_actual;
     elysian_file_hdl_t* file_hdl = &file->descriptor.hdl;
-	int ret;
-	//file_hdl->handler(server, ELYSISIAN_FILE_HDL_ACTION_FSEEK, NULL, 0);
-	
+	elysian_err_t err;
+
 	if (seekpos < file_hdl->pos) {
-		ret = file_hdl->handler(server, ELYSISIAN_FILE_HDL_ACTION_FSEEK0, &file->descriptor.hdl.varg, NULL, 0);
-		if (ret) {
-			return ELYSIAN_ERR_FATAL;
-		} else {
+		err = file_hdl->def->seekreset_handler(server, file->descriptor.hdl.varg);
+		if (err == ELYSIAN_ERR_OK) {
 			file_hdl->pos = 0;
+		} else {
+			return ELYSIAN_ERR_FATAL;
 		}
 	} 
 	
@@ -511,17 +510,15 @@ elysian_err_t elysian_fs_hdl_fseek(elysian_t* server, elysian_file_t* file, uint
 elysian_err_t elysian_fs_hdl_ftell(elysian_t* server, elysian_file_t* file, uint32_t* seekpos){
     elysian_file_hdl_t* file_hdl = &file->descriptor.hdl;
 	*seekpos = file_hdl->pos;
-	//file_hdl->handler(server, ELYSISIAN_FILE_HDL_ACTION_FTELL, NULL, 0);
 	return ELYSIAN_ERR_OK;
 }
 
 int elysian_fs_hdl_fread(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size){
-	//uint32_t read_size;
 	int read_size;
     elysian_file_hdl_t* file_hdl = &file->descriptor.hdl;
 
 	//read_size = (buf_size > file_rom->size - file_hdl->pos) ? file_rom->size - file_rom->pos : buf_size;
-	read_size = file_hdl->handler(server, ELYSISIAN_FILE_HDL_ACTION_FREAD, &file->descriptor.hdl.varg, buf, buf_size);
+	read_size = file_hdl->def->read_handler(server, file->descriptor.hdl.varg, buf, buf_size);
 	if (read_size > 0) {
 		file_hdl->pos += read_size;
 	}
@@ -535,9 +532,7 @@ int elysian_fs_hdl_fwrite(elysian_t* server, elysian_file_t* file, uint8_t* buf,
 
 elysian_err_t elysian_fs_hdl_fclose(elysian_t* server, elysian_file_t* file){
 	elysian_file_hdl_t* file_hdl = &file->descriptor.hdl;
-	
-	file_hdl->handler(server, ELYSISIAN_FILE_HDL_ACTION_FCLOSE, &file->descriptor.hdl.varg, NULL, 0);
-	
+	file_hdl->def->close_handler(server, file->descriptor.hdl.varg);
     return ELYSIAN_ERR_OK;
 }
 

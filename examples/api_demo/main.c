@@ -679,64 +679,61 @@ typedef struct{
 	uint32_t read_cursor;
 } example_hdl_file_t;
 
-int virtual_file_handler(elysian_t* server, elysian_file_hdl_action_e action,  void** varg, uint8_t* buf, uint32_t buf_size){
-	example_hdl_file_t* file_args = (example_hdl_file_t*) *varg;
+elysian_err_t virtual_file_open_handler(elysian_t* server, void** varg) {
+	example_hdl_file_t* file_args;
+	
+	file_args = elysian_mem_malloc(server, sizeof(example_hdl_file_t));
+	if (file_args) {
+		/*
+		** Create a 5 mb virtual file
+		*/
+		*varg = file_args;
+		file_args->read_cursor = 0;
+		file_args->size = 5 * 1024 * 1024;
+		return ELYSIAN_ERR_OK;
+	} else {
+		return ELYSIAN_ERR_POLL;
+	}
+}
+
+int virtual_file_read_handler(elysian_t* server, void* varg, uint8_t* buf, uint32_t buf_size) {
+	example_hdl_file_t* file_args = (example_hdl_file_t*) varg;
 	uint32_t read_size;
 	
-	switch(action) {
-		case ELYSISIAN_FILE_HDL_ACTION_FOPEN:
-		{
-			ELYSIAN_LOG("ELYSIAN_FILE_HDL_ACTION_FOPEN");
-			file_args = elysian_mem_malloc(server, sizeof(example_hdl_file_t));
-			if (file_args) {
-				/*
-				** Create a 5 mb virtual file
-				*/
-				*varg = file_args;
-				file_args->read_cursor = 0;
-				file_args->size = 5 * 1024 * 1024;
-			}
-			
-			return 0;
-		}break;
-		case ELYSISIAN_FILE_HDL_ACTION_FSEEK0:
-		{
-			/*
-			** Reset the current read cursor
-			*/
-			file_args->read_cursor = 0;
-			
-			return 0;
-		}break;	
-		case ELYSISIAN_FILE_HDL_ACTION_FREAD:
-		{
-			/*
-			** Copy the requested amount of bytes. If EOF reached, copy zero bytes to indicate it.
-			*/
-			read_size = file_args->size - file_args->read_cursor;
-			if (read_size > buf_size) {
-				read_size = buf_size;
-			}
+	/* Copy the requested amount of bytes. If EOF reached, copy zero bytes to indicate this. */
+	read_size = file_args->size - file_args->read_cursor;
+	if (read_size > buf_size) {
+		read_size = buf_size;
+	}
 
-			/*
-			** Increase the current read cursor
-			*/
-			file_args->read_cursor += read_size;
+	/* Increase the current read cursor */
+	file_args->read_cursor += read_size;
 
-			memset (buf, 0, read_size);
-			
-			return read_size;
-		}break;	
-		case ELYSISIAN_FILE_HDL_ACTION_FCLOSE:
-		{
-			ELYSIAN_LOG("ELYSISIAN_FILE_HDL_ACTION_FCLOSE");
-			elysian_mem_free(server, file_args);
-			return 0;
-		}break;
-	};
-
-	return 0;
+	/* Get data */
+	memset (buf, 0, read_size);
+	
+	return read_size;
 }
+
+elysian_err_t virtual_file_seekreset_handler(elysian_t* server, void* varg) {
+	example_hdl_file_t* file_args = (example_hdl_file_t*) varg;
+	
+	/* Reset the current read cursor */
+	file_args->read_cursor = 0;
+	
+	return ELYSIAN_ERR_OK;
+}
+
+elysian_err_t virtual_file_close_handler(elysian_t* server, void* varg) {
+	example_hdl_file_t* file_args = (example_hdl_file_t*) varg;
+	
+	if (file_args) {
+		elysian_mem_free(server, file_args);
+	}
+
+	return ELYSIAN_ERR_OK;
+}
+
 
 typedef struct{
 	uint32_t timer_count;
@@ -761,8 +758,8 @@ elysian_err_t websocket_connected_handler(elysian_t* server, void** vargs) {
 	return ELYSIAN_ERR_OK;
 }
 
-elysian_err_t websocket_frame_handler(elysian_t* server, uint8_t* frame_data, uint32_t frame_len, void* vargs) {
-	//example_websocket_args_t* args = (example_websocket_args_t*) vargs;
+elysian_err_t websocket_frame_handler(elysian_t* server, void* varg, uint8_t* frame_data, uint32_t frame_len) {
+	//example_websocket_args_t* arg = (example_websocket_args_t*) varg;
 	elysian_err_t err;
 	
 	ELYSIAN_LOG("websocket_frame_handler()");
@@ -775,8 +772,8 @@ elysian_err_t websocket_frame_handler(elysian_t* server, uint8_t* frame_data, ui
 	return ELYSIAN_ERR_OK;
 }
 
-elysian_err_t websocket_timer_handler(elysian_t* server, void* vargs) {
-	example_websocket_args_t* args = (example_websocket_args_t*) vargs;
+elysian_err_t websocket_timer_handler(elysian_t* server, void* varg) {
+	example_websocket_args_t* arg = (example_websocket_args_t*) varg;
 	elysian_err_t err;
 	char frame_data[64];
 	
@@ -785,7 +782,7 @@ elysian_err_t websocket_timer_handler(elysian_t* server, void* vargs) {
 	/* Restart timer */
 	elysian_websocket_timer_config(server, 1500);
 	
-	elysian_sprintf(frame_data, "Timer handler #%u", args->timer_count++);
+	elysian_sprintf(frame_data, "Timer handler #%u", arg->timer_count++);
 	err = elysian_websocket_send_text(server, frame_data, strlen(frame_data));
 	if (err != ELYSIAN_ERR_OK){
 		/* Frame transmission failed */
@@ -794,24 +791,18 @@ elysian_err_t websocket_timer_handler(elysian_t* server, void* vargs) {
 	return ELYSIAN_ERR_OK;
 }
 
-elysian_err_t websocket_disconnected_handler(elysian_t* server, void* vargs) {
-	example_websocket_args_t* args = (example_websocket_args_t*) vargs;
+elysian_err_t websocket_disconnected_handler(elysian_t* server, void* varg) {
+	example_websocket_args_t* arg = (example_websocket_args_t*) varg;
 
 	ELYSIAN_LOG("websocket_disconnected_handler()");
 	
-	if (args) {
-		elysian_mem_free(server, args);
+	if (arg) {
+		elysian_mem_free(server, arg);
 	}
 	
 	return ELYSIAN_ERR_OK;
 }
 
-
-
-const elysian_file_hdl_t hdl_fs[] = {
-	{.name = (char*) "/virtual_file.log", .handler = virtual_file_handler},
-	{.name = NULL, .handler = NULL},
-};
 
 const elysian_mvc_controller_t mvc_controllers[] = {
 	/*
@@ -854,16 +845,28 @@ const elysian_mvc_controller_t mvc_controllers[] = {
 	{.url = "/fs_ext/file_upload_ext_controller", .handler = controller_file_upload, 
 		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_POST | ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_PUT | ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS},
 
-	/*
-	* End of list
-	*/
+	/* End of list */
 	{.url = NULL, .handler = NULL,  
 		.flags = ELYSIAN_MVC_CONTROLLER_FLAG_NONE},
 };
 
+const elysian_file_def_hdl_t hdl_fs[] = {
+	{.name = (char*) "/virtual_file.log", 
+	.open_handler = virtual_file_open_handler,
+	.read_handler = virtual_file_read_handler,
+	.seekreset_handler = virtual_file_seekreset_handler,
+	.close_handler = virtual_file_close_handler},
+	
+	/* End of list */
+	{.name = NULL, 	
+	.open_handler = NULL,
+	.read_handler = NULL,
+	.seekreset_handler = NULL,
+	.close_handler = NULL},
+};
+
 const elysian_websocket_controller_t webosocket_controllers[] = {
 	{.url = (char*) "/websockets_example", 
-	.timer_interval_ms = 500,
 	.connected_handler = websocket_connected_handler, 
 	.frame_handler = websocket_frame_handler, 
 	.timer_handler = websocket_timer_handler, 
@@ -871,7 +874,6 @@ const elysian_websocket_controller_t webosocket_controllers[] = {
 	
 	/* End of list */																	
 	{.url = (char*) NULL, 
-	.timer_interval_ms = 0,
 	.connected_handler = NULL, 
 	.frame_handler = NULL, 
 	.timer_handler = NULL, 

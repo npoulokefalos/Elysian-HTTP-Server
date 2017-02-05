@@ -395,7 +395,7 @@ elysian_err_t elysian_websocket_process_rx(elysian_t* server) {
 			
 			if (!ignore_frame) {
 				if ((rx_frame->len > 1) && (client->websocket.controller->frame_handler)) {
-					err = client->websocket.controller->frame_handler(server, &rx_frame->data[1], rx_frame->len - 1, client->websocket.handler_args);
+					err = client->websocket.controller->frame_handler(server, client->websocket.handler_args, &rx_frame->data[1], rx_frame->len - 1);
 					if (err != ELYSIAN_ERR_OK) {
 						/* Application rquested disconnection */
 						client->websocket.flags |= ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING;

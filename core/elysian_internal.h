@@ -347,8 +347,8 @@ struct elysian_file_ram_t{
 
 typedef struct elysian_file_rom_t elysian_file_rom_t;
 struct elysian_file_rom_t{
-	char* name;
-    uint8_t* ptr;
+	const char* name;
+    const uint8_t* ptr;
     uint32_t pos;
     uint32_t size;
 };
@@ -366,28 +366,22 @@ struct elysian_file_ext_t{
 #endif
 };
 
-#if 1
-typedef enum {
-	ELYSISIAN_FILE_HDL_ACTION_FOPEN = 0,
-	//ELYSISIAN_FILE_HDL_ACTION_FSIZE,
-	ELYSISIAN_FILE_HDL_ACTION_FREAD,
-	ELYSISIAN_FILE_HDL_ACTION_FSEEK0,
-	//ELYSISIAN_FILE_HDL_ACTION_FTELL,
-	ELYSISIAN_FILE_HDL_ACTION_FCLOSE,
-} elysian_file_hdl_action_e;
+typedef struct elysian_file_def_hdl_t elysian_file_def_hdl_t;
+struct elysian_file_def_hdl_t{
+	const char* name;
 
-//typedef int (*elysian_fs_vrt_file_handler_t)(elysian_t* server, void* args, elysian_file_hdl_action_e action,  uint8_t* buf, uint32_t buf_size);
+	elysian_err_t 	(*open_handler)(elysian_t* server, void** varg);
+	int 			(*read_handler)(elysian_t* server, void* varg, uint8_t* buf, uint32_t buf_size);
+	elysian_err_t 	(*seekreset_handler)(elysian_t* server, void* varg);
+	elysian_err_t 	(*close_handler)(elysian_t* server, void* varg);
+};
 
 typedef struct elysian_file_hdl_t elysian_file_hdl_t;
 struct elysian_file_hdl_t{
-	char* name;
+	const elysian_file_def_hdl_t* def;
     void* varg;
     uint32_t pos;
-    //uint32_t size;
-	//elysian_fs_vrt_file_handler_t handler;
-	int (*handler)(elysian_t* server, elysian_file_hdl_action_e action,  void** varg, uint8_t* buf, uint32_t buf_size);
 };
-#endif
 
 typedef struct elysian_fs_memdev_t elysian_fs_memdev_t;
 
@@ -464,11 +458,10 @@ void elysian_str_trim(elysian_t* server, char* str, char* ignore_prefix_chars, c
 typedef struct elysian_websocket_controller_t elysian_websocket_controller_t;
 struct elysian_websocket_controller_t{
     const char* url;
-	uint32_t timer_interval_ms;
-    elysian_err_t (*connected_handler)(elysian_t* server, void** vargs);
-	elysian_err_t (*frame_handler)(elysian_t* server, uint8_t* frame_data, uint32_t frame_len, void* vargs);
-	elysian_err_t (*timer_handler)(elysian_t* server, void* vargs);
-	elysian_err_t (*disconnected_handler)(elysian_t* server, void* vargs);
+    elysian_err_t (*connected_handler)(elysian_t* server, void** varg);
+	elysian_err_t (*frame_handler)(elysian_t* server, void* varg, uint8_t* frame_data, uint32_t frame_len);
+	elysian_err_t (*timer_handler)(elysian_t* server, void* varg);
+	elysian_err_t (*disconnected_handler)(elysian_t* server, void* varg);
 };
 
 typedef enum {
