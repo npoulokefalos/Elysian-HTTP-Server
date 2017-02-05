@@ -48,5 +48,3 @@ Supported features include:
 
 # Samples:
 ![alt tag](https://raw.githubusercontent.com/npoulokefalos/Elysian-Web-Server/master/sample/sample.png)
-![alt tag](https://raw.githubusercontent.com/npoulokefalos/Elysian-Web-Server/master/sample/sample2.png)
-![alt tag](https://raw.githubusercontent.com/npoulokefalos/Elysian-Web-Server/master/sample/sample3.png)

@@ -10,7 +10,7 @@ endif
 
 $(info )
 $(info --------------------------------------------------------------------------------)
-$(info Note: To generate the ROM file structure issue 'python fs_rom/makefsdata.py')
+$(info To generate the ROM file structure execute 'python fs_rom/makefsdata.py')
 $(info --------------------------------------------------------------------------------)
 $(info )
 
