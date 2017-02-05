@@ -92,6 +92,16 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 	ELYSIAN_LOG("URL = '%s'!", url);
     client->httpreq.url = url;
 	
+	controller_def = elysian_mvc_controller_def_get(server, client->httpreq.url, client->httpreq.method);
+	if (!controller_def) {
+		if ((client->httpreq.method != ELYSIAN_HTTP_METHOD_GET) && (client->httpreq.method != ELYSIAN_HTTP_METHOD_HEAD)) {
+			/* Only GET/HEAD requests can be served without controller */
+			elysian_set_fatal_http_status_code(server, ELYSIAN_HTTP_STATUS_CODE_405);
+			err = ELYSIAN_ERR_FATAL;
+			goto handle_error;
+		}
+	}
+	
 	/*
 	** Get Transfer-Encoding
 	*/
@@ -196,7 +206,6 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 		client->httpreq.body_len = (uint32_t) atoi(header_value);
 		elysian_mem_free(server, header_value);
         
-		controller_def = elysian_mvc_controller_def_get(server, client->httpreq.url, client->httpreq.method);
 		if((controller_def) && (controller_def->flags & ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS)) {
 			max_http_body_size = ELYSIAN_MAX_HTTP_BODY_SIZE_KB_EXT;
 		} else {
@@ -1110,7 +1119,7 @@ const elysian_http_status_code_t elysian_http_status_codes[] = {
 		.code_msg = "Not Found",
 		.code_body = "Error 404: The requested URL was not found."
 	},
-	[ELYSIAN_HTTP_STATUS_CODE_405] = { //Todo: generate this when a resource with no controller is requested using POST/PUT?
+	[ELYSIAN_HTTP_STATUS_CODE_405] = {
 		.code_num = 405,
 		.code_msg = "Method Not Allowed",
 		.code_body = "Error 405: Method Not Allowed."
