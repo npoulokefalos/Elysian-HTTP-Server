@@ -93,8 +93,42 @@ elysian_err_t elysian_mvc_clear(elysian_t* server){
 }
 
 elysian_err_t elysian_websockets_controller(elysian_t* server);
-static const elysian_mvc_controller_t elysian_mvc_controller_websockets_def = {.url = (char*) "", .handler = elysian_websockets_controller, .flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET};
+static const elysian_mvc_controller_t elysian_mvc_controller_def_websockets = {.url = (char*) "", .handler = elysian_websockets_controller, .flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET};
 
+elysian_err_t elysian_http_status_page_controller(elysian_t* server);
+static const elysian_mvc_controller_t elysian_mvc_controller_def_http_status_page = {.url = (char*) "", .handler = elysian_http_status_page_controller, .flags = ELYSIAN_MVC_CONTROLLER_FLAG_HTTP_GET};
+
+elysian_err_t elysian_http_status_page_controller(elysian_t* server){
+	elysian_client_t* client = elysian_mvc_client(server);
+    elysian_err_t err;
+    char msg[64];
+	
+    ELYSIAN_LOG("[[ %s ]]", __func__);
+    
+	elysian_mvc_transfer_encoding_set(server, ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY);
+	elysian_mvc_status_code_set(server, client->httpresp.current_status_code);
+	client->mvc.range_start = ELYSIAN_HTTP_RANGE_WF;
+	client->mvc.range_end = ELYSIAN_HTTP_RANGE_WF;
+	
+	elysian_sprintf(msg, "%u", elysian_http_get_status_code_num(client->httpresp.current_status_code));
+	err = elysian_mvc_attribute_set(server, "http_status_code_num", msg);
+    if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+	
+	elysian_sprintf(msg, "%s", elysian_http_get_status_code_msg(client->httpresp.current_status_code));
+	err = elysian_mvc_attribute_set(server, "http_status_code_description", msg);
+    if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+	
+    err = elysian_mvc_view_set(server, ELYSIAN_FS_HTTP_STATUS_PAGE_VRT_PATH);
+    if(err != ELYSIAN_ERR_OK){ 
+        return err;
+    }
+    
+    return ELYSIAN_ERR_OK;
+}
 
 elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
@@ -110,6 +144,7 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 	/* -----------------------------------------------------------------------------------------------------
 	** Initialize MVC
 	----------------------------------------------------------------------------------------------------- */
+	controller = NULL;
 	client->mvc.connection = ELYSIAN_HTTP_CONNECTION_KEEPALIVE;
 	client->mvc.connection_upgrade = ELYSIAN_HTTP_CONNECTION_UPGRADE_NO;
 	if (client->httpresp.current_status_code != ELYSIAN_HTTP_STATUS_CODE_NA) {
@@ -117,21 +152,22 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 		** Status code has been decided automatically by the Web Server (for example due to internal error).
 		** Don't query applcation layer for extra information.
 		*/
-		char status_code_page_name[32];
-		elysian_sprintf(status_code_page_name, ELYSIAN_FS_ROM_VRT_ROOT"/%u.html", elysian_http_get_status_code_num(client->httpresp.current_status_code));
-		err = elysian_mvc_view_set(server, status_code_page_name);
-		if (err != ELYSIAN_ERR_OK) { 
-			ELYSIAN_ASSERT((err == ELYSIAN_ERR_POLL) || (err == ELYSIAN_ERR_FATAL));
-			return err;
-		}
+		//char status_code_page_name[32];
+		//elysian_sprintf(status_code_page_name, ELYSIAN_FS_ROM_VRT_ROOT"/%u.html", elysian_http_get_status_code_num(client->httpresp.current_status_code));
+		//err = elysian_mvc_view_set(server, status_code_page_name);
+		//if (err != ELYSIAN_ERR_OK) { 
+		//	ELYSIAN_ASSERT((err == ELYSIAN_ERR_POLL) || (err == ELYSIAN_ERR_FATAL));
+		//	return err;
+		//}
 		
-		elysian_mvc_transfer_encoding_set(server, ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY);
-		elysian_mvc_status_code_set(server, client->httpresp.current_status_code);
-		client->mvc.range_start = ELYSIAN_HTTP_RANGE_WF;
-		client->mvc.range_end = ELYSIAN_HTTP_RANGE_WF;
-		ELYSIAN_LOG("MVC configured automatically with view '%s' and HTTP status code %u", client->mvc.view, elysian_http_get_status_code_num(client->mvc.status_code));
+		//elysian_mvc_transfer_encoding_set(server, ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY);
+		//elysian_mvc_status_code_set(server, client->httpresp.current_status_code);
+		//client->mvc.range_start = ELYSIAN_HTTP_RANGE_WF;
+		//client->mvc.range_end = ELYSIAN_HTTP_RANGE_WF;
+		//ELYSIAN_LOG("MVC configured automatically with view '%s' and HTTP status code %u", client->mvc.view, elysian_http_get_status_code_num(client->mvc.status_code));
 		
-		return ELYSIAN_ERR_OK;
+		controller = (elysian_mvc_controller_t*) &elysian_mvc_controller_def_http_status_page;
+		//return ELYSIAN_ERR_OK;
 	} else {
 		/*
 		** Initialize MVC according to HTTP request. Let user bypass it according to preference.
@@ -165,9 +201,10 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 	/* -----------------------------------------------------------------------------------------------------
 	** Assign the appropriate application controller
 	----------------------------------------------------------------------------------------------------- */
-	controller = NULL;
-	if ((client->httpreq.connection == ELYSIAN_HTTP_CONNECTION_UPGRADE) && (client->httpreq.connection_upgrade == ELYSIAN_HTTP_CONNECTION_UPGRADE_WEBSOCKET)) {
-		controller = (elysian_mvc_controller_t*) &elysian_mvc_controller_websockets_def;
+	if (!controller) {
+		if ((client->httpreq.connection == ELYSIAN_HTTP_CONNECTION_UPGRADE) && (client->httpreq.connection_upgrade == ELYSIAN_HTTP_CONNECTION_UPGRADE_WEBSOCKET)) {
+			controller = (elysian_mvc_controller_t*) &elysian_mvc_controller_def_websockets;
+		}
 	}
 	
 	if (!controller) {

@@ -298,52 +298,32 @@ elysian_err_t elysian_fs_ram_fremove(elysian_t* server, char* abs_path){
  ROM filesystem
 ----------------------------------------------------------------------------------------------------------- */
 static const elysian_file_def_rom_t fs_def_rom_empty_file = {
-	.name = (char*) ELYSIAN_FS_EMPTY_FILE_VRT_PATH, 
+	.name = (char*) ELYSIAN_FS_EMPTY_FILE_ABS_PATH, 
 	.ptr = (uint8_t*) "", 
 	.size = 0
 };
-	
-extern const elysian_http_status_code_t elysian_http_status_codes[] ;
-static const elysian_file_def_rom_t fs_def_rom_http_status_code_pages[] = {
-	{.name = (char*) ELYSIAN_FS_ROM_ABS_ROOT"/400.html", 
-	.ptr = (uint8_t*) "Error 400: Bad Request", 
-	.size = sizeof("Error 400: Bad Request") - 1},
-	
-	{.name = (char*) ELYSIAN_FS_ROM_ABS_ROOT"/401.html", 
-	.ptr = (uint8_t*) "Error 400: Bad Request", 
-	.size = sizeof("Error 400: Bad Request") - 1},
-	
-	{.name = (char*) ELYSIAN_FS_ROM_ABS_ROOT"/404.html", 
-	.ptr = (uint8_t*) "Error 400: Bad Request", 
-	.size = sizeof("Error 400: Bad Request") - 1},
-	
-	{.name = (char*) ELYSIAN_FS_ROM_ABS_ROOT"/405.html", 
-	.ptr = (uint8_t*) "Error 400: Bad Request", 
-	.size = sizeof("Error 400: Bad Request") - 1},
-	
-	{.name = (char*) ELYSIAN_FS_ROM_ABS_ROOT"/408.html", 
-	.ptr = (uint8_t*) "Error 400: Bad Request", 
-	.size = sizeof("Error 400: Bad Request") - 1},
-	
-	{.name = (char*) ELYSIAN_FS_ROM_ABS_ROOT"/413.html", 
-	.ptr = (uint8_t*) "Error 400: Bad Request", 
-	.size = sizeof("Error 400: Bad Request") - 1},
-	
-	{.name = (char*) ELYSIAN_FS_ROM_ABS_ROOT"/417.html", 
-	.ptr = (uint8_t*) "Error 400: Bad Request", 
-	.size = sizeof("Error 400: Bad Request") - 1},
-	
-	{.name = (char*) ELYSIAN_FS_ROM_ABS_ROOT"/500.html", 
-	.ptr = (uint8_t*) "Error 400: Bad Request", 
-	.size = sizeof("Error 400: Bad Request") - 1},
-	
-	/* End of FS */
-	{.name = (char*) NULL, .ptr = (uint8_t*) NULL, .size = 0},
+
+static const char elysian_default_http_status_page[] =
+"<!DOCTYPE html>"
+"<html>"
+"<body style=\"font-family:Arial;background-color:white;color=white;\">"
+"<div style=\"margin-left:auto;margin-right:auto;text-align:center;\">"
+"<h1><%=http_status_code_description%></h1>"
+"<h3>HTTP status <%=http_status_code_num%></h3>"
+"An unexpected condition was encountered.<br/><br/>"
+"<a style=\"text-decoration:none;\" href=\"../fs_rom/index.html\">Home Page</a>"
+"</div>"
+"</body>"
+"</html>";
+										
+static const elysian_file_def_rom_t fs_def_rom_http_status_page = {
+	.name = (char*) ELYSIAN_FS_HTTP_STATUS_PAGE_ABS_PATH, 
+	.ptr = (uint8_t*) elysian_default_http_status_page, 
+	.size = sizeof(elysian_default_http_status_page) - 1
 };
 
 elysian_err_t elysian_fs_rom_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file){
-	char status_code_page[36];
-	int i, k;
+	int i;
 	
     ELYSIAN_LOG("Opening file <%s>..", abs_path);
     
@@ -361,30 +341,18 @@ elysian_err_t elysian_fs_rom_fopen(elysian_t* server, char* abs_path, elysian_fi
 			}
 		}
 	}
-	
-	/* Try to match with an HTTP status code page */
-	for (i = 0; i < ELYSIAN_HTTP_STATUS_CODE_MAX; i++) {
-		elysian_sprintf(status_code_page, ELYSIAN_FS_ROM_ABS_ROOT"/%u.html", elysian_http_get_status_code_num(i));
-		if (strcmp(abs_path, status_code_page) == 0) {
-			/* The body of an HTTP status code was requested */
-			for (k = 0; fs_def_rom_http_status_code_pages[k].name != NULL; k++){
-				printf("checking with %s --------- %s\r\n",  abs_path, server->fs_def_rom[i].name);
-				if (strcmp(abs_path, fs_def_rom_http_status_code_pages[k].name) == 0) {
-					(file)->descriptor.rom.def = &fs_def_rom_http_status_code_pages[k];
-					(file)->descriptor.rom.pos = 0;
-					return ELYSIAN_ERR_OK;
-				}
-			}
-			
-			/* No default page found, return the empty page */
-			(file)->descriptor.rom.def = &fs_def_rom_empty_file;
-			(file)->descriptor.rom.pos = 0;
-			return ELYSIAN_ERR_OK;
-		}
+
+	/* Try to match with the empty file */
+	if (strcmp(abs_path, ELYSIAN_FS_HTTP_STATUS_PAGE_ABS_PATH) == 0) {
+		printf("checking with %s --------- %s\r\n",  abs_path, ELYSIAN_FS_HTTP_STATUS_PAGE_ABS_PATH);
+		(file)->descriptor.rom.def = &fs_def_rom_http_status_page;
+		(file)->descriptor.rom.pos = 0;
+		return ELYSIAN_ERR_OK;
 	}
 	
 	/* Try to match with the empty file */
 	if (strcmp(abs_path, ELYSIAN_FS_EMPTY_FILE_ABS_PATH) == 0) {
+		printf("checking with %s --------- %s\r\n",  abs_path, ELYSIAN_FS_EMPTY_FILE_ABS_PATH);
 		(file)->descriptor.rom.def = &fs_def_rom_empty_file;
 		(file)->descriptor.rom.pos = 0;
 		return ELYSIAN_ERR_OK;
