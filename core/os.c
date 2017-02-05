@@ -258,16 +258,16 @@ const elysian_fs_memdev_t fs_memdevs[] = {
 		.fremove = elysian_port_fs_ext_fremove
 	},
 	{
-		.vrt_root = ELYSIAN_FS_HDL_VRT_ROOT,
-		.abs_root = ELYSIAN_FS_HDL_ABS_ROOT,
-		.fopen = elysian_fs_hdl_fopen, 
-		.fsize = elysian_fs_hdl_fsize,
-		.fseek = elysian_fs_hdl_fseek,
-        .ftell = elysian_fs_hdl_ftell,
-		.fread = elysian_fs_hdl_fread,
-		.fwrite = elysian_fs_hdl_fwrite,
-		.fclose = elysian_fs_hdl_fclose,
-		.fremove = elysian_fs_hdl_fremove
+		.vrt_root = ELYSIAN_FS_VRT_VRT_ROOT,
+		.abs_root = ELYSIAN_FS_VRT_ABS_ROOT,
+		.fopen = elysian_fs_vrt_fopen, 
+		.fsize = elysian_fs_vrt_fsize,
+		.fseek = elysian_fs_vrt_fseek,
+        .ftell = elysian_fs_vrt_ftell,
+		.fread = elysian_fs_vrt_fread,
+		.fwrite = elysian_fs_vrt_fwrite,
+		.fclose = elysian_fs_vrt_fclose,
+		.fremove = elysian_fs_vrt_fremove
 	}
 };
 

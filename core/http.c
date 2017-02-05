@@ -904,17 +904,7 @@ elysian_err_t elysian_http_response_build(elysian_t* server){
 #else
 		
 #endif
-	
-#if 0
-	if(client->mvc.status_code == ELYSIAN_HTTP_STATUS_CODE_302){
-		ELYSIAN_ASSERT(client->mvc.redirection_url);
-		err = elysian_http_add_response_header_line(server, "Location", client->mvc.redirection_url);
-		if(err != ELYSIAN_ERR_OK){
-			return err;
-		}
-	}
-#endif
-	
+
 	/*
 	** Set the HTTP headers set by the application layer
 	*/
@@ -1020,8 +1010,8 @@ void elysian_http_decode(char *encoded) {
 -------------------------------------------------------------------------------------------------------------------------------- */
 typedef struct elysian_http_method_t elysian_http_method_t;
 struct elysian_http_method_t{
-    elysian_http_method_e id;
-	char* name;
+    const elysian_http_method_e id;
+	const char* name;
 };
 
 const elysian_http_method_t elysian_http_methods[] = {
@@ -1055,7 +1045,7 @@ char* elysian_http_get_method_name(elysian_http_method_e method_id){
     uint32_t i;
     for(i = 0; i < sizeof(elysian_http_methods)/sizeof(elysian_http_methods[0]); i++){
         if(elysian_http_methods[i].id == method_id){
-            return elysian_http_methods[i].name;
+            return (char*) elysian_http_methods[i].name;
         }
     }
     return "";
@@ -1065,7 +1055,7 @@ elysian_http_method_e elysian_http_get_method_id(char* method_name){
     uint32_t i;
     for(i = 0; i < sizeof(elysian_http_methods)/sizeof(elysian_http_methods[0]); i++){
         if(strcmp(elysian_http_methods[i].name, method_name) == 0){
-            return elysian_http_methods[i].id;
+            return (elysian_http_method_e) elysian_http_methods[i].id;
         }
     }
     return ELYSIAN_HTTP_METHOD_NA;
@@ -1074,13 +1064,6 @@ elysian_http_method_e elysian_http_get_method_id(char* method_name){
 /* --------------------------------------------------------------------------------------------------------------------------------
 | HTTP status codes
 -------------------------------------------------------------------------------------------------------------------------------- */
-typedef struct elysian_http_status_code_t elysian_http_status_code_t;
-struct elysian_http_status_code_t{
-	uint16_t code_num;
-	char* code_msg;
-	char* code_body;
-};
-
 const elysian_http_status_code_t elysian_http_status_codes[] = {
 	[ELYSIAN_HTTP_STATUS_CODE_100] = {
 		.code_num = 100,
@@ -1110,12 +1093,12 @@ const elysian_http_status_code_t elysian_http_status_codes[] = {
 	[ELYSIAN_HTTP_STATUS_CODE_302] = {
 		.code_num = 302,
 		.code_msg = "Found",
-		.code_body = "Error 301: This page was temporary moved."
+		.code_body = ""
 		},
 	[ELYSIAN_HTTP_STATUS_CODE_400] = {
 		.code_num = 400,
 		.code_msg = "Bad Request",
-		.code_body = "Error 400: Bad Request."
+		.code_body = "Error 400: Bad Request"
 	},
 	[ELYSIAN_HTTP_STATUS_CODE_401] = {
 		.code_num = 401,
@@ -1127,7 +1110,7 @@ const elysian_http_status_code_t elysian_http_status_codes[] = {
 		.code_msg = "Not Found",
 		.code_body = "Error 404: The requested URL was not found."
 	},
-	[ELYSIAN_HTTP_STATUS_CODE_405] = {
+	[ELYSIAN_HTTP_STATUS_CODE_405] = { //Todo: generate this when a resource with no controller is requested using POST/PUT?
 		.code_num = 405,
 		.code_msg = "Method Not Allowed",
 		.code_body = "Error 405: Method Not Allowed."
@@ -1171,14 +1154,15 @@ uint16_t elysian_http_get_status_code_num(elysian_http_status_code_e status_code
 
 char* elysian_http_get_status_code_msg(elysian_http_status_code_e status_code){
 	ELYSIAN_ASSERT(status_code < ELYSIAN_HTTP_STATUS_CODE_MAX);
-	return elysian_http_status_codes[status_code].code_msg;
+	return (char*) elysian_http_status_codes[status_code].code_msg;
 }
 
+#if 0
 char* elysian_http_get_status_code_body(elysian_http_status_code_e status_code){
 	ELYSIAN_ASSERT(status_code < ELYSIAN_HTTP_STATUS_CODE_MAX);
 	return elysian_http_status_codes[status_code].code_body;
 }
-
+#endif
 /* --------------------------------------------------------------------------------------------------------------------------------
 | Basic Access Authentication
 -------------------------------------------------------------------------------------------------------------------------------- */

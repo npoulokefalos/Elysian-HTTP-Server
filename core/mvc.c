@@ -323,7 +323,7 @@ elysian_err_t elysian_mvc_view_set(elysian_t* server, char* view){
 
 	if(view == NULL){
 		/* Special case for an empty-bodied file */
-		view = ELYSIAN_FS_EMPTY_FILE_VRT_ROOT ELYSIAN_FS_EMPTY_FILE_NAME;
+		view = ELYSIAN_FS_EMPTY_FILE_VRT_PATH;
 	}
 
     if(strcmp(view, "/") == 0){

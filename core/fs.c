@@ -297,9 +297,53 @@ elysian_err_t elysian_fs_ram_fremove(elysian_t* server, char* abs_path){
 /* -----------------------------------------------------------------------------------------------------------
  ROM filesystem
 ----------------------------------------------------------------------------------------------------------- */
+static const elysian_file_def_rom_t fs_def_rom_empty_file = {
+	.name = (char*) ELYSIAN_FS_EMPTY_FILE_VRT_PATH, 
+	.ptr = (uint8_t*) "", 
+	.size = 0
+};
+	
+extern const elysian_http_status_code_t elysian_http_status_codes[] ;
+static const elysian_file_def_rom_t fs_def_rom_http_status_code_pages[] = {
+	{.name = (char*) ELYSIAN_FS_ROM_ABS_ROOT"/400.html", 
+	.ptr = (uint8_t*) "Error 400: Bad Request", 
+	.size = sizeof("Error 400: Bad Request") - 1},
+	
+	{.name = (char*) ELYSIAN_FS_ROM_ABS_ROOT"/401.html", 
+	.ptr = (uint8_t*) "Error 400: Bad Request", 
+	.size = sizeof("Error 400: Bad Request") - 1},
+	
+	{.name = (char*) ELYSIAN_FS_ROM_ABS_ROOT"/404.html", 
+	.ptr = (uint8_t*) "Error 400: Bad Request", 
+	.size = sizeof("Error 400: Bad Request") - 1},
+	
+	{.name = (char*) ELYSIAN_FS_ROM_ABS_ROOT"/405.html", 
+	.ptr = (uint8_t*) "Error 400: Bad Request", 
+	.size = sizeof("Error 400: Bad Request") - 1},
+	
+	{.name = (char*) ELYSIAN_FS_ROM_ABS_ROOT"/408.html", 
+	.ptr = (uint8_t*) "Error 400: Bad Request", 
+	.size = sizeof("Error 400: Bad Request") - 1},
+	
+	{.name = (char*) ELYSIAN_FS_ROM_ABS_ROOT"/413.html", 
+	.ptr = (uint8_t*) "Error 400: Bad Request", 
+	.size = sizeof("Error 400: Bad Request") - 1},
+	
+	{.name = (char*) ELYSIAN_FS_ROM_ABS_ROOT"/417.html", 
+	.ptr = (uint8_t*) "Error 400: Bad Request", 
+	.size = sizeof("Error 400: Bad Request") - 1},
+	
+	{.name = (char*) ELYSIAN_FS_ROM_ABS_ROOT"/500.html", 
+	.ptr = (uint8_t*) "Error 400: Bad Request", 
+	.size = sizeof("Error 400: Bad Request") - 1},
+	
+	/* End of FS */
+	{.name = (char*) NULL, .ptr = (uint8_t*) NULL, .size = 0},
+};
+
 elysian_err_t elysian_fs_rom_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file){
-	char status_code_page[32];
-	int i;
+	char status_code_page[36];
+	int i, k;
 	
     ELYSIAN_LOG("Opening file <%s>..", abs_path);
     
@@ -307,47 +351,51 @@ elysian_err_t elysian_fs_rom_fopen(elysian_t* server, char* abs_path, elysian_fi
 		return ELYSIAN_ERR_FATAL;
 	}
 	
-	if (server->rom_fs) {
-		for(i = 0; server->rom_fs[i].name != NULL; i++){
-			printf("checking with %s --------- %s\r\n",  abs_path, server->rom_fs[i].name);
-			if(strcmp(abs_path, server->rom_fs[i].name) == 0){
-				(file)->descriptor.rom.ptr = server->rom_fs[i].ptr;
-				(file)->descriptor.rom.size = server->rom_fs[i].size;
+	if (server->fs_def_rom) {
+		for(i = 0; server->fs_def_rom[i].name != NULL; i++){
+			printf("checking with %s --------- %s\r\n",  abs_path, server->fs_def_rom[i].name);
+			if(strcmp(abs_path, server->fs_def_rom[i].name) == 0){
+				(file)->descriptor.rom.def = &server->fs_def_rom[i];
 				(file)->descriptor.rom.pos = 0;
 				return ELYSIAN_ERR_OK;
 			}
 		}
 	}
 	
-	/*
-	** Zero-sized file for messages without body
-	*/
-	if(strcmp(abs_path, ELYSIAN_FS_EMPTY_FILE_NAME) == 0){
-		(file)->descriptor.rom.ptr = (uint8_t*) "";
-		(file)->descriptor.rom.size = strlen((char*) (file)->descriptor.rom.ptr);
-		(file)->descriptor.rom.pos = 0;
-		return ELYSIAN_ERR_OK;
-	}
-	
-	/*
-	** If this is a status code page, send the default user-friendly message
-	*/
-	for(i = 0; i < ELYSIAN_HTTP_STATUS_CODE_MAX; i++){
+	/* Try to match with an HTTP status code page */
+	for (i = 0; i < ELYSIAN_HTTP_STATUS_CODE_MAX; i++) {
 		elysian_sprintf(status_code_page, ELYSIAN_FS_ROM_ABS_ROOT"/%u.html", elysian_http_get_status_code_num(i));
-		if(strcmp(abs_path, status_code_page) == 0){
-			(file)->descriptor.rom.ptr = (uint8_t*) elysian_http_get_status_code_body(i);
-			(file)->descriptor.rom.size = strlen((char*) (file)->descriptor.rom.ptr);
+		if (strcmp(abs_path, status_code_page) == 0) {
+			/* The body of an HTTP status code was requested */
+			for (k = 0; fs_def_rom_http_status_code_pages[k].name != NULL; k++){
+				printf("checking with %s --------- %s\r\n",  abs_path, server->fs_def_rom[i].name);
+				if (strcmp(abs_path, fs_def_rom_http_status_code_pages[k].name) == 0) {
+					(file)->descriptor.rom.def = &fs_def_rom_http_status_code_pages[k];
+					(file)->descriptor.rom.pos = 0;
+					return ELYSIAN_ERR_OK;
+				}
+			}
+			
+			/* No default page found, return the empty page */
+			(file)->descriptor.rom.def = &fs_def_rom_empty_file;
 			(file)->descriptor.rom.pos = 0;
 			return ELYSIAN_ERR_OK;
 		}
 	}
 	
+	/* Try to match with the empty file */
+	if (strcmp(abs_path, ELYSIAN_FS_EMPTY_FILE_ABS_PATH) == 0) {
+		(file)->descriptor.rom.def = &fs_def_rom_empty_file;
+		(file)->descriptor.rom.pos = 0;
+		return ELYSIAN_ERR_OK;
+	}
+
 	return ELYSIAN_ERR_NOTFOUND;
 }
 
 elysian_err_t elysian_fs_rom_fsize(elysian_t* server, elysian_file_t* file, uint32_t* filesize){
     elysian_file_rom_t* file_rom = &file->descriptor.rom;
-	*filesize = file_rom->size;
+	*filesize = file_rom->def->size;
 	return ELYSIAN_ERR_OK;
 }
 
@@ -369,8 +417,8 @@ int elysian_fs_rom_fread(elysian_t* server, elysian_file_t* file, uint8_t* buf, 
 	uint32_t read_size;
     elysian_file_rom_t* file_rom = &file->descriptor.rom;
     
-	read_size = (buf_size > file_rom->size - file_rom->pos) ? file_rom->size - file_rom->pos : buf_size;
-	memcpy(buf, &file->descriptor.rom.ptr[file_rom->pos], read_size);
+	read_size = (buf_size > file_rom->def->size - file_rom->pos) ? file_rom->def->size - file_rom->pos : buf_size;
+	memcpy(buf, &file->descriptor.rom.def->ptr[file_rom->pos], read_size);
 	file_rom->pos += read_size;
 	return read_size;
 }
@@ -394,7 +442,7 @@ elysian_err_t elysian_fs_rom_fremove(elysian_t* server, char* abs_path){
 /* -----------------------------------------------------------------------------------------------------------
  Web Server internal filesystem
 ----------------------------------------------------------------------------------------------------------- */
-elysian_err_t elysian_fs_hdl_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file) {
+elysian_err_t elysian_fs_vrt_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file) {
 	elysian_err_t err;
     uint32_t i;
     
@@ -404,14 +452,14 @@ elysian_err_t elysian_fs_hdl_fopen(elysian_t* server, char* abs_path, elysian_fi
 		return ELYSIAN_ERR_FATAL;
 	}
 
-	if (server->hdl_fs) {
-		for(i = 0; server->hdl_fs[i].name != NULL; i++){
-			printf("checking with %s --------- %s\r\n",  abs_path, server->hdl_fs[i].name);
-			if(strcmp(abs_path, server->hdl_fs[i].name) == 0){
-				file->descriptor.hdl.def = &server->hdl_fs[i];
-				file->descriptor.hdl.pos = 0;
-				file->descriptor.hdl.varg = NULL;
-				err = (file)->descriptor.hdl.def->open_handler(server, &file->descriptor.hdl.varg);
+	if (server->fs_def_vrt) {
+		for(i = 0; server->fs_def_vrt[i].name != NULL; i++){
+			printf("checking with %s --------- %s\r\n",  abs_path, server->fs_def_vrt[i].name);
+			if(strcmp(abs_path, server->fs_def_vrt[i].name) == 0){
+				file->descriptor.vrt.def = &server->fs_def_vrt[i];
+				file->descriptor.vrt.pos = 0;
+				file->descriptor.vrt.varg = NULL;
+				err = (file)->descriptor.vrt.def->open_handler(server, &file->descriptor.vrt.varg);
 				if(err == ELYSIAN_ERR_OK) {
 					return ELYSIAN_ERR_OK;
 				} else {
@@ -424,8 +472,8 @@ elysian_err_t elysian_fs_hdl_fopen(elysian_t* server, char* abs_path, elysian_fi
 	return ELYSIAN_ERR_NOTFOUND;
 }
 
-elysian_err_t elysian_fs_hdl_fsize(elysian_t* server, elysian_file_t* file, uint32_t* filesize){
-    elysian_file_hdl_t* file_hdl = &file->descriptor.hdl;
+elysian_err_t elysian_fs_vrt_fsize(elysian_t* server, elysian_file_t* file, uint32_t* filesize){
+    elysian_file_vrt_t* file_vrt = &file->descriptor.vrt;
 	uint8_t buf[256];
 	uint32_t read_size;
 	int read_size_actual;
@@ -433,11 +481,11 @@ elysian_err_t elysian_fs_hdl_fsize(elysian_t* server, elysian_file_t* file, uint
 	elysian_err_t err;
 
 	*filesize = 0;
-	initial_seekpos = file_hdl->pos;
-	if (file_hdl->pos) {
-		err = file_hdl->def->seekreset_handler(server, file->descriptor.hdl.varg);
+	initial_seekpos = file_vrt->pos;
+	if (file_vrt->pos) {
+		err = file_vrt->def->seekreset_handler(server, file_vrt->varg);
 		if (err == ELYSIAN_ERR_OK) {
-			file_hdl->pos = 0;
+			file_vrt->pos = 0;
 		} else {
 			return ELYSIAN_ERR_FATAL;
 		}
@@ -447,7 +495,7 @@ elysian_err_t elysian_fs_hdl_fsize(elysian_t* server, elysian_file_t* file, uint
 	** Get file size
 	*/
 	do {
-		read_size_actual = elysian_fs_hdl_fread(server, file, buf, sizeof(buf));
+		read_size_actual = elysian_fs_vrt_fread(server, file, buf, sizeof(buf));
 		if (read_size_actual < 0) {
 			return ELYSIAN_ERR_FATAL;
 		} else {
@@ -455,10 +503,10 @@ elysian_err_t elysian_fs_hdl_fsize(elysian_t* server, elysian_file_t* file, uint
 		}
 	} while (read_size_actual != 0);
 
-	if (file_hdl->pos) {
-		err = file_hdl->def->seekreset_handler(server, file->descriptor.hdl.varg);
+	if (file_vrt->pos) {
+		err = file_vrt->def->seekreset_handler(server, file_vrt->varg);
 		if (err == ELYSIAN_ERR_OK) {
-			file_hdl->pos = 0;
+			file_vrt->pos = 0;
 		} else {
 			return ELYSIAN_ERR_FATAL;
 		}
@@ -467,9 +515,9 @@ elysian_err_t elysian_fs_hdl_fsize(elysian_t* server, elysian_file_t* file, uint
 	/*
 	** Seek at initial pos
 	*/
-	while (file_hdl->pos < initial_seekpos) {
-		read_size = (sizeof(buf) > (initial_seekpos - file_hdl->pos)) ? (initial_seekpos - file_hdl->pos) : sizeof(buf);
-		read_size_actual = elysian_fs_hdl_fread(server, file, buf, read_size);
+	while (file_vrt->pos < initial_seekpos) {
+		read_size = (sizeof(buf) > (initial_seekpos - file_vrt->pos)) ? (initial_seekpos - file_vrt->pos) : sizeof(buf);
+		read_size_actual = elysian_fs_vrt_fread(server, file, buf, read_size);
 		if (read_size_actual < 0) {
 			return ELYSIAN_ERR_FATAL;
 		}
@@ -477,29 +525,29 @@ elysian_err_t elysian_fs_hdl_fsize(elysian_t* server, elysian_file_t* file, uint
 	return ELYSIAN_ERR_OK;
 }
 
-elysian_err_t elysian_fs_hdl_fseek(elysian_t* server, elysian_file_t* file, uint32_t seekpos) {
+elysian_err_t elysian_fs_vrt_fseek(elysian_t* server, elysian_file_t* file, uint32_t seekpos) {
+	elysian_file_vrt_t* file_vrt = &file->descriptor.vrt;
 	uint8_t buf[256];
 	uint32_t read_size;
 	int read_size_actual;
-    elysian_file_hdl_t* file_hdl = &file->descriptor.hdl;
 	elysian_err_t err;
 
-	if (seekpos < file_hdl->pos) {
-		err = file_hdl->def->seekreset_handler(server, file->descriptor.hdl.varg);
+	if (seekpos < file_vrt->pos) {
+		err = file_vrt->def->seekreset_handler(server, file_vrt->varg);
 		if (err == ELYSIAN_ERR_OK) {
-			file_hdl->pos = 0;
+			file_vrt->pos = 0;
 		} else {
 			return ELYSIAN_ERR_FATAL;
 		}
 	} 
 	
-	while (file_hdl->pos < seekpos) {
-		read_size = (sizeof(buf) > (seekpos - file_hdl->pos)) ? (seekpos - file_hdl->pos) : sizeof(buf);
-		read_size_actual = elysian_fs_hdl_fread(server, file, buf, read_size);
+	while (file_vrt->pos < seekpos) {
+		read_size = (sizeof(buf) > (seekpos - file_vrt->pos)) ? (seekpos - file_vrt->pos) : sizeof(buf);
+		read_size_actual = elysian_fs_vrt_fread(server, file, buf, read_size);
 		if (read_size_actual < 0) {
 			return ELYSIAN_ERR_FATAL;
 		}
-		if ((read_size_actual != read_size) && (file_hdl->pos < seekpos)) {
+		if ((read_size_actual != read_size) && (file_vrt->pos < seekpos)) {
 			return ELYSIAN_ERR_FATAL;
 		}
 	};
@@ -507,36 +555,36 @@ elysian_err_t elysian_fs_hdl_fseek(elysian_t* server, elysian_file_t* file, uint
 	return ELYSIAN_ERR_OK;
 }
 
-elysian_err_t elysian_fs_hdl_ftell(elysian_t* server, elysian_file_t* file, uint32_t* seekpos){
-    elysian_file_hdl_t* file_hdl = &file->descriptor.hdl;
-	*seekpos = file_hdl->pos;
+elysian_err_t elysian_fs_vrt_ftell(elysian_t* server, elysian_file_t* file, uint32_t* seekpos){
+    elysian_file_vrt_t* file_vrt = &file->descriptor.vrt;
+	*seekpos = file_vrt->pos;
 	return ELYSIAN_ERR_OK;
 }
 
-int elysian_fs_hdl_fread(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size){
+int elysian_fs_vrt_fread(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size){
+	elysian_file_vrt_t* file_vrt = &file->descriptor.vrt;
 	int read_size;
-    elysian_file_hdl_t* file_hdl = &file->descriptor.hdl;
 
-	//read_size = (buf_size > file_rom->size - file_hdl->pos) ? file_rom->size - file_rom->pos : buf_size;
-	read_size = file_hdl->def->read_handler(server, file->descriptor.hdl.varg, buf, buf_size);
+	//read_size = (buf_size > file_rom->size - file_vrt->pos) ? file_rom->size - file_rom->pos : buf_size;
+	read_size = file_vrt->def->read_handler(server, file_vrt->varg, buf, buf_size);
 	if (read_size > 0) {
-		file_hdl->pos += read_size;
+		file_vrt->pos += read_size;
 	}
 	return read_size;
 }
 
-int elysian_fs_hdl_fwrite(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size){
+int elysian_fs_vrt_fwrite(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size){
 	ELYSIAN_ASSERT(0);
 	return -1;
 }
 
-elysian_err_t elysian_fs_hdl_fclose(elysian_t* server, elysian_file_t* file){
-	elysian_file_hdl_t* file_hdl = &file->descriptor.hdl;
-	file_hdl->def->close_handler(server, file->descriptor.hdl.varg);
+elysian_err_t elysian_fs_vrt_fclose(elysian_t* server, elysian_file_t* file){
+	elysian_file_vrt_t* file_vrt = &file->descriptor.vrt;
+	file_vrt->def->close_handler(server, file_vrt->varg);
     return ELYSIAN_ERR_OK;
 }
 
-elysian_err_t elysian_fs_hdl_fremove(elysian_t* server, char* abs_path){
+elysian_err_t elysian_fs_vrt_fremove(elysian_t* server, char* abs_path){
 	ELYSIAN_ASSERT(0);
 	return ELYSIAN_ERR_FATAL;
 }

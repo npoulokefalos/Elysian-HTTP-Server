@@ -1534,13 +1534,13 @@ elysian_t* elysian_new(){
     }
     
     server->controllers = NULL;
-	server->rom_fs = NULL;
-	server->hdl_fs = NULL;
+	server->fs_def_rom = NULL;
+	server->fs_def_vrt = NULL;
 
     return server;
 }
 
-elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_mvc_controller_t controllers[], const elysian_file_rom_t rom_fs[], const elysian_file_def_hdl_t hdl_fs[], const elysian_websocket_controller_t websocket_controllers[], elysian_authentication_cb_t authentication_cb) {
+elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_mvc_controller_t controllers[], const elysian_file_def_rom_t fs_def_rom[], const elysian_file_def_vrt_t fs_def_vrt[], const elysian_websocket_controller_t websocket_controllers[], elysian_authentication_cb_t authentication_cb) {
     elysian_err_t err;
 	
 #if defined(ELYSIAN_OS_ENV_UNIX)
@@ -1549,8 +1549,8 @@ elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_mvc_
 	}
 #endif
 	server->controllers = (elysian_mvc_controller_t*) controllers;
-	server->rom_fs = (elysian_file_rom_t*) rom_fs;
-	server->hdl_fs = (elysian_file_def_hdl_t*) hdl_fs;
+	server->fs_def_rom = (elysian_file_def_rom_t*) fs_def_rom;
+	server->fs_def_vrt = (elysian_file_def_vrt_t*) fs_def_vrt;
 	server->websocket_controllers = (elysian_websocket_controller_t*) websocket_controllers;
 	
 	server->listening_port = port;

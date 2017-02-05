@@ -77,8 +77,8 @@
 ** Web Server's internal partition for sending default content, for example default error pages (404, 500, ..)
 ** when user-defined error pages are not provided in any other user partition.
 */
-#define ELYSIAN_FS_HDL_VRT_ROOT						"/fs_hdl"
-#define ELYSIAN_FS_HDL_ABS_ROOT						""
+#define ELYSIAN_FS_VRT_VRT_ROOT						"/fs_hdl"
+#define ELYSIAN_FS_VRT_ABS_ROOT						""
 
 
 /*
@@ -101,8 +101,11 @@
 ** CAUTION: Do not change the partition of this file, unless it is guaranteed that this file will always exist to
 **			the specified partition.
 */
-#define ELYSIAN_FS_EMPTY_FILE_NAME 					"/empty.file"
-#define ELYSIAN_FS_EMPTY_FILE_VRT_ROOT 				ELYSIAN_FS_ROM_VRT_ROOT
+#define ELYSIAN_FS_EMPTY_FILE_ABS_PATH 					ELYSIAN_FS_ROM_ABS_ROOT"/empty.file"
+#define ELYSIAN_FS_EMPTY_FILE_VRT_PATH 					ELYSIAN_FS_ROM_VRT_ROOT"/empty.file"
+
+//#define ELYSIAN_FS_EMPTY_FILE_NAME 					ELYSIAN_FS_ROM_ABS_ROOT"/empty.file"
+//#define ELYSIAN_FS_EMPTY_FILE_VRT_ROOT 				ELYSIAN_FS_ROM_VRT_ROOT
 
 
 #define ELYSIAN_CBUF_LEN (384)
@@ -247,6 +250,13 @@ void elysian_http_decode(char *encoded);
 char* elysian_http_get_method_name(elysian_http_method_e method_id);
 elysian_http_method_e elysian_http_get_method_id(char* method_name);
     
+typedef struct elysian_http_status_code_t elysian_http_status_code_t;
+struct elysian_http_status_code_t{
+	uint16_t code_num;
+	const char* code_msg;
+	const char* code_body;
+};
+
 uint16_t elysian_http_get_status_code_num(elysian_http_status_code_e status_code);
 char* elysian_http_get_status_code_msg(elysian_http_status_code_e status_code);
 char* elysian_http_get_status_code_body(elysian_http_status_code_e status_code);
@@ -338,19 +348,7 @@ struct elysian_fs_ram_file_t{
 typedef struct elysian_file_ram_t elysian_file_ram_t;
 struct elysian_file_ram_t{
 	elysian_fs_ram_file_t* fd;
-	//elysian_file_mode_t mode;
-	//char* name;
-	//uint8_t handles;
     uint32_t pos;
-    //elysian_cbuf_t* cbuf;
-};
-
-typedef struct elysian_file_rom_t elysian_file_rom_t;
-struct elysian_file_rom_t{
-	const char* name;
-    const uint8_t* ptr;
-    uint32_t pos;
-    uint32_t size;
 };
 
 typedef struct elysian_file_ext_t elysian_file_ext_t;
@@ -366,19 +364,31 @@ struct elysian_file_ext_t{
 #endif
 };
 
-typedef struct elysian_file_def_hdl_t elysian_file_def_hdl_t;
-struct elysian_file_def_hdl_t{
+typedef struct elysian_file_def_rom_t elysian_file_def_rom_t;
+struct elysian_file_def_rom_t {
 	const char* name;
+    const uint8_t* ptr;
+    const uint32_t size;
+};
 
+typedef struct elysian_file_rom_t elysian_file_rom_t;
+struct elysian_file_rom_t {
+	const elysian_file_def_rom_t* def;
+    uint32_t pos;
+};
+
+typedef struct elysian_file_def_vrt_t elysian_file_def_vrt_t;
+struct elysian_file_def_vrt_t {
+	const char* name;
 	elysian_err_t 	(*open_handler)(elysian_t* server, void** varg);
 	int 			(*read_handler)(elysian_t* server, void* varg, uint8_t* buf, uint32_t buf_size);
 	elysian_err_t 	(*seekreset_handler)(elysian_t* server, void* varg);
 	elysian_err_t 	(*close_handler)(elysian_t* server, void* varg);
 };
 
-typedef struct elysian_file_hdl_t elysian_file_hdl_t;
-struct elysian_file_hdl_t{
-	const elysian_file_def_hdl_t* def;
+typedef struct elysian_file_vrt_t elysian_file_vrt_t;
+struct elysian_file_vrt_t{
+	const elysian_file_def_vrt_t* def;
     void* varg;
     uint32_t pos;
 };
@@ -395,7 +405,7 @@ struct elysian_file_t{
         elysian_file_ram_t ram;
         elysian_file_rom_t rom;
         elysian_file_ext_t ext;
-		elysian_file_hdl_t hdl;
+		elysian_file_vrt_t vrt;
     }descriptor;
 };
 
@@ -432,14 +442,14 @@ int elysian_fs_ram_fwrite(elysian_t* server, elysian_file_t* file, uint8_t* buf,
 elysian_err_t elysian_fs_ram_fclose(elysian_t* server, elysian_file_t* file);
 elysian_err_t elysian_fs_ram_fremove(elysian_t* server, char* vrt_path);
 
-elysian_err_t elysian_fs_hdl_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file);
-elysian_err_t elysian_fs_hdl_fsize(elysian_t* server, elysian_file_t* file, uint32_t* filesize);
-elysian_err_t elysian_fs_hdl_fseek(elysian_t* server, elysian_file_t* file, uint32_t seekpos);
-elysian_err_t elysian_fs_hdl_ftell(elysian_t* server, elysian_file_t* file, uint32_t* seekpos);
-int elysian_fs_hdl_fread(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size);
-int elysian_fs_hdl_fwrite(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size);
-elysian_err_t elysian_fs_hdl_fclose(elysian_t* server, elysian_file_t* file);
-elysian_err_t elysian_fs_hdl_fremove(elysian_t* server, char* vrt_path);
+elysian_err_t elysian_fs_vrt_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file);
+elysian_err_t elysian_fs_vrt_fsize(elysian_t* server, elysian_file_t* file, uint32_t* filesize);
+elysian_err_t elysian_fs_vrt_fseek(elysian_t* server, elysian_file_t* file, uint32_t seekpos);
+elysian_err_t elysian_fs_vrt_ftell(elysian_t* server, elysian_file_t* file, uint32_t* seekpos);
+int elysian_fs_vrt_fread(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size);
+int elysian_fs_vrt_fwrite(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size);
+elysian_err_t elysian_fs_vrt_fclose(elysian_t* server, elysian_file_t* file);
+elysian_err_t elysian_fs_vrt_fremove(elysian_t* server, char* vrt_path);
 
 
 
