@@ -36,13 +36,13 @@ Supported features include:
 
 ## Linux or Cygwin: 
 - Open a terminal and navigate to "examples/api_demo"
-- Isuue "make plat=linux"
+- Issue "make plat=linux"
 - Run the "./elysian.out" executable.
 - Open a browser and navigate to "http://localhost:9000"
 
 ## Windows (MinGW): 
 - Open cmd and navigate to "examples/api_demo"
-- Isuue "mingw32-make make plat=windows"
+- Issue "mingw32-make make plat=windows"
 - Run the "elysian.out" executable.
 - Open a browser and navigate to "http://localhost:9000"
 
