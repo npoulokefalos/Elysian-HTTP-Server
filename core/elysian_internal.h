@@ -723,7 +723,7 @@ typedef enum{
 }elysian_schdlr_task_prio_t;
 
 
-typedef void (*elysian_schdlr_state_t)(elysian_t* server, elysian_schdlr_ev_t event);
+typedef elysian_err_t (*elysian_schdlr_state_t)(elysian_t* server, elysian_schdlr_ev_t event);
 
 typedef struct elysian_schdlr_task_t elysian_schdlr_task_t;
 struct elysian_schdlr_task_t{
@@ -770,10 +770,11 @@ struct elysian_schdlr_t{
     elysian_schdlr_state_t client_connected_state;
 };
 
+elysian_err_t elysian_schdlr_same_state(elysian_t* server, elysian_schdlr_ev_t ev);
 elysian_schdlr_task_t* elysian_schdlr_current_task_get(elysian_t* server);
 elysian_client_t* elysian_schdlr_current_client_get(elysian_t* server);
-void elysian_schdlr_state_set(elysian_t* server, elysian_schdlr_state_t state);
 elysian_schdlr_state_t elysian_schdlr_state_get(elysian_t* server);
+elysian_err_t elysian_schdlr_state_next(elysian_t* server, elysian_schdlr_state_t next_state);
 void elysian_schdlr_state_poll_set(elysian_t* server, uint32_t poll_delta);
 void elysian_schdlr_state_poll_enable(elysian_t* server);
 void elysian_schdlr_state_poll_disable(elysian_t* server);

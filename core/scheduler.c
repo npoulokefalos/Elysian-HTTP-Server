@@ -34,6 +34,27 @@
 
 #define ELYSIAN_STARVATION_ENABLED	(1)
 
+elysian_err_t elysian_schdlr_same_state(elysian_t* server, elysian_schdlr_ev_t ev) {
+	return ELYSIAN_ERR_OK;
+}
+
+elysian_err_t elysian_schdlr_state_next(elysian_t* server, elysian_schdlr_state_t next_state) {
+	elysian_schdlr_t* schdlr = &server->scheduler;
+	elysian_schdlr_task_t* task = schdlr->current_task;
+    ELYSIAN_ASSERT(task != NULL);
+	
+	if (!next_state) {
+		/* Task quit request */
+		task->new_state = NULL;
+	} else {
+		/* Different or same state */
+		if (next_state != elysian_schdlr_same_state) {
+			task->new_state = next_state;
+		}
+	}
+	return ELYSIAN_ERR_OK;
+}
+
 void elysian_schdlr_throw_event(elysian_t* server, elysian_schdlr_task_t* task, elysian_schdlr_ev_t ev){
     elysian_schdlr_t* schdlr = &server->scheduler;
 	if(!task->state){
@@ -643,13 +664,6 @@ elysian_schdlr_task_t* elysian_schdlr_current_task_get(elysian_t* server){
 	return schdlr->current_task;
 }
 #endif
-
-void elysian_schdlr_state_set(elysian_t* server, elysian_schdlr_state_t state){
-	elysian_schdlr_t* schdlr = &server->scheduler;
-	elysian_schdlr_task_t* task = schdlr->current_task;
-    ELYSIAN_ASSERT(task != NULL);
-    task->new_state = state;
-}
 
 elysian_schdlr_state_t elysian_schdlr_state_get(elysian_t* server){
 	elysian_schdlr_t* schdlr = &server->scheduler;
