@@ -67,8 +67,6 @@ uint32_t elysian_mem_usage_bytes = 0;
 
 uint32_t elysian_mem_usage(){
     ELYSIAN_LOG("elysian_mem_usage() =============================== %u", elysian_mem_usage_bytes);
-    elysian_stats_update(elysian_stats_RES_MEM, elysian_mem_usage_bytes);
-    elysian_stats_get(elysian_stats_RES_MEM);
     return elysian_mem_usage_bytes;
 }
 

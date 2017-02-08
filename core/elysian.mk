@@ -7,7 +7,6 @@ ELYSIAN_SOURCE_C = \
 					mvc.c \
 					http.c \
 					fs.c \
-					stats.c \
 					strings_file.c \
 					strings.c \
 					isp.c \
