@@ -43,24 +43,24 @@
 
 uint32_t elysian_port_time_now(){
 #if defined(ELYSIAN_OS_ENV_UNIX)
-    struct timeval  tv;
-    gettimeofday(&tv, NULL);
-    return  ((tv.tv_sec) * 1000) + ((tv.tv_usec) / 1000) ;
+	struct timeval  tv;
+	gettimeofday(&tv, NULL);
+	return  ((tv.tv_sec) * 1000) + ((tv.tv_usec) / 1000) ;
 #elif defined(ELYSIAN_OS_ENV_CHIBIOS)
-    return chTimeNow();
+	return chTimeNow();
 #elif defined(ELYSIAN_OS_ENV_WINDOWS)
 	SYSTEMTIME time;
 	GetSystemTime(&time);
 	uint32_t millis = (time.wSecond * 1000) + time.wMilliseconds; /* Rolls every 59999 ms */
 	return millis;
 #else
-    return 0;
+	return 0;
 #endif
 }
 
 void elysian_port_time_sleep(uint32_t ms){
 #if defined(ELYSIAN_OS_ENV_UNIX)
-    usleep(1000 * ms);
+	usleep(1000 * ms);
 #elif defined(ELYSIAN_OS_ENV_CHIBIOS)
 	chThdSleepMilliseconds(ms);
 #elif defined(ELYSIAN_OS_ENV_WINDOWS)
@@ -76,7 +76,7 @@ void elysian_port_time_sleep(uint32_t ms){
 */
 void elysian_port_thread_yield(){
 #if defined(ELYSIAN_OS_ENV_UNIX)
-    elysian_port_time_sleep(1);
+	elysian_port_time_sleep(1);
 #elif defined(ELYSIAN_OS_ENV_CHIBIOS)
 	chThdYield();
 #elif defined(ELYSIAN_OS_ENV_WINDOWS)
@@ -92,19 +92,19 @@ void elysian_port_thread_yield(){
 
 void* elysian_port_mem_malloc(uint32_t size){
 #if defined(ELYSIAN_OS_ENV_UNIX)
-    return malloc(size);
+	return malloc(size);
 #elif defined(ELYSIAN_OS_ENV_CHIBIOS)
-    return chHeapAlloc(NULL, size);
+	return chHeapAlloc(NULL, size);
 #elif defined(ELYSIAN_OS_ENV_WINDOWS)
 	return malloc(size);
 #else
-    return NULL;
+	return NULL;
 #endif
 }
 
 void elysian_port_mem_free(void* ptr){
 #if defined(ELYSIAN_OS_ENV_UNIX)
-    free(ptr);
+	free(ptr);
 #elif defined(ELYSIAN_OS_ENV_CHIBIOS)
 	chHeapFree(ptr);
 #elif defined(ELYSIAN_OS_ENV_WINDOWS)
@@ -144,13 +144,13 @@ elysian_err_t elysian_port_hostname_get(char hostname[64]){
  */
 void elysian_setblocking(elysian_socket_t* socket, uint8_t blocking){
 #if defined(ELYSIAN_TCPIP_ENV_UNIX)
-    int flags = fcntl(socket->fd, F_GETFL, 0);
-    if (flags < 0) {
-        ELYSIAN_LOG("fcntl");
-        while(1){}
-    };
-    flags = blocking ? (flags&~O_NONBLOCK) : (flags|O_NONBLOCK);
-    fcntl(socket->fd, F_SETFL, flags);
+	int flags = fcntl(socket->fd, F_GETFL, 0);
+	if (flags < 0) {
+		ELYSIAN_LOG("fcntl");
+		while(1){}
+	};
+	flags = blocking ? (flags&~O_NONBLOCK) : (flags|O_NONBLOCK);
+	fcntl(socket->fd, F_SETFL, flags);
 #elif defined(ELYSIAN_TCPIP_ENV_WINDOWS)
 	unsigned long flags = !!blocking;
 	ioctlsocket(socket->fd, FIONBIO, &flags);
@@ -167,7 +167,7 @@ void elysian_setblocking(elysian_socket_t* socket, uint8_t blocking){
  */
 void elysian_port_socket_close(elysian_socket_t* socket){
 #if defined(ELYSIAN_TCPIP_ENV_UNIX)
-    close(socket->fd);
+	close(socket->fd);
 #elif defined(ELYSIAN_TCPIP_ENV_WINDOWS)
 	closesocket(socket->fd);
 #else
@@ -187,67 +187,67 @@ void elysian_port_socket_close(elysian_socket_t* socket){
  */
 elysian_err_t elysian_port_socket_listen(uint16_t port, elysian_socket_t* server_socket){
 #if defined(ELYSIAN_TCPIP_ENV_UNIX)
-    int server_socket_fd;
-    struct sockaddr_in server_sockaddrin;
-    if ((server_socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        return ELYSIAN_ERR_FATAL;
-    }
+	int server_socket_fd;
+	struct sockaddr_in server_sockaddrin;
+	if ((server_socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+		return ELYSIAN_ERR_FATAL;
+	}
 	
-    server_sockaddrin.sin_family = AF_INET;
-    server_sockaddrin.sin_port = htons(port);
-    server_sockaddrin.sin_addr.s_addr = INADDR_ANY;
-    memset(&(server_sockaddrin.sin_zero), 0, sizeof(server_sockaddrin.sin_zero));
+	server_sockaddrin.sin_family = AF_INET;
+	server_sockaddrin.sin_port = htons(port);
+	server_sockaddrin.sin_addr.s_addr = INADDR_ANY;
+	memset(&(server_sockaddrin.sin_zero), 0, sizeof(server_sockaddrin.sin_zero));
 
-    if (bind(server_socket_fd, (struct sockaddr *)&server_sockaddrin, sizeof(struct sockaddr)) == -1) {
-        ELYSIAN_LOG_ERR("bind error!");
-        return ELYSIAN_ERR_FATAL;
-    }
+	if (bind(server_socket_fd, (struct sockaddr *)&server_sockaddrin, sizeof(struct sockaddr)) == -1) {
+		ELYSIAN_LOG_ERR("bind error!");
+		return ELYSIAN_ERR_FATAL;
+	}
 
-    if (listen(server_socket_fd, ELYSIAN_MAX_CLIENTS_NUM) == -1) {
-        ELYSIAN_LOG_ERR("listen error!");
-        return ELYSIAN_ERR_FATAL;
-    }
-    
-    server_socket->fd = server_socket_fd;
+	if (listen(server_socket_fd, ELYSIAN_MAX_CLIENTS_NUM) == -1) {
+		ELYSIAN_LOG_ERR("listen error!");
+		return ELYSIAN_ERR_FATAL;
+	}
+	
+	server_socket->fd = server_socket_fd;
 #elif defined(ELYSIAN_TCPIP_ENV_WINDOWS)
 	SOCKET server_socket_fd;
-    struct sockaddr_in server_sockaddrin;
+	struct sockaddr_in server_sockaddrin;
 	WSADATA wsaData;
 	
 	//Initialize Winsock
-    if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
-        ELYSIAN_LOG_ERR("WSAStartup error!");
-        return ELYSIAN_ERR_FATAL;
-    }
+	if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
+		ELYSIAN_LOG_ERR("WSAStartup error!");
+		return ELYSIAN_ERR_FATAL;
+	}
 	
-    if ((server_socket_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == INVALID_SOCKET) {
+	if ((server_socket_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == INVALID_SOCKET) {
 		ELYSIAN_LOG_ERR("socket error!");
 		WSACleanup();
-        return ELYSIAN_ERR_FATAL;
-    }
+		return ELYSIAN_ERR_FATAL;
+	}
 	
-    server_sockaddrin.sin_family = AF_INET;
-    server_sockaddrin.sin_port = htons(port);
-    server_sockaddrin.sin_addr.s_addr = INADDR_ANY;
+	server_sockaddrin.sin_family = AF_INET;
+	server_sockaddrin.sin_port = htons(port);
+	server_sockaddrin.sin_addr.s_addr = INADDR_ANY;
 	//memset(&(server_sockaddrin.sin_zero), 0, sizeof(struct sockaddr_in));
 
-    if (bind(server_socket_fd, (SOCKADDR*)&server_sockaddrin, sizeof(struct sockaddr)) == SOCKET_ERROR) {
-        ELYSIAN_LOG_ERR("bind error!");
+	if (bind(server_socket_fd, (SOCKADDR*)&server_sockaddrin, sizeof(struct sockaddr)) == SOCKET_ERROR) {
+		ELYSIAN_LOG_ERR("bind error!");
 		WSACleanup();
-        return ELYSIAN_ERR_FATAL;
-    }
+		return ELYSIAN_ERR_FATAL;
+	}
 
-    if (listen(server_socket_fd, ELYSIAN_MAX_CLIENTS_NUM) == SOCKET_ERROR) {
-        ELYSIAN_LOG_ERR("listen error!");
+	if (listen(server_socket_fd, ELYSIAN_MAX_CLIENTS_NUM) == SOCKET_ERROR) {
+		ELYSIAN_LOG_ERR("listen error!");
 		WSACleanup();
-        return ELYSIAN_ERR_FATAL;
-    }
-    
-    server_socket->fd = server_socket_fd;
+		return ELYSIAN_ERR_FATAL;
+	}
+	
+	server_socket->fd = server_socket_fd;
 #else
 
 #endif
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 }
 
 /* 
@@ -265,40 +265,40 @@ elysian_err_t elysian_port_socket_listen(uint16_t port, elysian_socket_t* server
 ** @retval ELYSIAN_ERR_FATAL  	There was a fatal error. No new connection was accepted. client_socket is invalid.
  */
 elysian_err_t elysian_port_socket_accept(elysian_socket_t* server_socket, uint32_t timeout_ms, elysian_socket_t* client_socket){
-    int client_socket_fd;
-    struct sockaddr_in client_addr;
-    
+	int client_socket_fd;
+	struct sockaddr_in client_addr;
+	
 #if defined(ELYSIAN_TCPIP_ENV_UNIX)
 	socklen_t sockaddr_in_size;
 
-    sockaddr_in_size = sizeof(struct sockaddr_in);
-    
-    elysian_setblocking(server_socket, 0);
-    client_socket_fd = accept(server_socket->fd, (struct sockaddr *)&client_addr, &sockaddr_in_size);
-    elysian_setblocking(server_socket, 1);
-    
-    if(client_socket_fd < 0) {
+	sockaddr_in_size = sizeof(struct sockaddr_in);
+	
+	elysian_setblocking(server_socket, 0);
+	client_socket_fd = accept(server_socket->fd, (struct sockaddr *)&client_addr, &sockaddr_in_size);
+	elysian_setblocking(server_socket, 1);
+	
+	if(client_socket_fd < 0) {
 		if((errno != EAGAIN) && (errno != EWOULDBLOCK)){
-             return ELYSIAN_ERR_FATAL;
-        }else{
+			 return ELYSIAN_ERR_FATAL;
+		}else{
 			 return ELYSIAN_ERR_POLL;
 		}
-    } 
+	} 
 	
-    ELYSIAN_LOG("New socket %d accepted!", client_socket_fd);
+	ELYSIAN_LOG("New socket %d accepted!", client_socket_fd);
 	
-    client_socket->fd = client_socket_fd;
-    
-    return ELYSIAN_ERR_OK;
+	client_socket->fd = client_socket_fd;
+	
+	return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_TCPIP_ENV_WINDOWS)
 	int sockaddr_in_size;
-    sockaddr_in_size = sizeof(struct sockaddr_in);
-    
-    elysian_setblocking(server_socket, 0);
-    client_socket_fd = accept(server_socket->fd, (struct sockaddr *)&client_addr, &sockaddr_in_size);
-    elysian_setblocking(server_socket, 1);
-    
-    if(client_socket_fd == INVALID_SOCKET) {
+	sockaddr_in_size = sizeof(struct sockaddr_in);
+	
+	elysian_setblocking(server_socket, 0);
+	client_socket_fd = accept(server_socket->fd, (struct sockaddr *)&client_addr, &sockaddr_in_size);
+	elysian_setblocking(server_socket, 1);
+	
+	if(client_socket_fd == INVALID_SOCKET) {
 		int win_errno = WSAGetLastError();
 		if (win_errno != WSAEWOULDBLOCK) {
 			printf("accept() failed with error %d\n", WSAGetLastError());
@@ -306,12 +306,12 @@ elysian_err_t elysian_port_socket_accept(elysian_socket_t* server_socket, uint32
 		} else {
 			return ELYSIAN_ERR_POLL;
 		}
-    }
-    
-    ELYSIAN_LOG("Socket %d accepted!", client_socket_fd);
-    client_socket->fd = client_socket_fd;
-    
-    return ELYSIAN_ERR_OK;
+	}
+	
+	ELYSIAN_LOG("Socket %d accepted!", client_socket_fd);
+	client_socket->fd = client_socket_fd;
+	
+	return ELYSIAN_ERR_OK;
 #else
 	return ELYSIAN_ERR_FATAL;
 #endif 
@@ -332,50 +332,50 @@ elysian_err_t elysian_port_socket_accept(elysian_socket_t* server_socket, uint32
 ** @retval -1	There was a fatal error. Connection is considered lost. elysian_port_socket_close() is going to follow.
  */
 int elysian_port_socket_read(elysian_socket_t* client_socket, uint8_t* buf, uint16_t buf_size){
-    int result;
-    
-    //ELYSIAN_LOG("Socket %d Trying to read %u bytes\r\n", client_socket->fd, buf_size);
+	int result;
+	
+	//ELYSIAN_LOG("Socket %d Trying to read %u bytes\r\n", client_socket->fd, buf_size);
 
-    elysian_setblocking(client_socket, 0);
+	elysian_setblocking(client_socket, 0);
 	
 #if defined(ELYSIAN_TCPIP_ENV_UNIX)
-    result = recv(client_socket->fd, buf, buf_size, 0);
-    if(result < 0){
-        if((errno != EAGAIN) && (errno != EWOULDBLOCK)){
+	result = recv(client_socket->fd, buf, buf_size, 0);
+	if(result < 0){
+		if((errno != EAGAIN) && (errno != EWOULDBLOCK)){
 			ELYSIAN_LOG_ERR(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> read() result is %d, ERRNO = %d", result, errno);
-            result = -1;
-        }else{
+			result = -1;
+		}else{
 			result = 0;
 		}
-    }else if(result == 0){
-        /*
-        ** The return value will be 0 when the peer has performed an orderly shutdown
-        */
-        result = -1;
-    }
+	}else if(result == 0){
+		/*
+		** The return value will be 0 when the peer has performed an orderly shutdown
+		*/
+		result = -1;
+	}
 #elif defined(ELYSIAN_TCPIP_ENV_WINDOWS)
-    result = recv(client_socket->fd, (char*) buf, buf_size, 0);
-    if(result < 0){
-        int win_errno = WSAGetLastError();
-        if(win_errno != WSAEWOULDBLOCK ){
+	result = recv(client_socket->fd, (char*) buf, buf_size, 0);
+	if(result < 0){
+		int win_errno = WSAGetLastError();
+		if(win_errno != WSAEWOULDBLOCK ){
 			ELYSIAN_LOG_ERR(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> read() result is %d, ERRNO = %d", result, win_errno);
-            result = -1;
-        }else{
+			result = -1;
+		}else{
 			result = 0;
 		}
-    }else if(result == 0){
-        /*
-        ** The return value will be 0 when the peer has performed an orderly shutdown
-        */
-        result = -1;
-    }
+	}else if(result == 0){
+		/*
+		** The return value will be 0 when the peer has performed an orderly shutdown
+		*/
+		result = -1;
+	}
 #else
 	result = -1;
 #endif
 
-    elysian_setblocking(client_socket, 1);
+	elysian_setblocking(client_socket, 1);
 
-    //ELYSIAN_LOG("received = %u bytes\r\n", result);
+	//ELYSIAN_LOG("received = %u bytes\r\n", result);
 
 	return result;
 }
@@ -394,40 +394,40 @@ int elysian_port_socket_read(elysian_socket_t* client_socket, uint8_t* buf, uint
 ** @retval -1	There was a fatal error. Connection is considered lost. elysian_port_socket_close() is going to follow.
  */
 int elysian_port_socket_write(elysian_socket_t* client_socket, uint8_t* buf, uint16_t buf_size){
-    int result;
-    
+	int result;
+	
 	//ELYSIAN_LOG("Trying to write %u bytes\r\n", buf_size);
 	
-    elysian_setblocking(client_socket, 0);
+	elysian_setblocking(client_socket, 0);
 	
 #if defined(ELYSIAN_TCPIP_ENV_UNIX)
 	result = write(client_socket->fd, buf, buf_size);
-    if(result < 0){
-        if((errno != EAGAIN) && (errno != EWOULDBLOCK)){
-            ELYSIAN_LOG_ERR(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> write() result is %d, ERRNO = %d", result, errno);
-            result = -1;
-        }else{
+	if(result < 0){
+		if((errno != EAGAIN) && (errno != EWOULDBLOCK)){
+			ELYSIAN_LOG_ERR(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> write() result is %d, ERRNO = %d", result, errno);
+			result = -1;
+		}else{
 			result = 0;
 		}
-    }
+	}
 #elif defined(ELYSIAN_TCPIP_ENV_WINDOWS)
 	result = send(client_socket->fd, (const char *) buf, buf_size, 0);
-    if(result == SOCKET_ERROR){
+	if(result == SOCKET_ERROR){
 		int win_errno = WSAGetLastError();
-        if(win_errno != WSAEWOULDBLOCK){
-            ELYSIAN_LOG_ERR(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> send() result is %d, ERRNO = %d", result, win_errno);
-            result = -1;
-        }else{
+		if(win_errno != WSAEWOULDBLOCK){
+			ELYSIAN_LOG_ERR(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> send() result is %d, ERRNO = %d", result, win_errno);
+			result = -1;
+		}else{
 			result = 0;
 		}
-    }
+	}
 #else
 	result = -1;
 #endif
 
-    elysian_setblocking(client_socket, 1);
+	elysian_setblocking(client_socket, 1);
 
-    return result;
+	return result;
 }
 
 #if (ELYSIAN_SOCKET_SELECT_SUPPORTED == 1)
@@ -446,75 +446,75 @@ int elysian_port_socket_write(elysian_socket_t* client_socket, uint8_t* buf, uin
 ** @retval ELYSIAN_ERR_FATAL  	There was a fatal error. 
  */
 elysian_err_t elysian_port_socket_select(elysian_socket_t* socket_readset[], uint32_t socket_readset_sz, uint32_t timeout_ms, uint8_t socket_readset_status[]){
-    uint32_t index;
-    int retval;
+	uint32_t index;
+	int retval;
 	
 #if defined(ELYSIAN_TCPIP_ENV_UNIX)
 	struct timeval timeval;
 	fd_set fd_readset;
-    FD_ZERO(&fd_readset);
+	FD_ZERO(&fd_readset);
 
-    for(index = 0; index < socket_readset_sz; index++){
-        socket_readset_status[index] = 0;
-        FD_SET(socket_readset[index]->fd, &fd_readset);
-    }
+	for(index = 0; index < socket_readset_sz; index++){
+		socket_readset_status[index] = 0;
+		FD_SET(socket_readset[index]->fd, &fd_readset);
+	}
 
-    timeval.tv_sec 		= (timeout_ms / 1000); 
-    timeval.tv_usec 	= (timeout_ms % 1000) * 1000;
-    
-    retval = select (FD_SETSIZE, &fd_readset, NULL, NULL, &timeval);
-    
-    if(retval < 0){
-        /* Select error */
-        ELYSIAN_LOG("Select Error!\r\n");
-    }else if(retval == 0){
-        /* Select timeout */
-        ELYSIAN_LOG("Select Timeout!\r\n");
-    }else{
-        /* Read/Write event */
-        for(index = 0; index < socket_readset_sz; index++){
-            if (FD_ISSET(socket_readset[index]->fd, &fd_readset)){
-                //ELYSIAN_LOG("Socket[index = %d] %d can read!\r\n",index,socket_readset[index]->fd);
-                socket_readset_status[index] = 1;
-            }
-        }
-    }
+	timeval.tv_sec 		= (timeout_ms / 1000); 
+	timeval.tv_usec 	= (timeout_ms % 1000) * 1000;
+	
+	retval = select (FD_SETSIZE, &fd_readset, NULL, NULL, &timeval);
+	
+	if(retval < 0){
+		/* Select error */
+		ELYSIAN_LOG("Select Error!\r\n");
+	}else if(retval == 0){
+		/* Select timeout */
+		ELYSIAN_LOG("Select Timeout!\r\n");
+	}else{
+		/* Read/Write event */
+		for(index = 0; index < socket_readset_sz; index++){
+			if (FD_ISSET(socket_readset[index]->fd, &fd_readset)){
+				//ELYSIAN_LOG("Socket[index = %d] %d can read!\r\n",index,socket_readset[index]->fd);
+				socket_readset_status[index] = 1;
+			}
+		}
+	}
 	return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_TCPIP_ENV_WINDOWS)
 	TIMEVAL timeval;
 	fd_set fd_readset;
-    FD_ZERO(&fd_readset);
-    //ELYSIAN_LOG("----");
-    for(index = 0; index < socket_readset_sz; index++){
-        //ELYSIAN_LOG("elysian_port_socket_select(timeout = %u, socket_readset[%d]->fd = %d, size = %d)", timeout_ms, index, socket_readset[index]->fd, socket_readset_sz);
-        socket_readset_status[index] = 0;
-        FD_SET(socket_readset[index]->fd, &fd_readset);
-    }
-    //ELYSIAN_LOG("----");
-    
-    timeval.tv_sec 		= (timeout_ms / 1000); 
-    timeval.tv_usec 	= (timeout_ms % 1000) * 1000;
-    
-    retval = select (FD_SETSIZE, &fd_readset, NULL, NULL, &timeval);
-    
-    if(retval == SOCKET_ERROR){
-        /* Select error */
+	FD_ZERO(&fd_readset);
+	//ELYSIAN_LOG("----");
+	for(index = 0; index < socket_readset_sz; index++){
+		//ELYSIAN_LOG("elysian_port_socket_select(timeout = %u, socket_readset[%d]->fd = %d, size = %d)", timeout_ms, index, socket_readset[index]->fd, socket_readset_sz);
+		socket_readset_status[index] = 0;
+		FD_SET(socket_readset[index]->fd, &fd_readset);
+	}
+	//ELYSIAN_LOG("----");
+	
+	timeval.tv_sec 		= (timeout_ms / 1000); 
+	timeval.tv_usec 	= (timeout_ms % 1000) * 1000;
+	
+	retval = select (FD_SETSIZE, &fd_readset, NULL, NULL, &timeval);
+	
+	if(retval == SOCKET_ERROR){
+		/* Select error */
 		int win_errno = WSAGetLastError();
-        ELYSIAN_LOG("Select Error! win_errno = %d\r\n", win_errno);
-    }else if(retval == 0){
-        /* Select timeout */
-        ELYSIAN_LOG("Select Timeout!\r\n");
-    }else{
-        /* Read/Write event */
-        //ELYSIAN_LOG("Select Event!\r\n");
-        for(index = 0; index < socket_readset_sz; index++){
-            
-            if (FD_ISSET(socket_readset[index]->fd, &fd_readset)){
-                //ELYSIAN_LOG("Socket[index = %d] %d can read!\r\n",index,socket_readset[index]->fd);
-                socket_readset_status[index] = 1;
-            }
-        }
-    }
+		ELYSIAN_LOG("Select Error! win_errno = %d\r\n", win_errno);
+	}else if(retval == 0){
+		/* Select timeout */
+		ELYSIAN_LOG("Select Timeout!\r\n");
+	}else{
+		/* Read/Write event */
+		//ELYSIAN_LOG("Select Event!\r\n");
+		for(index = 0; index < socket_readset_sz; index++){
+			
+			if (FD_ISSET(socket_readset[index]->fd, &fd_readset)){
+				//ELYSIAN_LOG("Socket[index = %d] %d can read!\r\n",index,socket_readset[index]->fd);
+				socket_readset_status[index] = 1;
+			}
+		}
+	}
 	return ELYSIAN_ERR_OK;
 #else
 	return ELYSIAN_ERR_FATAL;
@@ -550,32 +550,32 @@ elysian_err_t elysian_port_fs_ext_fopen(elysian_t* server, char* abs_path, elysi
 #endif
 	
 #if defined(ELYSIAN_FS_ENV_UNIX)
-    file->descriptor.ext.fd = fopen(abs_path, (mode == ELYSIAN_FILE_MODE_READ) ? "rb" : "wb");
-    if(!file->descriptor.ext.fd){
-        return ELYSIAN_ERR_NOTFOUND;
-    }
-    return ELYSIAN_ERR_OK;
+	file->descriptor.ext.fd = fopen(abs_path, (mode == ELYSIAN_FILE_MODE_READ) ? "rb" : "wb");
+	if(!file->descriptor.ext.fd){
+		return ELYSIAN_ERR_NOTFOUND;
+	}
+	return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
-    file->descriptor.ext.fd = fopen(abs_path, (mode == ELYSIAN_FILE_MODE_READ) ? "rb" : "wb");
-    if(!file->descriptor.ext.fd){
-        return ELYSIAN_ERR_NOTFOUND;
-    }
-    return ELYSIAN_ERR_OK;
+	file->descriptor.ext.fd = fopen(abs_path, (mode == ELYSIAN_FILE_MODE_READ) ? "rb" : "wb");
+	if(!file->descriptor.ext.fd){
+		return ELYSIAN_ERR_NOTFOUND;
+	}
+	return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
-    FIL* file;
-    FRESULT res;
-    if(!(file = elysian_mem_malloc(server, sizeof(FIL))){
+	FIL* file;
+	FRESULT res;
+	if(!(file = elysian_mem_malloc(server, sizeof(FIL))){
 		return ELYSIAN_ERR_POLL;
 	}
-    fr = f_open(file, abs_path, (mode == ELYSIAN_FILE_MODE_READ) ? (FA_READ | FA_OPEN_EXISTING) : (FA_WRITE | FA_CREATE_ALWAYS) ));
-    if((res != FR_OK){
-        elysian_mem_free(server, file);
-        return ELYSIAN_ERR_NOTFOUND;
-    }
-    *vfile = file;
-    return ELYSIAN_ERR_OK;
+	fr = f_open(file, abs_path, (mode == ELYSIAN_FILE_MODE_READ) ? (FA_READ | FA_OPEN_EXISTING) : (FA_WRITE | FA_CREATE_ALWAYS) ));
+	if((res != FR_OK){
+		elysian_mem_free(server, file);
+		return ELYSIAN_ERR_NOTFOUND;
+	}
+	*vfile = file;
+	return ELYSIAN_ERR_OK;
 #else
-    return ELYSIAN_ERR_NOTFOUND;
+	return ELYSIAN_ERR_NOTFOUND;
 #endif
 }
 
@@ -592,28 +592,28 @@ elysian_err_t elysian_port_fs_ext_fopen(elysian_t* server, char* abs_path, elysi
 **								is the only file operation that could use the particular file descriptor.
  */
 elysian_err_t elysian_port_fs_ext_fsize(elysian_t* server, elysian_file_t* file, uint32_t* filesize){
-    *filesize = 0;
+	*filesize = 0;
 #if defined(ELYSIAN_FS_ENV_UNIX)
-    elysian_file_ext_t* file_disk = &file->descriptor.ext;
-    uint32_t seekpos = ftell(file_disk->fd);
-    fseek(file_disk->fd, 0L, SEEK_END);
-    *filesize = ftell(file_disk->fd);
-    fseek(file_disk->fd, seekpos, SEEK_SET);
-    return ELYSIAN_ERR_OK;
+	elysian_file_ext_t* file_disk = &file->descriptor.ext;
+	uint32_t seekpos = ftell(file_disk->fd);
+	fseek(file_disk->fd, 0L, SEEK_END);
+	*filesize = ftell(file_disk->fd);
+	fseek(file_disk->fd, seekpos, SEEK_SET);
+	return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
-    elysian_file_ext_t* file_disk = &file->descriptor.ext;
-    uint32_t seekpos = ftell(file_disk->fd);
-    fseek(file_disk->fd, 0L, SEEK_END);
-    *filesize = ftell(file_disk->fd);
-    fseek(file_disk->fd, seekpos, SEEK_SET);
+	elysian_file_ext_t* file_disk = &file->descriptor.ext;
+	uint32_t seekpos = ftell(file_disk->fd);
+	fseek(file_disk->fd, 0L, SEEK_END);
+	*filesize = ftell(file_disk->fd);
+	fseek(file_disk->fd, seekpos, SEEK_SET);
 	
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
 	elysian_file_ext_t* file_disk = &file->descriptor.ext;
 	*filesize = f_size(file_disk->fd);
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 #else
-    return ELYSIAN_ERR_FATAL;
+	return ELYSIAN_ERR_FATAL;
 #endif
 }
 
@@ -631,13 +631,13 @@ elysian_err_t elysian_port_fs_ext_fsize(elysian_t* server, elysian_file_t* file,
  */
 elysian_err_t elysian_port_fs_ext_fseek(elysian_t* server, elysian_file_t* file, uint32_t seekpos){
 #if defined(ELYSIAN_FS_ENV_UNIX)
-    elysian_file_ext_t* file_disk = &file->descriptor.ext;;
-    fseek(file_disk->fd, seekpos, SEEK_SET);
-    return ELYSIAN_ERR_OK;
+	elysian_file_ext_t* file_disk = &file->descriptor.ext;;
+	fseek(file_disk->fd, seekpos, SEEK_SET);
+	return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
 	elysian_file_ext_t* file_disk = &file->descriptor.ext;
-    fseek(file_disk->fd, seekpos, SEEK_SET);
-    return ELYSIAN_ERR_OK;
+	fseek(file_disk->fd, seekpos, SEEK_SET);
+	return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
 	FRESULT res;
 	elysian_file_ext_t* file_disk = &file->descriptor.ext;
@@ -645,9 +645,9 @@ elysian_err_t elysian_port_fs_ext_fseek(elysian_t* server, elysian_file_t* file,
 	if(res != FR_OK){
 		return ELYSIAN_ERR_FATAL;
 	}
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 #else
-    return ELYSIAN_ERR_FATAL;
+	return ELYSIAN_ERR_FATAL;
 #endif
 }
 
@@ -666,18 +666,18 @@ elysian_err_t elysian_port_fs_ext_fseek(elysian_t* server, elysian_file_t* file,
 elysian_err_t elysian_port_fs_ext_ftell(elysian_t* server, elysian_file_t* file, uint32_t* seekpos){
 #if defined(ELYSIAN_FS_ENV_UNIX)
 	elysian_file_ext_t* file_disk = &file->descriptor.ext;
-    *seekpos = ftell(file_disk->fd);
-    return ELYSIAN_ERR_OK;
+	*seekpos = ftell(file_disk->fd);
+	return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
 	elysian_file_ext_t* file_disk = &file->descriptor.ext;
-    *seekpos = ftell(file_disk->fd);
-    return ELYSIAN_ERR_OK;
+	*seekpos = ftell(file_disk->fd);
+	return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
 	elysian_file_ext_t* file_disk = &file->descriptor.ext;
 	*filesize = f_tell(file_disk->fd);
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 #else
-    return ELYSIAN_ERR_FATAL;
+	return ELYSIAN_ERR_FATAL;
 #endif
 }
 
@@ -698,13 +698,13 @@ int elysian_port_fs_ext_fread(elysian_t* server, elysian_file_t* file, uint8_t* 
 #if defined(ELYSIAN_FS_ENV_UNIX)
 	int result;
 	elysian_file_ext_t* file_disk = &file->descriptor.ext;
-    result = fread(buf, 1, buf_size, file_disk->fd);
-    return result;
+	result = fread(buf, 1, buf_size, file_disk->fd);
+	return result;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
 	int result;
 	elysian_file_ext_t* file_disk = &file->descriptor.ext;
-    result = fread(buf, 1, buf_size, file_disk->fd);
-    return result;
+	result = fread(buf, 1, buf_size, file_disk->fd);
+	return result;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
    	FRESULT res;
 	elysian_file_ext_t* file_disk = &file->descriptor.ext;
@@ -713,9 +713,9 @@ int elysian_port_fs_ext_fread(elysian_t* server, elysian_file_t* file, uint8_t* 
 		*actualreadsize = 0;
 		return ELYSIAN_ERR_FATAL;
 	}
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 #else
-    return ELYSIAN_ERR_FATAL;
+	return ELYSIAN_ERR_FATAL;
 #endif
 }
 
@@ -765,7 +765,7 @@ int elysian_port_fs_ext_fwrite(elysian_t* server, elysian_file_t* file, uint8_t*
 		return actual_write_sz;
 	}
 #else
-    return -1;
+	return -1;
 #endif
 }
 
@@ -781,12 +781,12 @@ int elysian_port_fs_ext_fwrite(elysian_t* server, elysian_file_t* file, uint8_t*
 elysian_err_t elysian_port_fs_ext_fclose(elysian_t* server, elysian_file_t* file){
 #if defined(ELYSIAN_FS_ENV_UNIX)
 	elysian_file_ext_t* file_disk = &file->descriptor.ext;
-    fclose(file_disk->fd);
-    return ELYSIAN_ERR_OK;
+	fclose(file_disk->fd);
+	return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
 	elysian_file_ext_t* file_disk = &file->descriptor.ext;
-    fclose(file_disk->fd);
-    return ELYSIAN_ERR_OK;
+	fclose(file_disk->fd);
+	return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
    	FRESULT res;
 	elysian_file_ext_t* file_disk = &file->descriptor.ext;
@@ -794,9 +794,9 @@ elysian_err_t elysian_port_fs_ext_fclose(elysian_t* server, elysian_file_t* file
 	if(res != FR_OK){
 		return ELYSIAN_ERR_FATAL;
 	}
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 #else
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 #endif
 }
 
@@ -819,18 +819,18 @@ elysian_err_t elysian_port_fs_ext_fremove(elysian_t* server, char* abs_path){
 #endif
 	
 #if defined(ELYSIAN_FS_ENV_UNIX)
-    remove(abs_path);
-    return ELYSIAN_ERR_OK;
+	remove(abs_path);
+	return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_WINDOWS)
-    remove(abs_path);
-    return ELYSIAN_ERR_OK;
+	remove(abs_path);
+	return ELYSIAN_ERR_OK;
 #elif defined(ELYSIAN_FS_ENV_FATAFS)
 	FRESULT res;
-    res = f_unlink(abs_path);
+	res = f_unlink(abs_path);
 	if(res != FR_OK){
 		return ELYSIAN_ERR_FATAL;
 	}
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 #else
 	return ELYSIAN_ERR_OK;
 #endif

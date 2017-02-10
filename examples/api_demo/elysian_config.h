@@ -55,7 +55,7 @@
 /*
 ** The maximum number of concurrent HTTP connections.
 */
-#define ELYSIAN_MAX_CLIENTS_NUM               		(uint32_t) (10)
+#define ELYSIAN_MAX_CLIENTS_NUM			   			(uint32_t) (10)
 
 /*
 * Specify if the underlying TCP/IP enviroment suuports socket select() API.
@@ -67,7 +67,7 @@
 /*
 ** The maximum amount of memory (in Kilobytes) that the Web Server could allocate.
 */
-#define ELYSIAN_MAX_MEMORY_USAGE_KB	    			(10)
+#define ELYSIAN_MAX_MEMORY_USAGE_KB					(10)
 
 /*
 ** The maximum HTTP body size the HTTP server is allowed to process.

@@ -46,9 +46,9 @@ void elysian_cbuf_list_append(elysian_cbuf_t** cbuf_list, elysian_cbuf_t* cbuf_n
 	
 	if(*cbuf_list == NULL) {
 		*cbuf_list = cbuf_new;
-        return;
+		return;
 	}
-    cbuf = *cbuf_list;
+	cbuf = *cbuf_list;
 	while(cbuf->next){
 		cbuf = cbuf->next;
 	}
@@ -58,8 +58,8 @@ void elysian_cbuf_list_append(elysian_cbuf_t** cbuf_list, elysian_cbuf_t* cbuf_n
 void elysian_cbuf_list_free(elysian_t* server, elysian_cbuf_t* cbuf_list){
 	elysian_cbuf_t* cbuf_next;
 	while(cbuf_list){
-        cbuf_next = cbuf_list->next;
-        elysian_cbuf_free(server, cbuf_list);
+		cbuf_next = cbuf_list->next;
+		elysian_cbuf_free(server, cbuf_list);
 		cbuf_list = cbuf_next;
 	}
 }
@@ -69,7 +69,7 @@ uint32_t elysian_cbuf_list_len(elysian_cbuf_t* cbuf_list){
 	uint32_t len = 0;
 	while(cbuf){
 		len += cbuf->len;
-        cbuf = cbuf->next;
+		cbuf = cbuf->next;
 	}
 	return len;
 }
@@ -80,8 +80,8 @@ elysian_err_t elysian_cbuf_list_split(elysian_t* server, elysian_cbuf_t** cbuf_l
 	elysian_err_t err;
 	
 	if(size == 0){
-        return ELYSIAN_ERR_OK;
-    }
+		return ELYSIAN_ERR_OK;
+	}
 	
 	ELYSIAN_ASSERT(*cbuf_list0 != NULL);
 	//ELYSIAN_ASSERT(*cbuf_list1 == NULL, "");
@@ -95,18 +95,18 @@ elysian_err_t elysian_cbuf_list_split(elysian_t* server, elysian_cbuf_t** cbuf_l
 	while(size){
 		cbuf = *cbuf_list0;
 		ELYSIAN_ASSERT(cbuf != NULL);
-        ELYSIAN_ASSERT(size >= cbuf->len);
-        
+		ELYSIAN_ASSERT(size >= cbuf->len);
+		
 		cbuf_next = cbuf->next;
-        size -= cbuf->len;
-        *cbuf_list0 = cbuf->next;
-        cbuf->next = NULL;
-        elysian_cbuf_list_append(cbuf_list1, cbuf);
-        
-        if(size == 0){
-            return ELYSIAN_ERR_OK;
-        }
-        
+		size -= cbuf->len;
+		*cbuf_list0 = cbuf->next;
+		cbuf->next = NULL;
+		elysian_cbuf_list_append(cbuf_list1, cbuf);
+		
+		if(size == 0){
+			return ELYSIAN_ERR_OK;
+		}
+		
 		cbuf = cbuf_next;
 	}
 
@@ -133,32 +133,32 @@ elysian_cbuf_t* elysian_cbuf_chain(elysian_cbuf_t* cbuf0, elysian_cbuf_t* cbuf1)
 */
 elysian_err_t elysian_cbuf_rechain(elysian_t* server, elysian_cbuf_t** cbuf_list, uint32_t size){
 	elysian_cbuf_t* cbuf_new;
-    elysian_cbuf_t* cbuf_prev;
-    elysian_cbuf_t* cbuf;
+	elysian_cbuf_t* cbuf_prev;
+	elysian_cbuf_t* cbuf;
 	uint16_t alloc_sz1, alloc_sz2;
 	
-    if(size == 0){
-        return ELYSIAN_ERR_OK;
-    }
-    
+	if(size == 0){
+		return ELYSIAN_ERR_OK;
+	}
+	
 	ELYSIAN_ASSERT((*cbuf_list) != NULL);
 	
-    cbuf_prev = NULL;
-    cbuf = *cbuf_list;
+	cbuf_prev = NULL;
+	cbuf = *cbuf_list;
 	while(cbuf){
-        if(size == cbuf->len){
-            return ELYSIAN_ERR_OK;
-        }else if(size < cbuf->len){
-            break;
-        }else{
-            size -= cbuf->len;
-            cbuf_prev = cbuf;
-            cbuf = cbuf->next;
-        }
+		if(size == cbuf->len){
+			return ELYSIAN_ERR_OK;
+		}else if(size < cbuf->len){
+			break;
+		}else{
+			size -= cbuf->len;
+			cbuf_prev = cbuf;
+			cbuf = cbuf->next;
+		}
 	}
-    
-    ELYSIAN_ASSERT(cbuf != NULL);
-    ELYSIAN_ASSERT(cbuf->len > size);
+	
+	ELYSIAN_ASSERT(cbuf != NULL);
+	ELYSIAN_ASSERT(cbuf->len > size);
 
    
 	/*
@@ -171,8 +171,8 @@ elysian_err_t elysian_cbuf_rechain(elysian_t* server, elysian_cbuf_t** cbuf_list
 	*/
 	alloc_sz2 = cbuf->len - size;
 	
-    ELYSIAN_LOG("Rechain sz1=%u, sz2=%u\r\n",alloc_sz1,alloc_sz2);
-     
+	ELYSIAN_LOG("Rechain sz1=%u, sz2=%u\r\n",alloc_sz1,alloc_sz2);
+	 
 	if(alloc_sz1 < alloc_sz2){
 		/* Prepend */
 		cbuf_new = elysian_cbuf_alloc(server, &(cbuf->data)[0], alloc_sz1);
@@ -180,11 +180,11 @@ elysian_err_t elysian_cbuf_rechain(elysian_t* server, elysian_cbuf_t** cbuf_list
 			return ELYSIAN_ERR_POLL;
 		}
 		cbuf_new->next = cbuf;
-        if(cbuf_prev == NULL){
-            (*cbuf_list) = cbuf_new;
-        }else{
-            cbuf_prev->next = cbuf_new;
-        }
+		if(cbuf_prev == NULL){
+			(*cbuf_list) = cbuf_new;
+		}else{
+			cbuf_prev->next = cbuf_new;
+		}
 		cbuf_new->next->data = &cbuf_new->next->data[alloc_sz1];
 		cbuf_new->next->len -= alloc_sz1;
 	}else{
@@ -203,121 +203,121 @@ elysian_err_t elysian_cbuf_rechain(elysian_t* server, elysian_cbuf_t** cbuf_list
 }
 
 void elysian_cbuf_strget(elysian_cbuf_t* cbuf, uint32_t cbuf_index, char* buf, uint32_t buf_len){
-    uint32_t copy_size;
-    uint32_t buf_index;
-    
-    while(cbuf){
+	uint32_t copy_size;
+	uint32_t buf_index;
+	
+	while(cbuf){
 		if(cbuf_index < cbuf->len){
-            break;
-        }
+			break;
+		}
 		cbuf_index -= cbuf->len;
 		cbuf = cbuf->next;
 	}
-    
-    buf_index = 0;
-    while(buf_index < buf_len){
-        ELYSIAN_ASSERT(cbuf != NULL);
-        copy_size = (cbuf->len - cbuf_index > buf_len - buf_index) ? buf_len - buf_index : cbuf->len - cbuf_index;
-        memcpy(&buf[buf_index], &cbuf->data[cbuf_index], copy_size);
-        cbuf_index +=  copy_size;
-        buf_index += copy_size;
-        if(cbuf_index == cbuf->len){
-            cbuf = cbuf->next;
-            cbuf_index = 0;
-        }
-    }
+	
+	buf_index = 0;
+	while(buf_index < buf_len){
+		ELYSIAN_ASSERT(cbuf != NULL);
+		copy_size = (cbuf->len - cbuf_index > buf_len - buf_index) ? buf_len - buf_index : cbuf->len - cbuf_index;
+		memcpy(&buf[buf_index], &cbuf->data[cbuf_index], copy_size);
+		cbuf_index +=  copy_size;
+		buf_index += copy_size;
+		if(cbuf_index == cbuf->len){
+			cbuf = cbuf->next;
+			cbuf_index = 0;
+		}
+	}
 }
 
 #if 1
 uint8_t elysian_cbuf_strcmp(elysian_cbuf_t* cbuf, uint32_t index, char* str, uint8_t matchCase){
 	unsigned char c1;
 	unsigned char c2;
-    uint32_t  strIndex,strLen;
+	uint32_t  strIndex,strLen;
 
 	while(cbuf){
 		if(index < cbuf->len){break;}
 		index -= cbuf->len;
 		cbuf = cbuf->next;
 	}
-    
-    ELYSIAN_ASSERT(cbuf != NULL);
-    
+	
+	ELYSIAN_ASSERT(cbuf != NULL);
+	
 	strLen = strlen(str);
-    
-    for(strIndex = 0; strIndex < strLen; strIndex++){
-        if(!cbuf) {return 1;}
+	
+	for(strIndex = 0; strIndex < strLen; strIndex++){
+		if(!cbuf) {return 1;}
 
-        c1 = str[strIndex];
-        c2 = cbuf->data[index];
-        
-        if(matchCase){
-            if(c1 != c2){return 1;}
-        }else{
-            if(toupper(c1) != toupper(c2)) {return 1;}
-        }
-        
-        index++;
-        if(index == cbuf->len){
-            cbuf = cbuf->next;
-            index = 0;
-        }
-    }
-    return 0;
+		c1 = str[strIndex];
+		c2 = cbuf->data[index];
+		
+		if(matchCase){
+			if(c1 != c2){return 1;}
+		}else{
+			if(toupper(c1) != toupper(c2)) {return 1;}
+		}
+		
+		index++;
+		if(index == cbuf->len){
+			cbuf = cbuf->next;
+			index = 0;
+		}
+	}
+	return 0;
 }
 
 void elysian_cbuf_strcpy(elysian_cbuf_t* cbuf, uint32_t index0, uint32_t index1, char* str){
-    uint32_t copy_len;
-    uint32_t index;
+	uint32_t copy_len;
+	uint32_t index;
 
-    ELYSIAN_ASSERT(index0 <= index1);
-    
-    *str = '\0';
+	ELYSIAN_ASSERT(index0 <= index1);
+	
+	*str = '\0';
 
 	while(cbuf){
 		if(index0 < cbuf->len){break;}
 		index0 -= cbuf->len;
-        index1 -= cbuf->len;
+		index1 -= cbuf->len;
 		cbuf = cbuf->next;
 	}
-    
-    copy_len = index1 - index0 + 1;
+	
+	copy_len = index1 - index0 + 1;
 	for(index = 0; index < copy_len; index++){
-        ELYSIAN_ASSERT(cbuf != NULL);
-        
+		ELYSIAN_ASSERT(cbuf != NULL);
+		
 		str[index] = cbuf->data[index0++];
 
 		if(index0 == cbuf->len){
-            index0 = 0;
+			index0 = 0;
 			cbuf = cbuf->next;
 		}
 	}
-    
-    str[index] = '\0';
+	
+	str[index] = '\0';
 }
 
 void elysian_cbuf_memcpy(elysian_cbuf_t* cbuf, uint32_t index0, uint32_t index1, uint8_t* buf) {
-    uint32_t copy_len;
-    uint32_t index;
+	uint32_t copy_len;
+	uint32_t index;
 
-    ELYSIAN_ASSERT(index0 <= index1);
-    
+	ELYSIAN_ASSERT(index0 <= index1);
+	
 	memset(buf, 0, index1 - index0 + 1);
 
 	while (cbuf) {
 		if (index0 < cbuf->len){break;}
 		index0 -= cbuf->len;
-        index1 -= cbuf->len;
+		index1 -= cbuf->len;
 		cbuf = cbuf->next;
 	}
-    
-    copy_len = index1 - index0 + 1;
+	
+	copy_len = index1 - index0 + 1;
 	for(index = 0; index < copy_len; index++){
-        ELYSIAN_ASSERT(cbuf != NULL);
-        
+		ELYSIAN_ASSERT(cbuf != NULL);
+		
 		buf[index] = cbuf->data[index0++];
 
 		if(index0 == cbuf->len){
-            index0 = 0;
+			index0 = 0;
 			cbuf = cbuf->next;
 		}
 	}
@@ -345,35 +345,35 @@ uint32_t elysian_cbuf_strstr(elysian_cbuf_t* cbuf0, uint32_t index, char* str, u
 		cbuf 		= cbuf0;
 		tmpBufIndex = index;
 		found 		= 1;
-        
+		
 		for(strIndex = 0; strIndex < strLen; strIndex++){
-            
-            if(tmpBufIndex == cbuf->len){
-                cbuf = cbuf->next;
-                if(!cbuf) {
-                    //found = 0; 
-                    //break;
-                    return ELYSIAN_INDEX_OOB32;
-                }
-                tmpBufIndex = 0;
-            }
+			
+			if(tmpBufIndex == cbuf->len){
+				cbuf = cbuf->next;
+				if(!cbuf) {
+					//found = 0; 
+					//break;
+					return ELYSIAN_INDEX_OOB32;
+				}
+				tmpBufIndex = 0;
+			}
 
 			c1 = str[strIndex];
 			c2 = cbuf->data[tmpBufIndex];
-            
-            if(matchCase){
-                if(c1 != c2){
-                    found = 0; 
-                    break;
-                }
-            }else{
-                if(toupper(c1) != toupper(c2)){
-                    found = 0; 
-                    break;
-                }
-            }
-            
-            tmpBufIndex++;
+			
+			if(matchCase){
+				if(c1 != c2){
+					found = 0; 
+					break;
+				}
+			}else{
+				if(toupper(c1) != toupper(c2)){
+					found = 0; 
+					break;
+				}
+			}
+			
+			tmpBufIndex++;
 		}
 
 		if(found) {return skipIndex + index;}; /* Found */
@@ -391,57 +391,57 @@ uint32_t elysian_cbuf_strstr(elysian_cbuf_t* cbuf0, uint32_t index, char* str, u
 
 #if 0
 void elysian_cbuf_copy_escape(elysian_cbuf_t* cbuf, uint32_t index0, uint32_t index1, uint8_t* str){//} uint32_t copyLen){
-    uint32_t index;
-    uint16_t encodedStrIndex;
-    uint8_t encodedStr[3];
-    uint16_t len;
-    //HS_ENSURE(parentBuf != NULL,"hsPbufStrCpyN(): parrentPbuf != NULL");
+	uint32_t index;
+	uint16_t encodedStrIndex;
+	uint8_t encodedStr[3];
+	uint16_t len;
+	//HS_ENSURE(parentBuf != NULL,"hsPbufStrCpyN(): parrentPbuf != NULL");
 
-    *str = '\0';
+	*str = '\0';
 
-    while(index0 >= cbuf->len){
-        index0 -= cbuf->len;
-        cbuf = cbuf->next;
-    };
-    
-    encodedStrIndex = 0;
-    len = index1 - index0;
-    for(index = 0; index <= len; index++){
-        encodedStr[encodedStrIndex] = cbuf->data[index0];
-        if((encodedStrIndex == 0) && (encodedStr[encodedStrIndex] != '%')){
-            *str++ = encodedStr[encodedStrIndex];
-        }else if(encodedStrIndex == 2){
-            encodedStrIndex = 0;
-            // copy escaped
-            //*str++ =
-        }else{
-            encodedStrIndex++;
-        }
-        
-        if(index0 == cbuf->len){
-            cbuf = cbuf->next;
-            index0 = 0;
-            //if(!parentBuf) {HS_ENSURE(0,"hsPbufStrCpyN(): invalid index [2]!"); return; }
-        }
-    }
+	while(index0 >= cbuf->len){
+		index0 -= cbuf->len;
+		cbuf = cbuf->next;
+	};
+	
+	encodedStrIndex = 0;
+	len = index1 - index0;
+	for(index = 0; index <= len; index++){
+		encodedStr[encodedStrIndex] = cbuf->data[index0];
+		if((encodedStrIndex == 0) && (encodedStr[encodedStrIndex] != '%')){
+			*str++ = encodedStr[encodedStrIndex];
+		}else if(encodedStrIndex == 2){
+			encodedStrIndex = 0;
+			// copy escaped
+			//*str++ =
+		}else{
+			encodedStrIndex++;
+		}
+		
+		if(index0 == cbuf->len){
+			cbuf = cbuf->next;
+			index0 = 0;
+			//if(!parentBuf) {HS_ENSURE(0,"hsPbufStrCpyN(): invalid index [2]!"); return; }
+		}
+	}
 }
 
 elysian_cbuf_t* elysian_cbuf_list_dropn(elysian_cbuf_t* cbuf, uint32_t n){
 	elysian_cbuf_t* cbuf_next;
 
 	while(cbuf){
-        cbuf_next = cbuf->next;
+		cbuf_next = cbuf->next;
 		if(n < cbuf->len){
-            cbuf->data = &cbuf->data[n];
-            cbuf->len -= n;
-            break;
-        }
+			cbuf->data = &cbuf->data[n];
+			cbuf->len -= n;
+			break;
+		}
 		n -= cbuf->len;
-        elysian_cbuf_free(server, cbuf);
+		elysian_cbuf_free(server, cbuf);
 		cbuf = cbuf_next;
 	}
-    
-    return cbuf;
+	
+	return cbuf;
 }
 #endif
 
@@ -489,7 +489,7 @@ cbuf_t* elysian_cbuf_replace(cbuf_t* cbuf, char* str0, char* str1){
 
 void cbuf_list_print(elysian_cbuf_t* cbuf){
 	uint32_t index = 0;
-    
+	
 	ELYSIAN_LOG("Printing cbuf chain..\r\n");
 	while(cbuf){
 		ELYSIAN_LOG("[cbuf_%u, len %u] -> '%s'\r\n", index++, cbuf->len,  cbuf->data);

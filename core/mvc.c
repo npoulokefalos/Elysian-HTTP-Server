@@ -26,7 +26,7 @@ elysian_err_t elysian_mvc_add_alloc(elysian_t* server, void* data);
 
 void elysian_mvc_init(elysian_t* server){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    client->mvc.view = NULL;
+	client->mvc.view = NULL;
 	client->mvc.transfer_encoding = ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY;
 	//client->mvc.redirection_url = NULL;
 	client->mvc.httpresp_headers = NULL;
@@ -46,15 +46,15 @@ uint8_t elysian_mvc_isconfigured(elysian_t* server){
 
 elysian_err_t elysian_mvc_clear(elysian_t* server){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    elysian_mvc_attribute_t* attribute_next;
-    elysian_mvc_alloc_t* alloc_next;
+	elysian_mvc_attribute_t* attribute_next;
+	elysian_mvc_alloc_t* alloc_next;
 	elysian_mvc_httpresp_header_t* httpresp_header_next;
 	
-    if (client->mvc.view) {
-        elysian_mem_free(server, client->mvc.view);
-        client->mvc.view = NULL;
-    }
-    
+	if (client->mvc.view) {
+		elysian_mem_free(server, client->mvc.view);
+		client->mvc.view = NULL;
+	}
+	
 	while (client->mvc.httpresp_headers) {
 		httpresp_header_next = client->mvc.httpresp_headers->next;
 		elysian_mem_free(server, client->mvc.httpresp_headers->header);
@@ -63,26 +63,26 @@ elysian_err_t elysian_mvc_clear(elysian_t* server){
 		client->mvc.httpresp_headers = httpresp_header_next;
 	};
 	
-    while (client->mvc.attributes) {
-        attribute_next = client->mvc.attributes->next;
-        if(client->mvc.attributes->name){
-            elysian_mem_free(server, client->mvc.attributes->name);
-        }
-        if(client->mvc.attributes->value){
-            elysian_mem_free(server, client->mvc.attributes->value);
-        }
-        elysian_mem_free(server, client->mvc.attributes);
-        client->mvc.attributes = attribute_next;
-    };
+	while (client->mvc.attributes) {
+		attribute_next = client->mvc.attributes->next;
+		if(client->mvc.attributes->name){
+			elysian_mem_free(server, client->mvc.attributes->name);
+		}
+		if(client->mvc.attributes->value){
+			elysian_mem_free(server, client->mvc.attributes->value);
+		}
+		elysian_mem_free(server, client->mvc.attributes);
+		client->mvc.attributes = attribute_next;
+	};
 
 	while (client->mvc.allocs) {
-        alloc_next = client->mvc.allocs->next;
+		alloc_next = client->mvc.allocs->next;
 		elysian_mem_free(server, client->mvc.allocs->data);
-        elysian_mem_free(server, client->mvc.allocs);
-        client->mvc.allocs = alloc_next;
-    };
+		elysian_mem_free(server, client->mvc.allocs);
+		client->mvc.allocs = alloc_next;
+	};
 	
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_websockets_controller(elysian_t* server);
@@ -93,11 +93,11 @@ static const elysian_mvc_controller_def_t elysian_mvc_controller_def_http_status
 
 elysian_err_t elysian_http_status_page_controller(elysian_t* server){
 	elysian_client_t* client = elysian_mvc_client(server);
-    elysian_err_t err;
-    char msg[64];
+	elysian_err_t err;
+	char msg[64];
 	
-    ELYSIAN_LOG("[[ %s ]]", __func__);
-    
+	ELYSIAN_LOG("[[ %s ]]", __func__);
+	
 	elysian_mvc_transfer_encoding_set(server, ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY);
 	elysian_mvc_status_code_set(server, client->httpresp.current_status_code);
 	client->mvc.range_start = ELYSIAN_HTTP_RANGE_WF;
@@ -105,29 +105,29 @@ elysian_err_t elysian_http_status_page_controller(elysian_t* server){
 	
 	elysian_sprintf(msg, "%u", elysian_http_get_status_code_num(client->httpresp.current_status_code));
 	err = elysian_mvc_attribute_set(server, "http_status_code_num", msg);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
 	elysian_sprintf(msg, "%s", elysian_http_get_status_code_msg(client->httpresp.current_status_code));
 	err = elysian_mvc_attribute_set(server, "http_status_code_description", msg);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
-    err = elysian_mvc_view_set(server, ELYSIAN_FS_HTTP_STATUS_PAGE_VRT_PATH);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
-    
-    return ELYSIAN_ERR_OK;
+	err = elysian_mvc_view_set(server, ELYSIAN_FS_HTTP_STATUS_PAGE_VRT_PATH);
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
+	
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    elysian_err_t err;
+	elysian_err_t err;
 	elysian_mvc_alloc_t* alloc_next;
-    elysian_mvc_controller_def_t* controller_def;
+	elysian_mvc_controller_def_t* controller_def;
 	elysian_req_param_t* param_next;
 	
 	ELYSIAN_ASSERT(client->mvc.view == NULL);
@@ -250,7 +250,7 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 	
 	ELYSIAN_LOG("MVC configured with view '%s' and HTTP status code %u", client->mvc.view, elysian_http_get_status_code_num(client->mvc.status_code));
 	
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 }
 
 /*
@@ -259,7 +259,7 @@ elysian_err_t elysian_mvc_pre_configure(elysian_t* server) {
 elysian_err_t elysian_mvc_post_configure(elysian_t* server) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	uint32_t resource_size;
-    elysian_err_t err;
+	elysian_err_t err;
 	
 	if (client->mvc.transfer_encoding == ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY) {
 		/*
@@ -322,32 +322,32 @@ elysian_client_t* elysian_mvc_client(elysian_t* server) {
 }
 
 elysian_err_t elysian_mvc_view_set(elysian_t* server, char* view){
-    elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    if(client->mvc.view){
-        elysian_mem_free(server, client->mvc.view);
-        client->mvc.view = NULL;
-    }
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	if(client->mvc.view){
+		elysian_mem_free(server, client->mvc.view);
+		client->mvc.view = NULL;
+	}
 
 	if(view == NULL){
 		/* Special case for an empty-bodied file */
 		view = ELYSIAN_FS_EMPTY_FILE_VRT_PATH;
 	}
 
-    if(strcmp(view, "/") == 0){
+	if(strcmp(view, "/") == 0){
 		/* Special case for index.html page */
-        view = ELYSIAN_FS_INDEX_HTML_VRT_ROOT"/index.html";
-    }
-    
-    client->mvc.view = elysian_mem_malloc(server, strlen(view) + 1);
-    if(!client->mvc.view){
-        return ELYSIAN_ERR_POLL;
-    }
-    
-    strcpy(client->mvc.view, view);
-    
-    ELYSIAN_LOG("MVC view set to '%s'", client->mvc.view);
-    
-    return ELYSIAN_ERR_OK;
+		view = ELYSIAN_FS_INDEX_HTML_VRT_ROOT"/index.html";
+	}
+	
+	client->mvc.view = elysian_mem_malloc(server, strlen(view) + 1);
+	if(!client->mvc.view){
+		return ELYSIAN_ERR_POLL;
+	}
+	
+	strcpy(client->mvc.view, view);
+	
+	ELYSIAN_LOG("MVC view set to '%s'", client->mvc.view);
+	
+	return ELYSIAN_ERR_OK;
 }
 
 
@@ -422,8 +422,8 @@ elysian_err_t elysian_mvc_httpresp_header_add(elysian_t* server, char* header_na
 | Controllers
 -------------------------------------------------------------------------------------------------------------------------------- */
 elysian_mvc_controller_def_t* elysian_mvc_controller_def_get(elysian_t* server, char* url, elysian_http_method_e method_id) {
-    int i;
-    ELYSIAN_LOG("Searching user defined controller for url '%s' and method '%s'", url, elysian_http_get_method_name(method_id));
+	int i;
+	ELYSIAN_LOG("Searching user defined controller for url '%s' and method '%s'", url, elysian_http_get_method_name(method_id));
 	
 	if (server->controller_def) {
 		for (i = 0; (server->controller_def[i].url != NULL) && (server->controller_def[i].handler != NULL); i++) {
@@ -442,7 +442,7 @@ elysian_mvc_controller_def_t* elysian_mvc_controller_def_get(elysian_t* server, 
 			}
 		}
 	}
-    return NULL;
+	return NULL;
 }
 
 /* --------------------------------------------------------------------------------------------------------------------------------
@@ -450,59 +450,59 @@ elysian_mvc_controller_def_t* elysian_mvc_controller_def_get(elysian_t* server, 
 -------------------------------------------------------------------------------------------------------------------------------- */
 elysian_err_t elysian_mvc_attribute_set(elysian_t* server, char* name, char* value){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    elysian_mvc_attribute_t* attribute;
-    
-    ELYSIAN_ASSERT(client != NULL);
-    ELYSIAN_ASSERT(name != NULL);
-    ELYSIAN_ASSERT(strlen(name) > 0);
-    
-    attribute = elysian_mem_malloc(server, sizeof(elysian_mvc_attribute_t));
-    if(!attribute){
-        return ELYSIAN_ERR_POLL;
-    }
-    
-    attribute->name = elysian_mem_malloc(server, strlen(name) + 1);
-    if(!attribute->name){
-        elysian_mem_free(server, attribute);
-        return ELYSIAN_ERR_POLL;
-    }
-    
-    strcpy(attribute->name, name);
-    
-    attribute->value = elysian_mem_malloc(server, strlen(value) + 1);
-    if(!attribute->value){
-        elysian_mem_free(server, attribute->name);
-        elysian_mem_free(server, attribute);
-        return ELYSIAN_ERR_POLL;
-    }
-    
-    strcpy(attribute->value, value);
-    
+	elysian_mvc_attribute_t* attribute;
+	
+	ELYSIAN_ASSERT(client != NULL);
+	ELYSIAN_ASSERT(name != NULL);
+	ELYSIAN_ASSERT(strlen(name) > 0);
+	
+	attribute = elysian_mem_malloc(server, sizeof(elysian_mvc_attribute_t));
+	if(!attribute){
+		return ELYSIAN_ERR_POLL;
+	}
+	
+	attribute->name = elysian_mem_malloc(server, strlen(name) + 1);
+	if(!attribute->name){
+		elysian_mem_free(server, attribute);
+		return ELYSIAN_ERR_POLL;
+	}
+	
+	strcpy(attribute->name, name);
+	
+	attribute->value = elysian_mem_malloc(server, strlen(value) + 1);
+	if(!attribute->value){
+		elysian_mem_free(server, attribute->name);
+		elysian_mem_free(server, attribute);
+		return ELYSIAN_ERR_POLL;
+	}
+	
+	strcpy(attribute->value, value);
+	
 	ELYSIAN_LOG("ATTRIBUTE VALUE SET TO <%s>\r\n", attribute->value);
 	
-    attribute->next = client->mvc.attributes;
-    client->mvc.attributes = attribute;
-    
-    return ELYSIAN_ERR_OK;
+	attribute->next = client->mvc.attributes;
+	client->mvc.attributes = attribute;
+	
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_mvc_attribute_t* elysian_mvc_attribute_get(elysian_t* server, char* name){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    elysian_mvc_attribute_t* attribute;
-    
-    ELYSIAN_LOG("Searching user defined attribute with name '%s'", name);
-    
-    attribute = client->mvc.attributes;
-    while(attribute){
-        ELYSIAN_LOG("Attribute is '%s'!?", attribute->name)
-        if(strcmp(attribute->name, name) == 0){
-            ELYSIAN_LOG("Attribute found!");
-            return attribute;
-        }
-        attribute = attribute->next;
-    }
-    
-    return NULL;
+	elysian_mvc_attribute_t* attribute;
+	
+	ELYSIAN_LOG("Searching user defined attribute with name '%s'", name);
+	
+	attribute = client->mvc.attributes;
+	while(attribute){
+		ELYSIAN_LOG("Attribute is '%s'!?", attribute->name)
+		if(strcmp(attribute->name, name) == 0){
+			ELYSIAN_LOG("Attribute found!");
+			return attribute;
+		}
+		attribute = attribute->next;
+	}
+	
+	return NULL;
 }
 
 /* --------------------------------------------------------------------------------------------------------------------------------
@@ -510,21 +510,21 @@ elysian_mvc_attribute_t* elysian_mvc_attribute_get(elysian_t* server, char* name
 -------------------------------------------------------------------------------------------------------------------------------- */
 elysian_err_t elysian_mvc_add_alloc(elysian_t* server, void* data) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    elysian_mvc_alloc_t* alloc;
-    
-    ELYSIAN_ASSERT(client != NULL);
-    ELYSIAN_ASSERT(data != NULL);
+	elysian_mvc_alloc_t* alloc;
+	
+	ELYSIAN_ASSERT(client != NULL);
+	ELYSIAN_ASSERT(data != NULL);
 
 	alloc = elysian_mem_malloc(server, sizeof(elysian_mvc_alloc_t));
-    if(!alloc){
-        return ELYSIAN_ERR_POLL;
-    }
+	if(!alloc){
+		return ELYSIAN_ERR_POLL;
+	}
 	
-    alloc->data = data;
-    alloc->next = client->mvc.allocs;
-    client->mvc.allocs = alloc;
-    
-    return ELYSIAN_ERR_OK;
+	alloc->data = data;
+	alloc->next = client->mvc.allocs;
+	client->mvc.allocs = alloc;
+	
+	return ELYSIAN_ERR_OK;
 }
 
 /* --------------------------------------------------------------------------------------------------------------------------------
@@ -532,9 +532,9 @@ elysian_err_t elysian_mvc_add_alloc(elysian_t* server, void* data) {
 -------------------------------------------------------------------------------------------------------------------------------- */
 elysian_err_t elysian_mvc_httpreq_onservice_handler(elysian_t* server, elysian_httpreq_onservice_handler_t handler, void* data){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    client->httpreq_onservice_handler = handler;
-    client->httpreq_onservice_handler_data = data;
-    return ELYSIAN_ERR_OK;
+	client->httpreq_onservice_handler = handler;
+	client->httpreq_onservice_handler_data = data;
+	return ELYSIAN_ERR_OK;
 }
 
 /* --------------------------------------------------------------------------------------------------------------------------------
@@ -555,8 +555,8 @@ elysian_err_t elysian_mvc_param_get(elysian_t* server, char* param_name, elysian
 	};
 #endif
 	
-    //req_param->client = client;
-    
+	//req_param->client = client;
+	
 	param_next = client->httpreq.params;
 	while(param_next){
 		ELYSIAN_LOG("Comparing with '%s'", param_next->name);
@@ -610,13 +610,13 @@ elysian_err_t elysian_mvc_param_filename(elysian_t* server, elysian_req_param_t*
 }
 
 elysian_err_t elysian_mvc_param_read(elysian_t* server, elysian_req_param_t* req_param, uint32_t offset, uint8_t* buf, uint32_t buf_size, uint32_t* read_size) {
-    uint32_t current_offset;
-    elysian_err_t err;
-     
-    ELYSIAN_ASSERT(buf);
-    
-    *read_size = 0;
-    
+	uint32_t current_offset;
+	elysian_err_t err;
+	 
+	ELYSIAN_ASSERT(buf);
+	
+	*read_size = 0;
+	
 	if ((!req_param) || (!req_param->client) || (!req_param->file) || (req_param->data_index == ELYSIAN_INDEX_OOB32)) {
 		/*
 		** elysian_mvc_param_get() was not used, or was used but returned "parameter not found"
@@ -642,25 +642,25 @@ elysian_err_t elysian_mvc_param_read(elysian_t* server, elysian_req_param_t* req
 		buf_size = req_param->data_size - offset;
 	}
 	
-    err = elysian_fs_ftell(server, req_param->file, &current_offset);
-    if(err != ELYSIAN_ERR_OK){
-        return err;
-    }
+	err = elysian_fs_ftell(server, req_param->file, &current_offset);
+	if(err != ELYSIAN_ERR_OK){
+		return err;
+	}
 	
 	ELYSIAN_LOG("current_offset is %u", current_offset);
 	
 	if(current_offset != req_param->data_index + offset){
 		err = elysian_fs_fseek(server, req_param->file, req_param->data_index + offset);
-        if(err != ELYSIAN_ERR_OK){
-            return err;
-        }
+		if(err != ELYSIAN_ERR_OK){
+			return err;
+		}
 	}
-    err = elysian_fs_fread(server, req_param->file, buf, buf_size, read_size);
+	err = elysian_fs_fread(server, req_param->file, buf, buf_size, read_size);
 	if(err != ELYSIAN_ERR_OK){
-        return err;
-    }
+		return err;
+	}
 
-    return err;
+	return err;
 }
 
 elysian_err_t elysian_mvc_param_get_raw(elysian_t* server, char* param_name, uint8_t decode, uint8_t** param_value,  uint32_t* param_size,  uint8_t* param_found) {

@@ -71,33 +71,33 @@ elysian_err_t elysian_strncpy_file(elysian_t* server, elysian_file_t* file, uint
 	uint32_t read_sz;
 	uint32_t current_offset;
 	
-    /*
+	/*
 	** Seek to the appropriate file position
 	*/
 	err = elysian_fs_ftell(server, file, &current_offset);
-    if(err != ELYSIAN_ERR_OK){
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){
+		return err;
+	}
 	if(current_offset != offset){
 		err = elysian_fs_fseek(server, file, offset);
-        if(err != ELYSIAN_ERR_OK){
-            return err;
-        }
+		if(err != ELYSIAN_ERR_OK){
+			return err;
+		}
 	}
 	
-    /*
-    ** Read n bytes
-    */
-    err = elysian_fs_fread(server, file, (uint8_t*) str, n, &read_sz);
-    if(err != ELYSIAN_ERR_OK){
-        return err;
-    }
+	/*
+	** Read n bytes
+	*/
+	err = elysian_fs_fread(server, file, (uint8_t*) str, n, &read_sz);
+	if(err != ELYSIAN_ERR_OK){
+		return err;
+	}
 	if(read_sz != n){
 		return ELYSIAN_ERR_FATAL;
 	}
 
-    str[n] = '\0';
-    
+	str[n] = '\0';
+	
 	return ELYSIAN_ERR_OK;
 }
 
@@ -113,20 +113,20 @@ elysian_err_t elysian_strstr_file(elysian_t* server, elysian_file_t* file, uint3
 	uint32_t index;
 	uint32_t match_index;
 	uint32_t buf_index, buf_index0, buf_index1, pattern_index;
-    elysian_err_t err;
+	elysian_err_t err;
 
 	/*
 	** Seek to the appropriate file position
 	*/
 	err = elysian_fs_ftell(server, file, &current_offset);
-    if(err != ELYSIAN_ERR_OK){
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){
+		return err;
+	}
 	if(current_offset != offset){
 		err = elysian_fs_fseek(server, file, offset);
-        if(err != ELYSIAN_ERR_OK){
-            return err;
-        }
+		if(err != ELYSIAN_ERR_OK){
+			return err;
+		}
 	}
 	
 	/*
@@ -179,10 +179,10 @@ elysian_err_t elysian_strstr_file(elysian_t* server, elysian_file_t* file, uint3
 				goto op_finished; /* Pattern len is bigger than our working buffer, abort */
 			}else{
 				//f_read(file, &buf[buf_index1], buf_sz - buf_index1,(UINT*)&read_len);
-                err = elysian_fs_fread(server, file, &buf[buf_index1], buf_sz - buf_index1, &read_len);
-                if(err != ELYSIAN_ERR_OK){
-                    goto op_finished;
-                }
+				err = elysian_fs_fread(server, file, &buf[buf_index1], buf_sz - buf_index1, &read_len);
+				if(err != ELYSIAN_ERR_OK){
+					goto op_finished;
+				}
 				if(read_len != buf_sz - buf_index1){
 					eof = 1;
 				}
@@ -194,10 +194,10 @@ elysian_err_t elysian_strstr_file(elysian_t* server, elysian_file_t* file, uint3
 
 		int match;
 		if(match_case){
-            match = buf[buf_index] == pattern[pattern_index];
-        }else{
-            match = toupper(buf[buf_index]) == toupper(pattern[pattern_index]);
-        }
+			match = buf[buf_index] == pattern[pattern_index];
+		}else{
+			match = toupper(buf[buf_index]) == toupper(pattern[pattern_index]);
+		}
 		
 		//printf("buf='%s', pattern = '%s', buf_index = %u, pattern_index = %u\r\n", buf, pattern, buf_index, pattern_index);
 		if(match){
@@ -231,14 +231,14 @@ elysian_err_t elysian_strstr_file(elysian_t* server, elysian_file_t* file, uint3
 			buf_index = buf_index0;
 		}
 	}
-    
+	
 op_finished:
 	
 	if(buf != tmp_buf){
 		elysian_mem_free(server, buf);
 	}
-    
-    return ELYSIAN_ERR_OK;
+	
+	return ELYSIAN_ERR_OK;
 }
 
 #if 0

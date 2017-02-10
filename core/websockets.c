@@ -23,10 +23,10 @@ elysian_websocket_def_t* elysian_websocket_def_get(elysian_t* server, char* url)
 elysian_err_t elysian_websockets_controller(elysian_t* server) {
 	elysian_client_t* client = elysian_mvc_client(server);
 	elysian_websocket_def_t* websocket_def;
-    elysian_err_t err;
+	elysian_err_t err;
 
-    ELYSIAN_LOG("[[ %s ]]", __func__);
-    
+	ELYSIAN_LOG("[[ %s ]]", __func__);
+	
 	/*
 	** Check if the application has registered any websocket controllers
 	*/
@@ -92,8 +92,8 @@ elysian_err_t elysian_websockets_controller(elysian_t* server) {
 	
 	err = elysian_mvc_httpreq_header_get(server, "Sec-WebSocket-Key", &sec_websocket_key);
 	if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+		return err;
+	}
 	
 	if (strlen(sec_websocket_key) + strlen("258EAFA5-E914-47DA-95CA-C5AB0DC85B11") >= sizeof(sec_websocket_accept)) {
 		/* Websocket key is invalid */
@@ -115,15 +115,15 @@ elysian_err_t elysian_websockets_controller(elysian_t* server) {
 
 	err = elysian_mvc_httpresp_header_add(server, "Sec-WebSocket-Accept", sec_websocket_accept);
 	if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+		return err;
+	}
 	
-    err = elysian_mvc_view_set(server, NULL);
-    if (err != ELYSIAN_ERR_OK) { 
-        return err;
-    }
+	err = elysian_mvc_view_set(server, NULL);
+	if (err != ELYSIAN_ERR_OK) { 
+		return err;
+	}
 
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_websocket_frame_t* elysian_websocket_frame_allocate(elysian_t* server, uint32_t len) {
@@ -172,7 +172,7 @@ elysian_err_t elysian_websocket_send(elysian_t* server,  elysian_websocket_opcod
 	} else {
 		frame->data[index++] = 126;
 		frame->data[index++] = (frame_len >> 8) & 0xff;
-        frame->data[index++] = (frame_len) & 0xff;
+		frame->data[index++] = (frame_len) & 0xff;
 	}
 	
 	memcpy(&frame->data[index], frame_data, frame_len);

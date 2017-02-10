@@ -43,195 +43,195 @@ uint8_t authentication_cb(elysian_t* server, char* url, char* username, char* pa
 elysian_err_t controller_dynamic_page_html(elysian_t* server){
 	//elysian_client_t* client = elysian_mvc_client(server);
 	char attr_value[32];
-    elysian_err_t err;
+	elysian_err_t err;
 
-    ELYSIAN_LOG("[[ %s ]]", __func__);
-    
+	ELYSIAN_LOG("[[ %s ]]", __func__);
+	
 	elysian_sprintf(attr_value, "%u", elysian_time_now());
 	err = elysian_mvc_attribute_set(server, "attr_timestamp", attr_value);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
 	elysian_sprintf(attr_value, "%u", ELYSIAN_MAX_CLIENTS_NUM);
 	err = elysian_mvc_attribute_set(server, "attr_ELYSIAN_MAX_CLIENTS_NUM", attr_value);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
 	elysian_sprintf(attr_value, "%u", ELYSIAN_MAX_MEMORY_USAGE_KB);
 	err = elysian_mvc_attribute_set(server, "attr_ELYSIAN_MAX_MEMORY_USAGE_KB", attr_value);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
 	elysian_sprintf(attr_value, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM);
 	err = elysian_mvc_attribute_set(server, "attr_ELYSIAN_MAX_HTTP_BODY_SIZE_KB_RAM", attr_value);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
 	elysian_sprintf(attr_value, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_EXT);
 	err = elysian_mvc_attribute_set(server, "attr_ELYSIAN_MAX_HTTP_BODY_SIZE_KB_DISK", attr_value);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
-    err = elysian_mvc_view_set(server, "/fs_rom/dynamic_page.html");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	err = elysian_mvc_view_set(server, "/fs_rom/dynamic_page.html");
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t controller_form_get(elysian_t* server){
 	//elysian_client_t* client = elysian_mvc_client(server);
-    char* str1;
+	char* str1;
 	char* str2;
 	char* str3;
 	char* str4;
-    uint8_t param_found;
-    elysian_err_t err;
-    char msg[256];
+	uint8_t param_found;
+	elysian_err_t err;
+	char msg[256];
 	
-    ELYSIAN_LOG("[[ %s ]]", __func__);
-    
-    err = elysian_mvc_param_get_str(server, "param1", &str1, &param_found);
-    if (err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	ELYSIAN_LOG("[[ %s ]]", __func__);
+	
+	err = elysian_mvc_param_get_str(server, "param1", &str1, &param_found);
+	if (err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	if (!param_found) {
 		/* Parameter was not found */
 	} else {
 		/* Parameter found, data hold the data, datasize the size */
 	}
 	
-    ELYSIAN_LOG("param1 = %s", str1);
-    
-    err = elysian_mvc_param_get_str(server, "param2", &str2, &param_found);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
-    ELYSIAN_LOG("param2 = %s", str2);
-    
+	ELYSIAN_LOG("param1 = %s", str1);
+	
+	err = elysian_mvc_param_get_str(server, "param2", &str2, &param_found);
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
+	ELYSIAN_LOG("param2 = %s", str2);
+	
 	err = elysian_mvc_param_get_str(server, "param3", &str3, &param_found);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
-    ELYSIAN_LOG("param3 = %s", str3);
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
+	ELYSIAN_LOG("param3 = %s", str3);
 	
 	err = elysian_mvc_param_get_str(server, "param4", &str4, &param_found);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
-    ELYSIAN_LOG("param3 = %s", str3);
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
+	ELYSIAN_LOG("param3 = %s", str3);
 	
 	elysian_sprintf(msg, "param1 value was '%s'<br>param2 value was '%s'<br>param3 value was '%s'<br>param4 value was '%s'<br>", str1, str2, str3, str4);
 	ELYSIAN_LOG("MSG = %s", msg);
 	
 	err = elysian_mvc_attribute_set(server, "response_message", msg);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
-    err = elysian_mvc_view_set(server, "/fs_rom/form_get.html");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
-    
-    return ELYSIAN_ERR_OK;
+	err = elysian_mvc_view_set(server, "/fs_rom/form_get.html");
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
+	
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t controller_form_get_html(elysian_t* server){
 	//elysian_client_t* client = elysian_mvc_client(server);
-    elysian_err_t err;
+	elysian_err_t err;
 	
-    ELYSIAN_LOG("[[ %s ]]", __func__);
+	ELYSIAN_LOG("[[ %s ]]", __func__);
 
 	err = elysian_mvc_attribute_set(server, "response_message", "");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
-    err = elysian_mvc_view_set(server, "/fs_rom/form_get.html");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
-    
-    return ELYSIAN_ERR_OK;
+	err = elysian_mvc_view_set(server, "/fs_rom/form_get.html");
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
+	
+	return ELYSIAN_ERR_OK;
 }
 
 
 elysian_err_t controller_form_post(elysian_t* server){
 	//elysian_client_t* client = elysian_mvc_client(server);
-    char* str1;
+	char* str1;
 	char* str2;
 	char* str3;
 	char* str4;
-    uint8_t param_found;
-    elysian_err_t err;
-    char msg[256];
+	uint8_t param_found;
+	elysian_err_t err;
+	char msg[256];
 	
-    ELYSIAN_LOG("[[ %s ]]", __func__);
-    
-    err = elysian_mvc_param_get_str(server, "param1", &str1, &param_found);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
-    ELYSIAN_LOG("param1 = %s", str1);
-    
-    err = elysian_mvc_param_get_str(server, "param2", &str2, &param_found);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
-    ELYSIAN_LOG("param2 = %s", str2);
-    
+	ELYSIAN_LOG("[[ %s ]]", __func__);
+	
+	err = elysian_mvc_param_get_str(server, "param1", &str1, &param_found);
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
+	ELYSIAN_LOG("param1 = %s", str1);
+	
+	err = elysian_mvc_param_get_str(server, "param2", &str2, &param_found);
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
+	ELYSIAN_LOG("param2 = %s", str2);
+	
 	err = elysian_mvc_param_get_str(server, "param3", &str3, &param_found);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
-    ELYSIAN_LOG("param3 = %s", str3);
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
+	ELYSIAN_LOG("param3 = %s", str3);
 	
 	err = elysian_mvc_param_get_str(server, "param4", &str4, &param_found);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
-    ELYSIAN_LOG("param3 = %s", str3);
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
+	ELYSIAN_LOG("param3 = %s", str3);
 	
 	elysian_sprintf(msg, "param1 value was '%s'<br>param2 value was '%s'<br>param3 value was '%s'<br>param4 value was '%s'<br>", str1, str2, str3, str4);
 	ELYSIAN_LOG("MSG = %s", msg);
 	
 	err = elysian_mvc_attribute_set(server, "response_message", msg);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
-    err = elysian_mvc_view_set(server, "/fs_rom/form_post.html");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
-    
-    return ELYSIAN_ERR_OK;
+	err = elysian_mvc_view_set(server, "/fs_rom/form_post.html");
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
+	
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t controller_form_post_html(elysian_t* server){
 	//elysian_client_t* client = elysian_mvc_client(server);
-    elysian_err_t err;
+	elysian_err_t err;
 	
-    ELYSIAN_LOG("[[ %s ]]", __func__);
+	ELYSIAN_LOG("[[ %s ]]", __func__);
 
 	err = elysian_mvc_attribute_set(server, "response_message", "");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
-    err = elysian_mvc_view_set(server, "/fs_rom/form_post.html");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	err = elysian_mvc_view_set(server, "/fs_rom/form_post.html");
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 }
 
 
@@ -241,25 +241,25 @@ elysian_err_t controller_file_upload(elysian_t* server){
 	uint32_t param_file1_size;
 	char max_upload_size[16];
 	char* param1_data;
-    uint8_t param_found;
+	uint8_t param_found;
 	elysian_req_param_t param_file1;
 	uint32_t read_size;
-    uint8_t file1_data[128];
+	uint8_t file1_data[128];
 	char data[256];
-    elysian_err_t err;
+	elysian_err_t err;
 	char* requested_url;
 	char* param_file1_filename;
 	
-    ELYSIAN_LOG("[[ %s ]]", __func__);
-    
+	ELYSIAN_LOG("[[ %s ]]", __func__);
+	
 	/*
 	** Set the MVC view to be sent to the client
 	** Check if this was called from a ROM or DISK page
 	*/
 	err = elysian_mvc_httpreq_url_get(server, &requested_url);
 	if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+		return err;
+	}
 	
 	/*
 	** Set the value to the attr_max_upload_size attribute
@@ -271,34 +271,34 @@ elysian_err_t controller_file_upload(elysian_t* server){
 		elysian_sprintf(max_upload_size, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_EXT);
 	}
 	err = elysian_mvc_attribute_set(server, "attr_max_upload_size", max_upload_size);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
 	/*
 	** Read the complete param1 parameter as string and just print it..
 	*/
-    err = elysian_mvc_param_get_str(server, "param1", &param1_data, &param_found);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
-    ELYSIAN_LOG("param1 = %s", param1_data);
-    
+	err = elysian_mvc_param_get_str(server, "param1", &param1_data, &param_found);
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
+	ELYSIAN_LOG("param1 = %s", param1_data);
+	
 	/*
 	** Retrieve the file1 parameter
 	*/
 	err = elysian_mvc_param_get(server, "file1", &param_file1);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
 	/*
 	** Read the first bytes of the file1 parameter
 	*/
 	err = elysian_mvc_param_read(server, &param_file1, 0, file1_data, sizeof(file1_data) - 1, &read_size);
 	if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+		return err;
+	}
 	file1_data[read_size] = '\0';
 	
 	/*
@@ -306,28 +306,28 @@ elysian_err_t controller_file_upload(elysian_t* server){
 	*/
 	err = elysian_mvc_param_size(server, &param_file1, &param_file1_size);
 	if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+		return err;
+	}
 	
 	err = elysian_mvc_param_filename(server, &param_file1, &param_file1_filename);
 	if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+		return err;
+	}
 	
 	elysian_sprintf(data, "<b>The size of the uploaded file (%s) was %u bytes.</b><br>param1 value was '%s'. <br><br>", param_file1_filename, param_file1_size, param1_data);
 	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_size", data);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
 	/*
 	** Set the value to the attr_uploaded_file_data attribute
 	*/
 	elysian_sprintf(data, "<b>The first %u bytes of the uploaded file were:</b><br>'%s'", read_size, file1_data);
 	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_data", (char*) data);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
 	if (strcmp(requested_url, "/fs_rom/file_upload_ram_controller") == 0) {
 		err = elysian_mvc_view_set(server, "/fs_rom/file_upload_ram.html");
@@ -336,25 +336,25 @@ elysian_err_t controller_file_upload(elysian_t* server){
 		err = elysian_mvc_view_set(server, "/fs_ext/file_upload_ext.html");
 	}
 
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t controller_file_upload_html(elysian_t* server){
 	//elysian_client_t* client = elysian_mvc_client(server);
 	char* requested_url;
 	char max_upload_size[32];
-    elysian_err_t err;
+	elysian_err_t err;
 
-    ELYSIAN_LOG("[[ %s ]]", __func__);
-    
+	ELYSIAN_LOG("[[ %s ]]", __func__);
+	
 	/*
 	** Set the MVC view to be sent to the client
 	** Check if this was called from a ROM or DISK page
 	*/
 	err = elysian_mvc_httpreq_url_get(server, &requested_url);
 	if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+		return err;
+	}
 	
 	/*
 	** Set the value to the attr_max_upload_size attribute
@@ -366,19 +366,19 @@ elysian_err_t controller_file_upload_html(elysian_t* server){
 		elysian_sprintf(max_upload_size, "%u", ELYSIAN_MAX_HTTP_BODY_SIZE_KB_EXT);
 	}
 	err = elysian_mvc_attribute_set(server, "attr_max_upload_size", max_upload_size);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 
 	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_size", "");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
 	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_data", "");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
 	if (strcmp(requested_url, "/fs_rom/file_upload_ram.html") == 0) {
 		err = elysian_mvc_view_set(server, "/fs_rom/file_upload_ram.html");
@@ -386,46 +386,46 @@ elysian_err_t controller_file_upload_html(elysian_t* server){
 		err = elysian_mvc_view_set(server, "/fs_ext/file_upload_ext.html");
 	}
 	
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 }
 
 
 elysian_err_t controller_http_request_exposure_html(elysian_t* server){
 	//elysian_client_t* client = elysian_mvc_client(server);
-    elysian_err_t err;
+	elysian_err_t err;
 
-    ELYSIAN_LOG("[[ %s ]]", __func__);
-    
+	ELYSIAN_LOG("[[ %s ]]", __func__);
+	
 	err = elysian_mvc_attribute_set(server, "attr_http_request_headers", "(Not yet submitted)");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 
 	err = elysian_mvc_attribute_set(server, "attr_http_request_body", "(Not yet submitted)");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 
 	err = elysian_mvc_attribute_set(server, "attr_http_request_url", "(Not yet submitted)");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
 	err = elysian_mvc_attribute_set(server, "attr_http_request_header", "(Not yet submitted)");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
 	err = elysian_mvc_view_set(server, "/fs_rom/http_request_exposure.html");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t controller_http_request_exposure(elysian_t* server){
@@ -435,60 +435,60 @@ elysian_err_t controller_http_request_exposure(elysian_t* server){
 	char* str2;
 	char* str3;
 	char* str4;
-    elysian_err_t err;
+	elysian_err_t err;
 
-    ELYSIAN_LOG("[[ %s ]]", __func__);
-    
+	ELYSIAN_LOG("[[ %s ]]", __func__);
+	
 	err = elysian_mvc_param_get_str(server, ELYSIAN_MVC_PARAM_HTTP_HEADERS, &str1, &param_found);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 
 	err = elysian_mvc_param_get_str(server, ELYSIAN_MVC_PARAM_HTTP_BODY, &str2, &param_found);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
 	elysian_mvc_httpreq_url_get(server, &str3);
 	if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+		return err;
+	}
 
 	err = elysian_mvc_httpreq_header_get(server, "user-agent", &str4);
 	if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+		return err;
+	}
 	if (str3 == NULL) {
 		/* The requested header was not found, add a custom string */
 		str3 = "HTTP header not found!";
 	}
 	
 	err = elysian_mvc_attribute_set(server, "attr_http_request_headers", str1);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 
 	err = elysian_mvc_attribute_set(server, "attr_http_request_body", str2);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
 	err = elysian_mvc_attribute_set(server, "attr_http_request_url", str3);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
 	err = elysian_mvc_attribute_set(server, "attr_http_request_header", str4);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
 	err = elysian_mvc_view_set(server, "/fs_rom/http_request_exposure.html");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 }
 
 
@@ -497,37 +497,37 @@ elysian_err_t controller_redirected_page1_html(elysian_t* server){
 	//elysian_client_t* client = elysian_mvc_client(server);
 	char* str1;
 	uint8_t param_found;
-    elysian_err_t err;
+	elysian_err_t err;
 
-    ELYSIAN_LOG("[[ %s ]]", __func__);
-    
+	ELYSIAN_LOG("[[ %s ]]", __func__);
+	
 	err = elysian_mvc_param_get_str(server, "redirection_message", &str1, &param_found);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
-    ELYSIAN_LOG("param1 = %s", str1);
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
+	ELYSIAN_LOG("param1 = %s", str1);
 	
 	err = elysian_mvc_attribute_set(server, "redirection_message", str1);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
-    err = elysian_mvc_view_set(server, "/fs_rom/redirected_page1.html");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	err = elysian_mvc_view_set(server, "/fs_rom/redirected_page1.html");
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t controller_redirected_page0_html(elysian_t* server){
 	//elysian_client_t* client = elysian_mvc_client(server);
 	char httpresp_header_value[150];
 	char hostname[64];
-    elysian_err_t err;
+	elysian_err_t err;
 
-    ELYSIAN_LOG("[[ %s ]]", __func__);
-    
+	ELYSIAN_LOG("[[ %s ]]", __func__);
+	
 	err = elysian_os_hostname_get(hostname);
 	if(err != ELYSIAN_ERR_OK){
 		return err;
@@ -536,8 +536,8 @@ elysian_err_t controller_redirected_page0_html(elysian_t* server){
 	elysian_sprintf(httpresp_header_value, "http://%s:%u%s", hostname, server->listening_port, "/fs_rom/redirected_page1.html?redirection_message=sample+redirection+message");
 	err = elysian_mvc_httpresp_header_add(server, "Location", httpresp_header_value);
 	if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+		return err;
+	}
 	
 	elysian_mvc_status_code_set(server, ELYSIAN_HTTP_STATUS_CODE_302);
 	
@@ -545,17 +545,17 @@ elysian_err_t controller_redirected_page0_html(elysian_t* server){
 	** Empty HTTP body
 	*/
 	err = elysian_mvc_view_set(server, NULL);
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 }
 
 void controller_ajax_example_served(elysian_t* server, void* ptr) {
 	char* ajax_file_name = (char*) ptr;
 	
-    ELYSIAN_LOG("[[ %s ]]", __func__);
+	ELYSIAN_LOG("[[ %s ]]", __func__);
 	
 	ELYSIAN_LOG("Removing temporary file '%s'..", ajax_file_name);
 	elysian_fs_fremove(server, ajax_file_name);
@@ -570,10 +570,10 @@ elysian_err_t controller_ajax(elysian_t* server){
 	char * ajax_file_contents = "<%=ajax_attr%>";
 	char buffer[128];
 	//elysian_client_t* client = elysian_mvc_client(server);
-    elysian_err_t err;
+	elysian_err_t err;
 
-    ELYSIAN_LOG("[[ %s ]]", __func__);
-    
+	ELYSIAN_LOG("[[ %s ]]", __func__);
+	
 	ajax_file_name = elysian_mem_malloc(server, 64);
 	if(!ajax_file_name) {
 		return ELYSIAN_ERR_POLL;
@@ -591,25 +591,25 @@ elysian_err_t controller_ajax(elysian_t* server){
 		elysian_fs_fclose(server, &ajax_file);
 		elysian_fs_fremove(server, ajax_file_name);
 		elysian_mem_free(server, ajax_file_name);
-        return err;
-    }
+		return err;
+	}
 	elysian_fs_fclose(server, &ajax_file);
 
 	//elysian_sprintf(buffer, "[Timestamp %u] RAM usage is <b>%u</b> bytes.", elysian_time_now(), elysian_mem_usage());
 	elysian_sprintf(buffer, "%u,%u", elysian_mem_usage(), ELYSIAN_MAX_MEMORY_USAGE_KB * 1024);
 	err = elysian_mvc_attribute_set(server, "ajax_attr", buffer);
-    if(err != ELYSIAN_ERR_OK){ 
+	if(err != ELYSIAN_ERR_OK){ 
 		elysian_fs_fremove(server, ajax_file_name);
 		elysian_mem_free(server, ajax_file_name);
-        return err;
-    }
+		return err;
+	}
 	
 	err = elysian_mvc_view_set(server, ajax_file_name);
-    if(err != ELYSIAN_ERR_OK){ 
+	if(err != ELYSIAN_ERR_OK){ 
 		elysian_fs_fremove(server, ajax_file_name);
 		elysian_mem_free(server, ajax_file_name);
-        return err;
-    }
+		return err;
+	}
 	
 	elysian_mvc_httpreq_onservice_handler(server, controller_ajax_example_served, ajax_file_name);
 	return ELYSIAN_ERR_OK;
@@ -619,22 +619,22 @@ elysian_err_t controller_ajax(elysian_t* server){
 elysian_err_t controller_virtual_files_html(elysian_t* server){
 	//elysian_client_t* client = elysian_mvc_client(server);
 	char attr_value[32];
-    elysian_err_t err;
+	elysian_err_t err;
 
-    ELYSIAN_LOG("[[ %s ]]", __func__);
-    
+	ELYSIAN_LOG("[[ %s ]]", __func__);
+	
 	elysian_sprintf(attr_value, "%u", elysian_time_now());
 	err = elysian_mvc_attribute_set(server, "attr_virtual_file_path", "/fs_hdl/virtual_file.log");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
-    err = elysian_mvc_view_set(server, "/fs_rom/virtual_files.html");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	err = elysian_mvc_view_set(server, "/fs_rom/virtual_files.html");
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t controller_dynamic_page_disk_html(elysian_t* server){
@@ -642,10 +642,10 @@ elysian_err_t controller_dynamic_page_disk_html(elysian_t* server){
 	elysian_file_t disk_file;
 	uint32_t file_size;
 	char attr_value[64];
-    elysian_err_t err;
+	elysian_err_t err;
 
-    ELYSIAN_LOG("[[ %s ]]", __func__);
-    
+	ELYSIAN_LOG("[[ %s ]]", __func__);
+	
 	elysian_fs_finit(server, &disk_file);
 	err = elysian_fs_fopen(server, "/fs_ext/img1.jpg", ELYSIAN_FILE_MODE_READ, &disk_file);
 	if(err != ELYSIAN_ERR_OK){ 
@@ -655,23 +655,23 @@ elysian_err_t controller_dynamic_page_disk_html(elysian_t* server){
 	err = elysian_fs_fsize(server, &disk_file, &file_size);
 	if(err != ELYSIAN_ERR_OK){
 		elysian_fs_fclose(server, &disk_file);
-        return err;
-    }
+		return err;
+	}
 	
 	elysian_fs_fclose(server, &disk_file);
 	
 	elysian_sprintf(attr_value, "<b>%u</b>", file_size);
 	err = elysian_mvc_attribute_set(server, "attr_file_size", attr_value);
-    if(err != ELYSIAN_ERR_OK){
-        return err;
-    }
+	if(err != ELYSIAN_ERR_OK){
+		return err;
+	}
 	
-    err = elysian_mvc_view_set(server, "/fs_ext/dynamic_page_disk.html");
-    if(err != ELYSIAN_ERR_OK){ 
-        return err;
-    }
+	err = elysian_mvc_view_set(server, "/fs_ext/dynamic_page_disk.html");
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
 	
-    return ELYSIAN_ERR_OK;
+	return ELYSIAN_ERR_OK;
 }
 
 typedef struct{
@@ -884,18 +884,18 @@ const elysian_websocket_def_t webosocket_def[] = {
 
 int main(){
 	uint8_t stop = 0;
-    elysian_t* server;
+	elysian_t* server;
 	ELYSIAN_LOG("Starting web server. SERVER %u, CLIENT %u, RESOURCE %u, TOTAL %u", (unsigned int) sizeof(elysian_t), (unsigned int) sizeof(elysian_client_t), (unsigned int) sizeof(elysian_resource_t), (unsigned int) (sizeof(elysian_t) + sizeof(elysian_client_t) + sizeof(elysian_resource_t)));
 	
-    server = elysian_new();
+	server = elysian_new();
 
-    elysian_start(server, 9000, mvc_controller_def, file_rom_def, file_vrt_def, webosocket_def, authentication_cb);
-    
-    while(!stop){
-        elysian_poll(server, 10000);
-    }
-    
+	elysian_start(server, 9000, mvc_controller_def, file_rom_def, file_vrt_def, webosocket_def, authentication_cb);
+	
+	while(!stop){
+		elysian_poll(server, 10000);
+	}
+	
 	elysian_stop(server);
 	
-    return 0;
+	return 0;
 }

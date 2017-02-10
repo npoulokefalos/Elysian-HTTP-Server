@@ -23,24 +23,24 @@
 
 #include "elysian_config.h"
 
-#define ELYSIAN_PRINTF                	printf
-#define ELYSIAN_LOG(msg, ...)         	do { ELYSIAN_PRINTF("[%u] ELYSIAN_LOG %s():%d: " msg "\r\n", elysian_time_now(), __func__, __LINE__, ##__VA_ARGS__);} while(0);
-#define ELYSIAN_LOG_ERR(msg, ...)     	do { ELYSIAN_PRINTF("[%u] ELYSIAN_ERR %s():%d: " msg "\r\n", elysian_time_now(), __func__, __LINE__, ##__VA_ARGS__);} while(0);
-#define ELYSIAN_ASSERT(cond)     		if (!(cond)) { ELYSIAN_PRINTF("[%u] ELYSIAN_ASSERT Function %s(), Line %d\r\n", elysian_time_now(), __func__, __LINE__); while(1){} }
-#define ELYSIAN_UNUSED_ARG(arg)       	(void)(arg)
+#define ELYSIAN_PRINTF					printf
+#define ELYSIAN_LOG(msg, ...)		 	do { ELYSIAN_PRINTF("[%u] ELYSIAN_LOG %s():%d: " msg "\r\n", elysian_time_now(), __func__, __LINE__, ##__VA_ARGS__);} while(0);
+#define ELYSIAN_LOG_ERR(msg, ...)	 	do { ELYSIAN_PRINTF("[%u] ELYSIAN_ERR %s():%d: " msg "\r\n", elysian_time_now(), __func__, __LINE__, ##__VA_ARGS__);} while(0);
+#define ELYSIAN_ASSERT(cond)	 		if (!(cond)) { ELYSIAN_PRINTF("[%u] ELYSIAN_ASSERT Function %s(), Line %d\r\n", elysian_time_now(), __func__, __LINE__); while(1){} }
+#define ELYSIAN_UNUSED_ARG(arg)	   	(void)(arg)
 
 #define ELYSIAN_INDEX_OOB32				((uint32_t) 0xFFFFFFFF) /* Index out of bounds */
 
 typedef enum{
-    ELYSIAN_ERR_OK = 0,
-    ELYSIAN_ERR_POLL, /* Operation had a temporary memory error and requested to be called again */
-    ELYSIAN_ERR_READ, /* Operation needs more input data to complete processing */
+	ELYSIAN_ERR_OK = 0,
+	ELYSIAN_ERR_POLL, /* Operation had a temporary memory error and requested to be called again */
+	ELYSIAN_ERR_READ, /* Operation needs more input data to complete processing */
 	ELYSIAN_ERR_BUF,
-    ELYSIAN_ERR_FATAL,
-    ELYSIAN_ERR_NOTFOUND,
+	ELYSIAN_ERR_FATAL,
+	ELYSIAN_ERR_NOTFOUND,
 	ELYSIAN_ERR_AUTH,
-    //ELYSIAN_ERR_EOF,
-    //ELYSIAN_ERR_FILENOTFOUND,
+	//ELYSIAN_ERR_EOF,
+	//ELYSIAN_ERR_FILENOTFOUND,
 }elysian_err_t;
 
 typedef enum{
@@ -56,9 +56,9 @@ typedef enum{
 
 struct elysian_t{
 	uint16_t listening_port;
-    elysian_schdlr_t scheduler;
-    elysian_mvc_controller_def_t* controller_def;
-    elysian_file_rom_def_t* file_rom_def;
+	elysian_schdlr_t scheduler;
+	elysian_mvc_controller_def_t* controller_def;
+	elysian_file_rom_def_t* file_rom_def;
 	elysian_file_vrt_def_t* file_vrt_def;
 	elysian_websocket_def_t* websocket_def;
 	elysian_authentication_cb_t authentication_cb;
@@ -66,7 +66,7 @@ struct elysian_t{
 };
 
 /*======================================================================================================================================
- Core API                                                      															
+ Core API													  															
  ======================================================================================================================================*/
 /* 
 ** @brief 		Allocates space for a new server instance
@@ -109,7 +109,7 @@ elysian_err_t elysian_poll(elysian_t* server, uint32_t interval_ms);
 void elysian_stop(elysian_t* server);
 
 /*======================================================================================================================================
- MVC API                                                     															
+ MVC API													 															
  ======================================================================================================================================*/
 
 /* 
@@ -159,26 +159,26 @@ elysian_err_t elysian_mvc_redirect(elysian_t* server, char* redirection_url);
 elysian_err_t elysian_mvc_httpreq_onservice_handler(elysian_t* server, elysian_httpreq_onservice_handler_t handler, void* data);
 
 /*======================================================================================================================================
- Websocket API                                          															
+ Websocket API										  															
  ======================================================================================================================================*/
 elysian_err_t elysian_websocket_send_text(elysian_t* server,  char* frame_data, uint32_t frame_len);
 elysian_err_t elysian_websocket_send_binary(elysian_t* server, uint8_t* frame_data, uint32_t frame_len);
 elysian_err_t elysian_websocket_timer_config(elysian_t* server, uint32_t timer_interval_ms);
 
 /*======================================================================================================================================
- Memory Management API                                          															
+ Memory Management API										  															
  ======================================================================================================================================*/
 void* elysian_mem_malloc(elysian_t* server, uint32_t size);
 void elysian_mem_free(elysian_t* server, void* ptr);
 uint32_t elysian_mem_usage(void);
 
 /*======================================================================================================================================
- Time                                                															
+ Time																											
  ======================================================================================================================================*/
 uint32_t elysian_time_now(void);
 
 /*======================================================================================================================================
- Filesystem API                                             															
+ Filesystem API											 															
  ======================================================================================================================================*/
 void elysian_fs_finit(elysian_t* server, elysian_file_t* file);
 elysian_err_t elysian_fs_fopen(elysian_t* server, char* vrt_path, elysian_file_mode_t mode, elysian_file_t* file);
@@ -192,7 +192,7 @@ elysian_err_t elysian_fs_fclose(elysian_t* server, elysian_file_t* file);
 elysian_err_t elysian_fs_fremove(elysian_t* server, char* vrt_path);
 
 /*======================================================================================================================================
- Strings manipulation API                                           															
+ Strings manipulation API										   															
  ======================================================================================================================================*/
 char* elysian_strstr(char *haystack, char *needle);
 char* elysian_strcasestr(char *haystack, char *needle);
