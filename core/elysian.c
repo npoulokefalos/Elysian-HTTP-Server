@@ -1493,7 +1493,9 @@ elysian_err_t elysian_client_cleanup(elysian_t* server){
 }
 
 /* ---------------------------------------------------------------------------------------------------- */
+#if defined(ELYSIAN_OS_ENV_UNIX)
 #include <signal.h>
+#endif
 
 elysian_t* elysian_new(){
 	elysian_t* server;
