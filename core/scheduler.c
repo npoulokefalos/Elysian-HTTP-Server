@@ -34,10 +34,6 @@
 
 #define ELYSIAN_STARVATION_ENABLED	(1)
 
-elysian_err_t elysian_schdlr_same_state(elysian_t* server, elysian_schdlr_ev_t ev) {
-	return ELYSIAN_ERR_OK;
-}
-
 elysian_err_t elysian_schdlr_state_next(elysian_t* server, elysian_schdlr_state_t next_state) {
 	elysian_schdlr_t* schdlr = &server->scheduler;
 	elysian_schdlr_task_t* task = schdlr->current_task;
@@ -48,9 +44,7 @@ elysian_err_t elysian_schdlr_state_next(elysian_t* server, elysian_schdlr_state_
 		task->new_state = NULL;
 	} else {
 		/* Different or same state */
-		if (next_state != elysian_schdlr_same_state) {
-			task->new_state = next_state;
-		}
+		task->new_state = next_state;
 	}
 	return ELYSIAN_ERR_OK;
 }

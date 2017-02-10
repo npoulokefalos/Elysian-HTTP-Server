@@ -32,8 +32,8 @@ const char* elysian_schdlr_ev_name[]= {
     [elysian_schdlr_EV_ENTRY] = "EV_ENTRY",
     [elysian_schdlr_EV_READ] = "EV_READ",
     [elysian_schdlr_EV_POLL] = "EV_POLL",
-    //[elysian_schdlr_EV_CLOSED] = "EV_CLOSED",
     [elysian_schdlr_EV_TIMER1] = "EV_TIMER1",
+	[elysian_schdlr_EV_TIMER2] = "EV_TIMER2",
     [elysian_schdlr_EV_ABORT] = "EV_ABORT",
 };
 
@@ -251,7 +251,7 @@ elysian_err_t elysian_state_http_request_store(elysian_t* server, elysian_schdlr
                     break;
                 case ELYSIAN_ERR_POLL:
                     elysian_schdlr_state_poll_backoff(server);
-					return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+					return ELYSIAN_ERR_OK;
                     break;
                 case ELYSIAN_ERR_FATAL:
 					return elysian_schdlr_state_next(server, elysian_state_fatal_error_entry);
@@ -279,7 +279,7 @@ elysian_err_t elysian_state_http_request_store(elysian_t* server, elysian_schdlr
                     break;
                 case ELYSIAN_ERR_POLL:
                     elysian_schdlr_state_poll_backoff(server);
-					return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+					return ELYSIAN_ERR_OK;
                     break;
 				case ELYSIAN_ERR_READ:
 					/*
@@ -307,7 +307,7 @@ elysian_err_t elysian_state_http_request_store(elysian_t* server, elysian_schdlr
         }break;
     };
 	
-	return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_state_http_request_headers_receive(elysian_t* server, elysian_schdlr_ev_t ev){
@@ -354,7 +354,7 @@ elysian_err_t elysian_state_http_request_headers_receive(elysian_t* server, elys
         }break;
     };
 	
-	return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_state_http_request_body_receive(elysian_t* server, elysian_schdlr_ev_t ev){
@@ -411,7 +411,7 @@ elysian_err_t elysian_state_http_request_body_receive(elysian_t* server, elysian
         }break;
     };
 	
-	return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+	return ELYSIAN_ERR_OK;
 }
 
 
@@ -445,7 +445,7 @@ elysian_err_t elysian_state_http_request_headers_parse(elysian_t* server, elysia
                     break;
                 case ELYSIAN_ERR_POLL:
                     elysian_schdlr_state_poll_backoff(server);
-					return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+					return ELYSIAN_ERR_OK;
                     break;
                 case ELYSIAN_ERR_FATAL:
 					return elysian_schdlr_state_next(server, elysian_state_fatal_error_entry);
@@ -466,7 +466,7 @@ elysian_err_t elysian_state_http_request_headers_parse(elysian_t* server, elysia
         }break;
     };
 	
-	return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_state_http_expect_reply(elysian_t* server, elysian_schdlr_ev_t ev){
@@ -491,7 +491,7 @@ elysian_err_t elysian_state_http_expect_reply(elysian_t* server, elysian_schdlr_
         case elysian_schdlr_EV_POLL:
         {
 			elysian_sprintf(http_expect_response, "HTTP/1.1 %u %s\r\n\r\n", elysian_http_get_status_code_num(client->httpreq.expect_status_code), 
-																	elysian_http_get_status_code_msg(client->httpreq.expect_status_code));
+			elysian_http_get_status_code_msg(client->httpreq.expect_status_code));
 
 			client->httpresp.buf = 	(uint8_t*) http_expect_response;
 			client->httpresp.buf_len = strlen(http_expect_response);		
@@ -510,7 +510,7 @@ elysian_err_t elysian_state_http_expect_reply(elysian_t* server, elysian_schdlr_
 					break;
 				case ELYSIAN_ERR_POLL:
 					elysian_schdlr_state_poll_backoff(server);
-					return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+					return ELYSIAN_ERR_OK;
 					break;
 				default:
 					return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
@@ -528,7 +528,7 @@ elysian_err_t elysian_state_http_expect_reply(elysian_t* server, elysian_schdlr_
         }break;
     };
 	
-	return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_state_http_request_authenticate(elysian_t* server, elysian_schdlr_ev_t ev){
@@ -567,7 +567,7 @@ elysian_err_t elysian_state_http_request_authenticate(elysian_t* server, elysian
 					break;
 				case ELYSIAN_ERR_POLL:
 					elysian_schdlr_state_poll_backoff(server);
-					return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+					return ELYSIAN_ERR_OK;
 					break;
 				case ELYSIAN_ERR_FATAL:
 					return elysian_schdlr_state_next(server, elysian_state_fatal_error_entry);
@@ -588,7 +588,7 @@ elysian_err_t elysian_state_http_request_authenticate(elysian_t* server, elysian
         }break;
     };
 	
-	return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_state_http_request_params_get(elysian_t* server, elysian_schdlr_ev_t ev) {
@@ -615,7 +615,7 @@ elysian_err_t elysian_state_http_request_params_get(elysian_t* server, elysian_s
 					break;
 				case ELYSIAN_ERR_POLL:
 					elysian_schdlr_state_poll_backoff(server);
-					return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+					return ELYSIAN_ERR_OK;
 					break;
 				case ELYSIAN_ERR_FATAL:
 					return elysian_schdlr_state_next(server, elysian_state_fatal_error_entry);
@@ -636,7 +636,7 @@ elysian_err_t elysian_state_http_request_params_get(elysian_t* server, elysian_s
         }break;
     };
 	
-	return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+	return ELYSIAN_ERR_OK;
 }
 
 void elysian_set_http_status_code(elysian_t* server, elysian_http_status_code_e status_code) {
@@ -688,7 +688,7 @@ elysian_err_t elysian_state_fatal_error_entry(elysian_t* server, elysian_schdlr_
         }break;
     };
 	
-	return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_state_http_response_entry(elysian_t* server, elysian_schdlr_ev_t ev){
@@ -742,7 +742,7 @@ elysian_err_t elysian_state_http_response_entry(elysian_t* server, elysian_schdl
         }break;
     };
 	
-	return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_state_mvc_pre_configuration(elysian_t* server, elysian_schdlr_ev_t ev){
@@ -773,7 +773,7 @@ elysian_err_t elysian_state_mvc_pre_configuration(elysian_t* server, elysian_sch
 					break;
 				case ELYSIAN_ERR_POLL:
 					elysian_schdlr_state_poll_backoff(server);
-					return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+					return ELYSIAN_ERR_OK;
 					break;
 				case ELYSIAN_ERR_FATAL:
 					return elysian_schdlr_state_next(server, elysian_state_fatal_error_entry);
@@ -795,7 +795,7 @@ elysian_err_t elysian_state_mvc_pre_configuration(elysian_t* server, elysian_sch
         }break;
     };
 	
-	return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+	return ELYSIAN_ERR_OK;
 }
 
 
@@ -826,7 +826,7 @@ elysian_err_t elysian_state_prepare_http_response(elysian_t* server, elysian_sch
 				case ELYSIAN_ERR_POLL:
 				{
 					elysian_schdlr_state_poll_backoff(server);
-					return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+					return ELYSIAN_ERR_OK;
 				} break;
 				case ELYSIAN_ERR_NOTFOUND:
 				{
@@ -859,7 +859,7 @@ elysian_err_t elysian_state_prepare_http_response(elysian_t* server, elysian_sch
         }break;
     };
 	
-	return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+	return ELYSIAN_ERR_OK;
 }
 
 /*
@@ -910,7 +910,7 @@ elysian_err_t elysian_state_mvc_post_configuration(elysian_t* server, elysian_sc
         }break;
     };
 	
-	return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_state_build_http_response(elysian_t* server, elysian_schdlr_ev_t ev){
@@ -940,7 +940,7 @@ elysian_err_t elysian_state_build_http_response(elysian_t* server, elysian_schdl
 			client->httpresp.buf = elysian_mem_malloc(server, client->httpresp.buf_size);
 			if(!client->httpresp.buf){
 				elysian_schdlr_state_poll_backoff(server);
-				return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+				return ELYSIAN_ERR_OK;
 			}
             err = elysian_http_response_build(server);
 			switch(err){
@@ -956,13 +956,13 @@ elysian_err_t elysian_state_build_http_response(elysian_t* server, elysian_schdl
 					client->httpresp.buf = NULL;
 					client->httpresp.buf_size += 128; /* The response could not fit, try increasing the buffer */
 					elysian_schdlr_state_poll_enable(server); /* This is not a mem issue, reset backoff */
-					return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+					return ELYSIAN_ERR_OK;
 					break;
 				case ELYSIAN_ERR_POLL:
 					elysian_mem_free(server, client->httpresp.buf);
 					client->httpresp.buf = NULL;
 					elysian_schdlr_state_poll_backoff(server);
-					return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+					return ELYSIAN_ERR_OK;
 					break;
 				case ELYSIAN_ERR_FATAL:
 					elysian_resource_close(server);
@@ -985,7 +985,7 @@ elysian_err_t elysian_state_build_http_response(elysian_t* server, elysian_schdl
         }break;
     };
 	
-	return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev){
@@ -1038,7 +1038,7 @@ elysian_err_t elysian_state_http_response_send(elysian_t* server, elysian_schdlr
 						client->httpresp.buf_size = (client->httpresp.buf_size > 128) ? client->httpresp.buf_size - 128 : 0;
 						if (client->httpresp.buf_size < 128) {
 							elysian_schdlr_state_poll_backoff(server);
-							return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+							return ELYSIAN_ERR_OK;
 						}
 					} else {
 						/*
@@ -1139,7 +1139,7 @@ elysian_err_t elysian_state_http_response_send(elysian_t* server, elysian_schdlr
 							break;
 						case ELYSIAN_ERR_POLL:
 							elysian_schdlr_state_poll_backoff(server); 
-							return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+							return ELYSIAN_ERR_OK;
 							break;
 						default:
 							return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
@@ -1185,7 +1185,7 @@ elysian_err_t elysian_state_http_response_send(elysian_t* server, elysian_schdlr
         }break;
     };
 	
-	return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_state_websocket(elysian_t* server, elysian_schdlr_ev_t ev) {
@@ -1242,7 +1242,7 @@ elysian_err_t elysian_state_websocket(elysian_t* server, elysian_schdlr_ev_t ev)
                 case ELYSIAN_ERR_POLL:
 					/* Pending Rx frames exist */
 					elysian_schdlr_state_poll_backoff(server);
-					return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+					return ELYSIAN_ERR_OK;
                     break;
                 case ELYSIAN_ERR_FATAL:
                 default:
@@ -1282,7 +1282,7 @@ elysian_err_t elysian_state_websocket(elysian_t* server, elysian_schdlr_ev_t ev)
         }break;
     };
 	
-	return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_state_http_keepalive(elysian_t* server, elysian_schdlr_ev_t ev){
@@ -1311,7 +1311,7 @@ elysian_err_t elysian_state_http_keepalive(elysian_t* server, elysian_schdlr_ev_
 			err = elysian_client_cleanup(server);
 			if (err != ELYSIAN_ERR_OK) {
 				ELYSIAN_LOG("Cleanup failed!");
-				return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+				return ELYSIAN_ERR_OK;
 			}
 			
             /*
@@ -1336,7 +1336,7 @@ elysian_err_t elysian_state_http_keepalive(elysian_t* server, elysian_schdlr_ev_
         }break;
     };
 	
-	return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_state_http_disconnect(elysian_t* server, elysian_schdlr_ev_t ev){
@@ -1366,7 +1366,7 @@ elysian_err_t elysian_state_http_disconnect(elysian_t* server, elysian_schdlr_ev
 			err = elysian_client_cleanup(server);
 			if (err != ELYSIAN_ERR_OK) {
 				ELYSIAN_LOG("Cleanup failed!");
-				return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+				return ELYSIAN_ERR_OK;
 			}
 			
             /*
@@ -1408,7 +1408,7 @@ elysian_err_t elysian_state_http_disconnect(elysian_t* server, elysian_schdlr_ev
         }break;
     };
 	
-	return elysian_schdlr_state_next(server, elysian_schdlr_same_state);
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_client_cleanup(elysian_t* server){
