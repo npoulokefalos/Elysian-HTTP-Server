@@ -29,12 +29,12 @@
 
 
 const char* elysian_schdlr_ev_name[]= {
-    [elysian_schdlr_EV_ENTRY] = "EV_ENTRY",
-    [elysian_schdlr_EV_READ] = "EV_READ",
-    [elysian_schdlr_EV_POLL] = "EV_POLL",
-    [elysian_schdlr_EV_TIMER1] = "EV_TIMER1",
+	[elysian_schdlr_EV_ENTRY] = "EV_ENTRY",
+	[elysian_schdlr_EV_READ] = "EV_READ",
+	[elysian_schdlr_EV_POLL] = "EV_POLL",
+	[elysian_schdlr_EV_TIMER1] = "EV_TIMER1",
 	[elysian_schdlr_EV_TIMER2] = "EV_TIMER2",
-    [elysian_schdlr_EV_ABORT] = "EV_ABORT",
+	[elysian_schdlr_EV_ABORT] = "EV_ABORT",
 };
 
 elysian_err_t elysian_state_http_connection_accepted(elysian_t* server, elysian_schdlr_ev_t ev);
@@ -62,44 +62,44 @@ elysian_err_t elysian_client_cleanup(elysian_t* server);
 elysian_err_t elysian_state_http_connection_accepted(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	static uint32_t client_unique_id = 0;
-    
+	
 	ELYSIAN_LOG("[event = %s] ", elysian_schdlr_ev_name[ev]);
 	
-    switch(ev){
-        case elysian_schdlr_EV_ENTRY:
-        {
-            client->id = ++client_unique_id;
+	switch(ev){
+		case elysian_schdlr_EV_ENTRY:
+		{
+			client->id = ++client_unique_id;
 			
-            ELYSIAN_LOG("HTTP client #%u connected!", client->id);
+			ELYSIAN_LOG("HTTP client #%u connected!", client->id);
 			
 			client->rcv_cbuf_list = NULL;
 			client->store_cbuf_list = NULL;
 
-            client->httpreq.url = NULL;
-            client->httpreq.multipart_boundary = NULL;
+			client->httpreq.url = NULL;
+			client->httpreq.multipart_boundary = NULL;
 			client->httpreq.params = NULL;
 			
-            elysian_fs_finit(server, &client->httpreq.headers_file);
+			elysian_fs_finit(server, &client->httpreq.headers_file);
 			strcpy(client->httpreq.headers_filename, "");
-            
-            elysian_fs_finit(server, &client->httpreq.body_file);
+			
+			elysian_fs_finit(server, &client->httpreq.body_file);
 			strcpy(client->httpreq.body_filename, "");
 
 			elysian_mvc_init(server);
 			
-            client->httpresp.buf = NULL;
+			client->httpresp.buf = NULL;
 
 			elysian_resource_init(server);
 			
 			elysian_websocket_init(server);
 			
 			return elysian_schdlr_state_next(server, elysian_state_http_request_headers_receive);
-        }break;
-        default:
-        {
-            ELYSIAN_ASSERT(0);
-        }break;
-    };
+		}break;
+		default:
+		{
+			ELYSIAN_ASSERT(0);
+		}break;
+	};
 	
 	return elysian_schdlr_state_next(server, NULL);
 }
@@ -111,28 +111,28 @@ elysian_err_t elysian_state_http_connection_accepted(elysian_t* server, elysian_
 */
 elysian_err_t elysian_store_cbuf_to_file(elysian_t* server){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    elysian_cbuf_t* cbuf;
-    elysian_file_t* file;
-    char* filename;
-    char* filename_template;
-    uint32_t actual_write_sz;
-    elysian_err_t err;
+	elysian_cbuf_t* cbuf;
+	elysian_file_t* file;
+	char* filename;
+	char* filename_template;
+	uint32_t actual_write_sz;
+	elysian_err_t err;
 	elysian_mvc_controller_def_t* controller_def;
 
-    if (client->isp.func == elysian_isp_http_headers) {
-        file = &client->httpreq.headers_file;
-        filename = client->httpreq.headers_filename;
-        filename_template = ELYSIAN_FS_RAM_VRT_ROOT"/h_%u";
-    } else {
-        file = &client->httpreq.body_file;
-        filename = client->httpreq.body_filename;
+	if (client->isp.func == elysian_isp_http_headers) {
+		file = &client->httpreq.headers_file;
+		filename = client->httpreq.headers_filename;
+		filename_template = ELYSIAN_FS_RAM_VRT_ROOT"/h_%u";
+	} else {
+		file = &client->httpreq.body_file;
+		filename = client->httpreq.body_filename;
 		controller_def = elysian_mvc_controller_def_get(server, client->httpreq.url, client->httpreq.method);
 		if((controller_def) && (controller_def->flags & ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS)) {
 			filename_template = ELYSIAN_FS_EXT_VRT_ROOT"/b_%u";
 		} else {
 			filename_template = ELYSIAN_FS_RAM_VRT_ROOT"/b_%u";
 		}
-    }
+	}
 
 	while (1) {
 		if (!elysian_fs_fisopened(server, file)) {
@@ -197,15 +197,15 @@ elysian_err_t elysian_store_cbuf_to_file(elysian_t* server){
 
 elysian_err_t elysian_state_http_request_store(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    elysian_cbuf_t* cbuf;
-    elysian_err_t err;
-    uint8_t poll_request = 0;
+	elysian_cbuf_t* cbuf;
+	elysian_err_t err;
+	uint8_t poll_request = 0;
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
-    switch(ev){
-        case elysian_schdlr_EV_ENTRY:
-        {
-            elysian_schdlr_state_timer1_set(server, 4000);
+	switch(ev){
+		case elysian_schdlr_EV_ENTRY:
+		{
+			elysian_schdlr_state_timer1_set(server, 4000);
 			elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_LOW);
 
 			ELYSIAN_ASSERT(client->store_cbuf_list == NULL);
@@ -216,49 +216,49 @@ elysian_err_t elysian_state_http_request_store(elysian_t* server, elysian_schdlr
 			*/
 			//client->store_cbuf_list = NULL;
 			client->store_cbuf_list_offset = 0;
-            client->store_cbuf_list_size = -1;
+			client->store_cbuf_list_size = -1;
 			
-            /*
-            ** Don't break and continue to the READ event, asking a POLL
+			/*
+			** Don't break and continue to the READ event, asking a POLL
 			** to open the file and store the already received data.
-            */
-        };//break;
-        case elysian_schdlr_EV_READ:
-        {
+			*/
+		};//break;
+		case elysian_schdlr_EV_READ:
+		{
 			elysian_schdlr_state_timer1_reset(server);
 			
 			cbuf = elysian_schdlr_state_socket_read(server);
 			elysian_cbuf_list_append(&client->rcv_cbuf_list, cbuf);
-            cbuf_list_print(client->rcv_cbuf_list);
-            
+			cbuf_list_print(client->rcv_cbuf_list);
+			
 			elysian_schdlr_state_poll_enable(server);
-        }break;
-        case elysian_schdlr_EV_POLL:
-        {
+		}break;
+		case elysian_schdlr_EV_POLL:
+		{
 			err = client->isp.func(server, &client->rcv_cbuf_list, &client->store_cbuf_list, 0);
 			switch(err){
-                case ELYSIAN_ERR_OK:
+				case ELYSIAN_ERR_OK:
 					/* We have received the whole headers/body, set the correct store size */
 					client->store_cbuf_list_size = elysian_cbuf_list_len(client->store_cbuf_list);
 					ELYSIAN_LOG("ISP finished, remaining store size is %u", client->store_cbuf_list_size);
 					break;
 				case ELYSIAN_ERR_READ:
-                    break;
-                case ELYSIAN_ERR_POLL:
+					break;
+				case ELYSIAN_ERR_POLL:
 					poll_request = 1;
-                    break;
-                case ELYSIAN_ERR_FATAL:
+					break;
+				case ELYSIAN_ERR_FATAL:
 					return elysian_schdlr_state_next(server, elysian_state_fatal_error_entry);
-                    break;
-                default:
-                    ELYSIAN_ASSERT(0);
-                    break;
-            };
+					break;
+				default:
+					ELYSIAN_ASSERT(0);
+					break;
+			};
 			
 			ELYSIAN_LOG("Trying to store..");
 			err = elysian_store_cbuf_to_file(server);
-            switch(err){
-                case ELYSIAN_ERR_OK:
+			switch(err){
+				case ELYSIAN_ERR_OK:
 					if (client->isp.func == elysian_isp_http_headers) {
 						/*
 						** The whole HTTP request headers were received and stored
@@ -270,20 +270,20 @@ elysian_err_t elysian_state_http_request_store(elysian_t* server, elysian_schdlr
 						*/
 						return elysian_schdlr_state_next(server, elysian_state_http_request_authenticate);
 					}
-                    break;
-                case ELYSIAN_ERR_POLL:
+					break;
+				case ELYSIAN_ERR_POLL:
 					poll_request = 1;
-                    break;
+					break;
 				case ELYSIAN_ERR_READ:
-                    break;
-                case ELYSIAN_ERR_FATAL:
+					break;
+				case ELYSIAN_ERR_FATAL:
 					return elysian_schdlr_state_next(server, elysian_state_fatal_error_entry);
-                    break;
-                default:
+					break;
+				default:
 					ELYSIAN_LOG("err was %u",err);
-                    ELYSIAN_ASSERT(0);
-                    break;
-            };
+					ELYSIAN_ASSERT(0);
+					break;
+			};
 			
 			if (poll_request) {
 				elysian_schdlr_state_poll_backoff(server);
@@ -293,30 +293,30 @@ elysian_err_t elysian_state_http_request_store(elysian_t* server, elysian_schdlr
 				elysian_schdlr_state_poll_disable(server);
 				return ELYSIAN_ERR_OK;
 			}
-        }break;
+		}break;
 		case elysian_schdlr_EV_TIMER1:
-        case elysian_schdlr_EV_ABORT:
-        {
+		case elysian_schdlr_EV_ABORT:
+		{
 			return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-        }break;
-        default:
-        {
-            ELYSIAN_ASSERT(0);
-        }break;
-    };
+		}break;
+		default:
+		{
+			ELYSIAN_ASSERT(0);
+		}break;
+	};
 	
 	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_state_http_request_headers_receive(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    
+	
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
-    switch(ev){
-        case elysian_schdlr_EV_ENTRY:
-        {
-            elysian_schdlr_state_timer1_set(server, 4000);
+	switch(ev){
+		case elysian_schdlr_EV_ENTRY:
+		{
+			elysian_schdlr_state_timer1_set(server, 4000);
 			elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_LOW);
 			
 			ELYSIAN_ASSERT(client->store_cbuf_list == NULL);
@@ -326,7 +326,7 @@ elysian_err_t elysian_state_http_request_headers_receive(elysian_t* server, elys
 			client->httpresp.fatal_status_code = ELYSIAN_HTTP_STATUS_CODE_NA;
 			client->httpresp.attempts = 0;
 			
-            client->httpreq_onservice_handler = NULL;
+			client->httpreq_onservice_handler = NULL;
 			client->httpreq_onservice_handler_data = NULL;
 			
 			memset(&client->isp, 0, sizeof(client->isp));
@@ -336,34 +336,34 @@ elysian_err_t elysian_state_http_request_headers_receive(elysian_t* server, elys
 			ELYSIAN_LOG("Waiting new HTTP request from client #%u", client->id);
 			
 			return elysian_schdlr_state_next(server, elysian_state_http_request_store);
-        };break;
-        case elysian_schdlr_EV_READ:
-        {
+		};break;
+		case elysian_schdlr_EV_READ:
+		{
 
-        }break;
+		}break;
 		case elysian_schdlr_EV_TIMER1:
-        case elysian_schdlr_EV_ABORT:
-        {
+		case elysian_schdlr_EV_ABORT:
+		{
 			return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-        }break;
-        default:
-        {
-            ELYSIAN_ASSERT(0);
-        }break;
-    };
+		}break;
+		default:
+		{
+			ELYSIAN_ASSERT(0);
+		}break;
+	};
 	
 	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_state_http_request_body_receive(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    
+	
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
-    switch(ev){
-        case elysian_schdlr_EV_ENTRY:
-        {
-            elysian_schdlr_state_timer1_set(server, 4000);
+	switch(ev){
+		case elysian_schdlr_EV_ENTRY:
+		{
+			elysian_schdlr_state_timer1_set(server, 4000);
 			elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_LOW);
 			
 			ELYSIAN_ASSERT(client->store_cbuf_list == NULL);
@@ -393,21 +393,21 @@ elysian_err_t elysian_state_http_request_body_receive(elysian_t* server, elysian
 			
 			return elysian_schdlr_state_next(server, elysian_state_http_request_store);
 
-        };break;
-        case elysian_schdlr_EV_READ:
-        {
+		};break;
+		case elysian_schdlr_EV_READ:
+		{
 
-        }break;
+		}break;
 		case elysian_schdlr_EV_TIMER1:
-        case elysian_schdlr_EV_ABORT:
-        {
+		case elysian_schdlr_EV_ABORT:
+		{
 			return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-        }break;
-        default:
-        {
-            ELYSIAN_ASSERT(0);
-        }break;
-    };
+		}break;
+		default:
+		{
+			ELYSIAN_ASSERT(0);
+		}break;
+	};
 	
 	return ELYSIAN_ERR_OK;
 }
@@ -416,53 +416,53 @@ elysian_err_t elysian_state_http_request_body_receive(elysian_t* server, elysian
 
 elysian_err_t elysian_state_http_request_headers_parse(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    elysian_err_t err;
-    
+	elysian_err_t err;
+	
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
-    switch(ev){
-        case elysian_schdlr_EV_ENTRY:
-        {
-            elysian_schdlr_state_timer1_set(server, 4000);
-            elysian_schdlr_state_poll_enable(server);
-        }break;
-        case elysian_schdlr_EV_READ:
-        {
-        }break;
-        case elysian_schdlr_EV_POLL:
-        {
-            err = elysian_http_request_headers_parse(server);
-            switch(err){
-                case ELYSIAN_ERR_OK:
+	switch(ev){
+		case elysian_schdlr_EV_ENTRY:
+		{
+			elysian_schdlr_state_timer1_set(server, 4000);
+			elysian_schdlr_state_poll_enable(server);
+		}break;
+		case elysian_schdlr_EV_READ:
+		{
+		}break;
+		case elysian_schdlr_EV_POLL:
+		{
+			err = elysian_http_request_headers_parse(server);
+			switch(err){
+				case ELYSIAN_ERR_OK:
 					if(client->httpreq.expect_status_code != ELYSIAN_HTTP_STATUS_CODE_NA){
 						ELYSIAN_LOG("Expect status code is %u\r\n", client->httpreq.expect_status_code);
 						return elysian_schdlr_state_next(server, elysian_state_http_expect_reply);
 					} else {
 						return elysian_schdlr_state_next(server, elysian_state_http_request_body_receive);
 					}
-                    break;
-                case ELYSIAN_ERR_POLL:
-                    elysian_schdlr_state_poll_backoff(server);
+					break;
+				case ELYSIAN_ERR_POLL:
+					elysian_schdlr_state_poll_backoff(server);
 					return ELYSIAN_ERR_OK;
-                    break;
-                case ELYSIAN_ERR_FATAL:
+					break;
+				case ELYSIAN_ERR_FATAL:
 					return elysian_schdlr_state_next(server, elysian_state_fatal_error_entry);
-                    break;
-                default:
-                    ELYSIAN_ASSERT(0);
-                    break;
-            };
-        }break;
+					break;
+				default:
+					ELYSIAN_ASSERT(0);
+					break;
+			};
+		}break;
 		case elysian_schdlr_EV_TIMER1:
-        case elysian_schdlr_EV_ABORT:
-        {
+		case elysian_schdlr_EV_ABORT:
+		{
 			return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-        }break;
-        default:
-        {
-            ELYSIAN_ASSERT(0);
-        }break;
-    };
+		}break;
+		default:
+		{
+			ELYSIAN_ASSERT(0);
+		}break;
+	};
 	
 	return ELYSIAN_ERR_OK;
 }
@@ -471,23 +471,23 @@ elysian_err_t elysian_state_http_expect_reply(elysian_t* server, elysian_schdlr_
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	uint32_t send_size_actual;
 	char http_expect_response[64];
-    elysian_err_t err;
-    
+	elysian_err_t err;
+	
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
-    switch(ev){
-        case elysian_schdlr_EV_ENTRY:
-        {
-            elysian_schdlr_state_timer1_set(server, 4000);
-            elysian_schdlr_state_poll_enable(server);
+	switch(ev){
+		case elysian_schdlr_EV_ENTRY:
+		{
+			elysian_schdlr_state_timer1_set(server, 4000);
+			elysian_schdlr_state_poll_enable(server);
 			
 			client->httpresp.buf_index = 0;
-        }break;
-        case elysian_schdlr_EV_READ:
-        {
-        }break;
-        case elysian_schdlr_EV_POLL:
-        {
+		}break;
+		case elysian_schdlr_EV_READ:
+		{
+		}break;
+		case elysian_schdlr_EV_POLL:
+		{
 			elysian_sprintf(http_expect_response, "HTTP/1.1 %u %s\r\n\r\n", elysian_http_get_status_code_num(client->httpreq.expect_status_code), 
 			elysian_http_get_status_code_msg(client->httpreq.expect_status_code));
 
@@ -514,31 +514,31 @@ elysian_err_t elysian_state_http_expect_reply(elysian_t* server, elysian_schdlr_
 					return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
 					break;
 			};
-        }break;
+		}break;
 		case elysian_schdlr_EV_TIMER1:
-        case elysian_schdlr_EV_ABORT:
-        {
+		case elysian_schdlr_EV_ABORT:
+		{
 			return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-        }break;
-        default:
-        {
-            ELYSIAN_ASSERT(0);
-        }break;
-    };
+		}break;
+		default:
+		{
+			ELYSIAN_ASSERT(0);
+		}break;
+	};
 	
 	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_state_http_request_authenticate(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    elysian_err_t err;
-    
+	elysian_err_t err;
+	
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
-    switch(ev){
-        case elysian_schdlr_EV_ENTRY:
-        {
-            elysian_schdlr_state_timer1_set(server, 4000);
+	switch(ev){
+		case elysian_schdlr_EV_ENTRY:
+		{
+			elysian_schdlr_state_timer1_set(server, 4000);
 			elysian_schdlr_state_poll_enable(server);
 			
 			/*
@@ -546,12 +546,12 @@ elysian_err_t elysian_state_http_request_authenticate(elysian_t* server, elysian
 			** headers & body so we are able to pipeline new ones while serving it.
 			*/
 			client->http_pipelining_enabled = 1; 
-        }break;
-        case elysian_schdlr_EV_READ:
-        {
-        }break;
-        case elysian_schdlr_EV_POLL:
-        {
+		}break;
+		case elysian_schdlr_EV_READ:
+		{
+		}break;
+		case elysian_schdlr_EV_POLL:
+		{
 			err = elysian_http_authenticate(server);
 			switch(err){
 				case ELYSIAN_ERR_OK:
@@ -574,38 +574,38 @@ elysian_err_t elysian_state_http_request_authenticate(elysian_t* server, elysian
 					ELYSIAN_ASSERT(0);
 					break;
 			};
-        }break;
+		}break;
 		case elysian_schdlr_EV_TIMER1:
-        case elysian_schdlr_EV_ABORT:
-        {
+		case elysian_schdlr_EV_ABORT:
+		{
 			return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-        }break;
-        default:
-        {
-            ELYSIAN_ASSERT(0);
-        }break;
-    };
+		}break;
+		default:
+		{
+			ELYSIAN_ASSERT(0);
+		}break;
+	};
 	
 	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_state_http_request_params_get(elysian_t* server, elysian_schdlr_ev_t ev) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    elysian_err_t err;
-    
+	elysian_err_t err;
+	
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
-    switch(ev){
-        case elysian_schdlr_EV_ENTRY:
-        {
-            elysian_schdlr_state_timer1_set(server, 4000);
+	switch(ev){
+		case elysian_schdlr_EV_ENTRY:
+		{
+			elysian_schdlr_state_timer1_set(server, 4000);
 			elysian_schdlr_state_poll_enable(server);
-        }break;
-        case elysian_schdlr_EV_READ:
-        {
-        }break;
-        case elysian_schdlr_EV_POLL:
-        {
+		}break;
+		case elysian_schdlr_EV_READ:
+		{
+		}break;
+		case elysian_schdlr_EV_POLL:
+		{
 			err = elysian_http_request_get_params(server);
 			switch(err){
 				case ELYSIAN_ERR_OK:
@@ -622,17 +622,17 @@ elysian_err_t elysian_state_http_request_params_get(elysian_t* server, elysian_s
 					ELYSIAN_ASSERT(0);
 					break;
 			};
-        }break;
+		}break;
 		case elysian_schdlr_EV_TIMER1:
-        case elysian_schdlr_EV_ABORT:
-        {
+		case elysian_schdlr_EV_ABORT:
+		{
 			return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-        }break;
-        default:
-        {
-            ELYSIAN_ASSERT(0);
-        }break;
-    };
+		}break;
+		default:
+		{
+			ELYSIAN_ASSERT(0);
+		}break;
+	};
 	
 	return ELYSIAN_ERR_OK;
 }
@@ -650,12 +650,12 @@ void elysian_set_fatal_http_status_code(elysian_t* server, elysian_http_status_c
 
 elysian_err_t elysian_state_fatal_error_entry(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    
+	
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
-    switch(ev){
-        case elysian_schdlr_EV_ENTRY:
-        {
+	switch(ev){
+		case elysian_schdlr_EV_ENTRY:
+		{
 			if(client->httpresp.fatal_status_code == ELYSIAN_HTTP_STATUS_CODE_NA) {
 				/*
 				** Set a generic error status code if nothing has been set
@@ -666,37 +666,37 @@ elysian_err_t elysian_state_fatal_error_entry(elysian_t* server, elysian_schdlr_
 			elysian_set_http_status_code(server, client->httpresp.fatal_status_code);
 			client->httpresp.fatal_status_code = ELYSIAN_HTTP_STATUS_CODE_NA;
 			return elysian_schdlr_state_next(server, elysian_state_http_response_entry);
-        }break;
-        case elysian_schdlr_EV_READ:
-        {
+		}break;
+		case elysian_schdlr_EV_READ:
+		{
 			
-        }break;
-        case elysian_schdlr_EV_POLL:
-        {
+		}break;
+		case elysian_schdlr_EV_POLL:
+		{
 			
-        }break;
+		}break;
 		case elysian_schdlr_EV_TIMER1:
-        case elysian_schdlr_EV_ABORT:
-        {
+		case elysian_schdlr_EV_ABORT:
+		{
 			return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-        }break;
-        default:
-        {
-            ELYSIAN_ASSERT(0);
-        }break;
-    };
+		}break;
+		default:
+		{
+			ELYSIAN_ASSERT(0);
+		}break;
+	};
 	
 	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_state_http_response_entry(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    
+	
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
-    switch(ev){
-        case elysian_schdlr_EV_ENTRY:
-        {
+	switch(ev){
+		case elysian_schdlr_EV_ENTRY:
+		{
 			ELYSIAN_ASSERT(!elysian_resource_isopened(server));
 
 			ELYSIAN_LOG("Attempting to enter the HTTP response phase..");
@@ -720,25 +720,25 @@ elysian_err_t elysian_state_http_response_entry(elysian_t* server, elysian_schdl
 				
 				return elysian_schdlr_state_next(server, elysian_state_mvc_pre_configuration);
 			}
-        }break;
-        case elysian_schdlr_EV_READ:
-        {
+		}break;
+		case elysian_schdlr_EV_READ:
+		{
 			
-        }break;
-        case elysian_schdlr_EV_POLL:
-        {
+		}break;
+		case elysian_schdlr_EV_POLL:
+		{
 			
-        }break;
+		}break;
 		case elysian_schdlr_EV_TIMER1:
-        case elysian_schdlr_EV_ABORT:
-        {
+		case elysian_schdlr_EV_ABORT:
+		{
 			return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-        }break;
-        default:
-        {
-            ELYSIAN_ASSERT(0);
-        }break;
-    };
+		}break;
+		default:
+		{
+			ELYSIAN_ASSERT(0);
+		}break;
+	};
 	
 	return ELYSIAN_ERR_OK;
 }
@@ -749,19 +749,19 @@ elysian_err_t elysian_state_mvc_pre_configuration(elysian_t* server, elysian_sch
 
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
-    switch(ev){
-        case elysian_schdlr_EV_ENTRY:
-        {
-            elysian_schdlr_state_timer1_set(server, 5000);
-            elysian_schdlr_state_poll_enable(server);
+	switch(ev){
+		case elysian_schdlr_EV_ENTRY:
+		{
+			elysian_schdlr_state_timer1_set(server, 5000);
+			elysian_schdlr_state_poll_enable(server);
 
-        }break;
-        case elysian_schdlr_EV_READ:
-        {
+		}break;
+		case elysian_schdlr_EV_READ:
+		{
 			
-        }break;
-        case elysian_schdlr_EV_POLL:
-        {
+		}break;
+		case elysian_schdlr_EV_POLL:
+		{
 			elysian_mvc_clear(server);
 
 			err = elysian_mvc_pre_configure(server);
@@ -781,17 +781,17 @@ elysian_err_t elysian_state_mvc_pre_configuration(elysian_t* server, elysian_sch
 					return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
 					break;
 			};  
-        }break;
+		}break;
 		case elysian_schdlr_EV_TIMER1:
-        case elysian_schdlr_EV_ABORT:
-        {
+		case elysian_schdlr_EV_ABORT:
+		{
 			return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-        }break;
-        default:
-        {
-            ELYSIAN_ASSERT(0);
-        }break;
-    };
+		}break;
+		default:
+		{
+			ELYSIAN_ASSERT(0);
+		}break;
+	};
 	
 	return ELYSIAN_ERR_OK;
 }
@@ -799,22 +799,22 @@ elysian_err_t elysian_state_mvc_pre_configuration(elysian_t* server, elysian_sch
 
 elysian_err_t elysian_state_prepare_http_response(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    elysian_err_t err;
+	elysian_err_t err;
 
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
-    switch(ev){
-        case elysian_schdlr_EV_ENTRY:
-        {
-            elysian_schdlr_state_timer1_set(server, 5000);
-            elysian_schdlr_state_poll_enable(server);
-        }break;
-        case elysian_schdlr_EV_READ:
-        {
-          
-        }break;
-        case elysian_schdlr_EV_POLL:
-        {
+	switch(ev){
+		case elysian_schdlr_EV_ENTRY:
+		{
+			elysian_schdlr_state_timer1_set(server, 5000);
+			elysian_schdlr_state_poll_enable(server);
+		}break;
+		case elysian_schdlr_EV_READ:
+		{
+		  
+		}break;
+		case elysian_schdlr_EV_POLL:
+		{
 			err = elysian_resource_open(server);
 			switch(err){
 				case ELYSIAN_ERR_OK:
@@ -845,17 +845,17 @@ elysian_err_t elysian_state_prepare_http_response(elysian_t* server, elysian_sch
 					return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
 				} break;
 			};	
-        }break;
+		}break;
 		case elysian_schdlr_EV_TIMER1:
-        case elysian_schdlr_EV_ABORT:
-        {
+		case elysian_schdlr_EV_ABORT:
+		{
 			return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-        }break;
-        default:
-        {
-            ELYSIAN_ASSERT(0);
-        }break;
-    };
+		}break;
+		default:
+		{
+			ELYSIAN_ASSERT(0);
+		}break;
+	};
 	
 	return ELYSIAN_ERR_OK;
 }
@@ -867,22 +867,22 @@ elysian_err_t elysian_state_mvc_post_configuration(elysian_t* server, elysian_sc
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	elysian_err_t err;
 	
-    ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
-    
+	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
-    switch(ev){
-        case elysian_schdlr_EV_ENTRY:
-        {
-            elysian_schdlr_state_timer1_set(server, 5000);
-            elysian_schdlr_state_poll_enable(server);
+	
+	switch(ev){
+		case elysian_schdlr_EV_ENTRY:
+		{
+			elysian_schdlr_state_timer1_set(server, 5000);
+			elysian_schdlr_state_poll_enable(server);
 			
-        }break;
-        case elysian_schdlr_EV_READ:
-        {
+		}break;
+		case elysian_schdlr_EV_READ:
+		{
 			
-        }break;
-        case elysian_schdlr_EV_POLL:
-        {
+		}break;
+		case elysian_schdlr_EV_POLL:
+		{
 			err = elysian_mvc_post_configure(server);
 			if (err != ELYSIAN_ERR_OK) {
 				elysian_resource_close(server);
@@ -896,17 +896,17 @@ elysian_err_t elysian_state_mvc_post_configuration(elysian_t* server, elysian_sc
 			}
 			
 			return elysian_schdlr_state_next(server, elysian_state_build_http_response);
-        }break;
+		}break;
 		case elysian_schdlr_EV_TIMER1:
-        case elysian_schdlr_EV_ABORT:
-        {
+		case elysian_schdlr_EV_ABORT:
+		{
 			return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-        }break;
-        default:
-        {
-            ELYSIAN_ASSERT(0);
-        }break;
-    };
+		}break;
+		default:
+		{
+			ELYSIAN_ASSERT(0);
+		}break;
+	};
 	
 	return ELYSIAN_ERR_OK;
 }
@@ -915,32 +915,32 @@ elysian_err_t elysian_state_build_http_response(elysian_t* server, elysian_schdl
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	elysian_err_t err;
 	
-    ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
-    
+	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
-    switch(ev){
-        case elysian_schdlr_EV_ENTRY:
-        {
-            elysian_schdlr_state_timer1_set(server, 5000);
-            elysian_schdlr_state_poll_enable(server);
+	
+	switch(ev){
+		case elysian_schdlr_EV_ENTRY:
+		{
+			elysian_schdlr_state_timer1_set(server, 5000);
+			elysian_schdlr_state_poll_enable(server);
 			
 			client->httpresp.buf_size = ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX;
-        }break;
-        case elysian_schdlr_EV_READ:
-        {
-        
-        }break;
-        case elysian_schdlr_EV_POLL:
-        {
-            /*
-            ** Build HTTP response headers
-            */
+		}break;
+		case elysian_schdlr_EV_READ:
+		{
+		
+		}break;
+		case elysian_schdlr_EV_POLL:
+		{
+			/*
+			** Build HTTP response headers
+			*/
 			client->httpresp.buf = elysian_mem_malloc(server, client->httpresp.buf_size);
 			if(!client->httpresp.buf){
 				elysian_schdlr_state_poll_backoff(server);
 				return ELYSIAN_ERR_OK;
 			}
-            err = elysian_http_response_build(server);
+			err = elysian_http_response_build(server);
 			switch(err){
 				case ELYSIAN_ERR_OK:
 					client->httpresp.headers_size = client->httpresp.buf_len;
@@ -971,50 +971,50 @@ elysian_err_t elysian_state_build_http_response(elysian_t* server, elysian_schdl
 					return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
 					break;
 			}; 
-        }break;
+		}break;
 		case elysian_schdlr_EV_TIMER1:
-        case elysian_schdlr_EV_ABORT:
-        {
+		case elysian_schdlr_EV_ABORT:
+		{
 			return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-        }break;
-        default:
-        {
-            ELYSIAN_ASSERT(0);
-        }break;
-    };
+		}break;
+		default:
+		{
+			ELYSIAN_ASSERT(0);
+		}break;
+	};
 	
 	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_state_http_response_send(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-    elysian_err_t err;
-    uint32_t read_size;
-    uint32_t read_size_actual;
-    //uint32_t send_size;
-    uint32_t send_size_actual;
-    //uint32_t i;
+	elysian_err_t err;
+	uint32_t read_size;
+	uint32_t read_size_actual;
+	//uint32_t send_size;
+	uint32_t send_size_actual;
+	//uint32_t i;
 	uint32_t packet_count;
 	uint8_t read_complete;
 	
 	//ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
-    switch(ev){
-        case elysian_schdlr_EV_ENTRY:
-        {
+	switch(ev){
+		case elysian_schdlr_EV_ENTRY:
+		{
 			ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
-            elysian_schdlr_state_timer1_set(server, 5000);
-            elysian_schdlr_state_poll_enable(server);
-            elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_HIGH);
+			elysian_schdlr_state_timer1_set(server, 5000);
+			elysian_schdlr_state_poll_enable(server);
+			elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_HIGH);
 			
-            client->httpresp.sent_size = 0;
-        }break;
-        case elysian_schdlr_EV_READ:
-        {
+			client->httpresp.sent_size = 0;
+		}break;
+		case elysian_schdlr_EV_READ:
+		{
 
-        }break;
-        case elysian_schdlr_EV_POLL:
-        {
-            if (!client->httpresp.buf) {
+		}break;
+		case elysian_schdlr_EV_POLL:
+		{
+			if (!client->httpresp.buf) {
 #if 1
 				client->httpresp.buf_size = (30 * ELYSIAN_MAX_MEMORY_USAGE_KB * 1024) / 100;
 				client->httpresp.buf_size = client->httpresp.buf_size / 3;
@@ -1047,7 +1047,7 @@ elysian_err_t elysian_state_http_response_send(elysian_t* server, elysian_schdlr
 						break;
 					}
 				};
-            }
+			}
 
 			packet_count = 0;
 			do {
@@ -1160,28 +1160,28 @@ elysian_err_t elysian_state_http_response_send(elysian_t* server, elysian_schdlr
 						return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
 					}
 				}
-            } while (packet_count < 8);
+			} while (packet_count < 8);
 			
-            /*
-            ** Check if we can release the response buffer so it can be used by other clients
-            */
-            if(client->httpresp.buf_len == 0){
-                elysian_mem_free(server, client->httpresp.buf);
-                client->httpresp.buf = NULL;
-            }
-            
-            elysian_schdlr_state_poll_enable(server);
-        }break;
+			/*
+			** Check if we can release the response buffer so it can be used by other clients
+			*/
+			if(client->httpresp.buf_len == 0){
+				elysian_mem_free(server, client->httpresp.buf);
+				client->httpresp.buf = NULL;
+			}
+			
+			elysian_schdlr_state_poll_enable(server);
+		}break;
 		case elysian_schdlr_EV_TIMER1:
-        case elysian_schdlr_EV_ABORT:
-        {
+		case elysian_schdlr_EV_ABORT:
+		{
 			return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-        }break;
-        default:
-        {
-            ELYSIAN_ASSERT(0);
-        }break;
-    };
+		}break;
+		default:
+		{
+			ELYSIAN_ASSERT(0);
+		}break;
+	};
 	
 	return ELYSIAN_ERR_OK;
 }
@@ -1193,10 +1193,10 @@ elysian_err_t elysian_state_websocket(elysian_t* server, elysian_schdlr_ev_t ev)
 	
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
-    switch(ev){
-        case elysian_schdlr_EV_ENTRY:
-        {    
-            elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_HIGH);
+	switch(ev){
+		case elysian_schdlr_EV_ENTRY:
+		{	
+			elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_HIGH);
 			
 			ELYSIAN_ASSERT(client->websocket.def == NULL);
 			
@@ -1220,34 +1220,34 @@ elysian_err_t elysian_state_websocket(elysian_t* server, elysian_schdlr_ev_t ev)
 			/*
 			** Don't break, check for any received data
 			*/
-        }//break;
-        case elysian_schdlr_EV_READ:
-        {
+		}//break;
+		case elysian_schdlr_EV_READ:
+		{
 			cbuf = elysian_schdlr_state_socket_read(server);
 			elysian_cbuf_list_append(&client->rcv_cbuf_list, cbuf);
-            cbuf_list_print(client->rcv_cbuf_list);
+			cbuf_list_print(client->rcv_cbuf_list);
 			
 			elysian_schdlr_state_poll_enable(server);
-        }break;
-        case elysian_schdlr_EV_POLL:
-        {
+		}break;
+		case elysian_schdlr_EV_POLL:
+		{
 			err = elysian_websocket_process(server);
 			switch(err){
-                case ELYSIAN_ERR_OK:
+				case ELYSIAN_ERR_OK:
 					/* No pending operations */
 					elysian_schdlr_state_poll_disable(server);
 					break;
-                case ELYSIAN_ERR_POLL:
+				case ELYSIAN_ERR_POLL:
 					/* Pending Rx frames exist */
 					elysian_schdlr_state_poll_backoff(server);
 					return ELYSIAN_ERR_OK;
-                    break;
-                case ELYSIAN_ERR_FATAL:
-                default:
+					break;
+				case ELYSIAN_ERR_FATAL:
+				default:
 					return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-                    break;
-            };		  
-        }break;
+					break;
+			};		  
+		}break;
 		case elysian_schdlr_EV_TIMER1:
 		{
 			err = elysian_websocket_app_timer(server);
@@ -1270,15 +1270,15 @@ elysian_err_t elysian_state_websocket(elysian_t* server, elysian_schdlr_ev_t ev)
 			elysian_schdlr_state_poll_enable(server);
 			
 		} break;
-        case elysian_schdlr_EV_ABORT:
-        {
+		case elysian_schdlr_EV_ABORT:
+		{
 			return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-        }break;
-        default:
-        {
-            ELYSIAN_ASSERT(0);
-        }break;
-    };
+		}break;
+		default:
+		{
+			ELYSIAN_ASSERT(0);
+		}break;
+	};
 	
 	return ELYSIAN_ERR_OK;
 }
@@ -1289,18 +1289,18 @@ elysian_err_t elysian_state_http_keepalive(elysian_t* server, elysian_schdlr_ev_
 	
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
-    switch(ev){
-        case elysian_schdlr_EV_ENTRY:
-        {           
-            elysian_schdlr_state_timer1_set(server, 10000);
-            elysian_schdlr_state_poll_enable(server);
-            elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_HIGH);
-        }break;
-        case elysian_schdlr_EV_READ:
-        {
-        }break;
-        case elysian_schdlr_EV_POLL:
-        {
+	switch(ev){
+		case elysian_schdlr_EV_ENTRY:
+		{		   
+			elysian_schdlr_state_timer1_set(server, 10000);
+			elysian_schdlr_state_poll_enable(server);
+			elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_HIGH);
+		}break;
+		case elysian_schdlr_EV_READ:
+		{
+		}break;
+		case elysian_schdlr_EV_POLL:
+		{
 			/*
 			** Never exit unless we free up all the resources ?
 			*/
@@ -1312,27 +1312,27 @@ elysian_err_t elysian_state_http_keepalive(elysian_t* server, elysian_schdlr_ev_
 				return ELYSIAN_ERR_OK;
 			}
 			
-            /*
-            ** This cb should be called after client_cleanup() to make sure
-            ** that the web server has closed any file handles and so any files 
-            ** created from within controllre can be now safely removed by the application.
-            */
-            if(client->httpreq_onservice_handler){
-                client->httpreq_onservice_handler(server, client->httpreq_onservice_handler_data);
-            }
+			/*
+			** This cb should be called after client_cleanup() to make sure
+			** that the web server has closed any file handles and so any files 
+			** created from within controllre can be now safely removed by the application.
+			*/
+			if(client->httpreq_onservice_handler){
+				client->httpreq_onservice_handler(server, client->httpreq_onservice_handler_data);
+			}
 
 			return elysian_schdlr_state_next(server, elysian_state_http_request_headers_receive);
-        }break;
+		}break;
 		case elysian_schdlr_EV_TIMER1:
-        case elysian_schdlr_EV_ABORT:
-        {
+		case elysian_schdlr_EV_ABORT:
+		{
 			return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-        }break;
-        default:
-        {
-            ELYSIAN_ASSERT(0);
-        }break;
-    };
+		}break;
+		default:
+		{
+			ELYSIAN_ASSERT(0);
+		}break;
+	};
 	
 	return ELYSIAN_ERR_OK;
 }
@@ -1342,20 +1342,20 @@ elysian_err_t elysian_state_http_disconnect(elysian_t* server, elysian_schdlr_ev
 	elysian_err_t err;
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
-    switch(ev){
-        case elysian_schdlr_EV_ENTRY:
-        {
-            elysian_schdlr_state_timer1_set(server, 10000);
-            elysian_schdlr_state_poll_enable(server);
-            elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_HIGH);
+	switch(ev){
+		case elysian_schdlr_EV_ENTRY:
+		{
+			elysian_schdlr_state_timer1_set(server, 10000);
+			elysian_schdlr_state_poll_enable(server);
+			elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_HIGH);
 			
 			ELYSIAN_LOG("Disconnecting HTTP client #%u", client->id);
-        }break;
-        case elysian_schdlr_EV_READ:
-        {
-        }break;
-        case elysian_schdlr_EV_POLL:
-        {
+		}break;
+		case elysian_schdlr_EV_READ:
+		{
+		}break;
+		case elysian_schdlr_EV_POLL:
+		{
 			/*
 			** Never exit unless we free up all the resources ?
 			*/
@@ -1367,16 +1367,16 @@ elysian_err_t elysian_state_http_disconnect(elysian_t* server, elysian_schdlr_ev
 				return ELYSIAN_ERR_OK;
 			}
 			
-            /*
-            ** This cb should be called after client_cleanup() to make sure
-            ** that the web server has closed any file handles and so any files 
-            ** created from within controllre can be now safely removed by the application.
-            */
-            if(client->httpreq_onservice_handler){
-                client->httpreq_onservice_handler(server, client->httpreq_onservice_handler_data);
-            }
-            
-            if(client->rcv_cbuf_list){
+			/*
+			** This cb should be called after client_cleanup() to make sure
+			** that the web server has closed any file handles and so any files 
+			** created from within controllre can be now safely removed by the application.
+			*/
+			if(client->httpreq_onservice_handler){
+				client->httpreq_onservice_handler(server, client->httpreq_onservice_handler_data);
+			}
+			
+			if(client->rcv_cbuf_list){
 				elysian_cbuf_list_free(server, client->rcv_cbuf_list );
 				client->rcv_cbuf_list  = NULL;
 			}
@@ -1391,58 +1391,58 @@ elysian_err_t elysian_state_http_disconnect(elysian_t* server, elysian_schdlr_ev
 			*/
 			elysian_websocket_cleanup(server);
 			
-            return elysian_schdlr_state_next(server, NULL);
-        }break;
+			return elysian_schdlr_state_next(server, NULL);
+		}break;
 		case elysian_schdlr_EV_TIMER1:
-        case elysian_schdlr_EV_ABORT:
-        {
+		case elysian_schdlr_EV_ABORT:
+		{
 			/*
 			** Ignore any abort signals, we should cleanup before exiting
 			*/
-        }break;
-        default:
-        {
-            ELYSIAN_ASSERT(0);
-        }break;
-    };
+		}break;
+		default:
+		{
+			ELYSIAN_ASSERT(0);
+		}break;
+	};
 	
 	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_client_cleanup(elysian_t* server){
-    elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	elysian_err_t err = ELYSIAN_ERR_OK;
 	elysian_req_param_t* param_next;
 	
-    /*
-    ** Clear mvc
-    */
-    elysian_mvc_clear(server);
+	/*
+	** Clear mvc
+	*/
+	elysian_mvc_clear(server);
 
 	/*
 	** Clear ISP
 	*/
 	elysian_isp_cleanup(server);
 	
-    /*
-    ** Release resource
-    */
-    if(elysian_resource_isopened(server)){
-        elysian_resource_close(server);
-    }
-    
-    /*
-    ** Release response
-    */
-    if(client->httpresp.buf){
-        elysian_mem_free(server, client->httpresp.buf);
-        client->httpresp.buf = NULL;
-    }
-    
-    if(client->httpreq.url){
-        elysian_mem_free(server, client->httpreq.url);
-        client->httpreq.url = NULL;
-    }  
+	/*
+	** Release resource
+	*/
+	if(elysian_resource_isopened(server)){
+		elysian_resource_close(server);
+	}
+	
+	/*
+	** Release response
+	*/
+	if(client->httpresp.buf){
+		elysian_mem_free(server, client->httpresp.buf);
+		client->httpresp.buf = NULL;
+	}
+	
+	if(client->httpreq.url){
+		elysian_mem_free(server, client->httpreq.url);
+		client->httpreq.url = NULL;
+	}  
 
 	if(client->httpreq.multipart_boundary){
 		elysian_mem_free(server, client->httpreq.multipart_boundary);
@@ -1465,9 +1465,9 @@ elysian_err_t elysian_client_cleanup(elysian_t* server){
 	};
 	
 	if(client->httpreq.headers_filename[0] != '\0'){
-        ELYSIAN_LOG("Removing header file..");
+		ELYSIAN_LOG("Removing header file..");
 		if(elysian_fs_fisopened(server, &client->httpreq.headers_file)){
-            ELYSIAN_LOG("Closing headers file..");
+			ELYSIAN_LOG("Closing headers file..");
 			elysian_fs_fclose(server, &client->httpreq.headers_file);
 		}
 		err = elysian_fs_fremove(server, client->httpreq.headers_filename);
@@ -1476,10 +1476,10 @@ elysian_err_t elysian_client_cleanup(elysian_t* server){
 		}
 		strcpy(client->httpreq.headers_filename, "");
 	}
-    
-    if(client->httpreq.body_filename[0] != '\0'){
+	
+	if(client->httpreq.body_filename[0] != '\0'){
 		if(elysian_fs_fisopened(server, &client->httpreq.body_file)){
-            ELYSIAN_LOG("Closing body file..");
+			ELYSIAN_LOG("Closing body file..");
 			elysian_fs_fclose(server, &client->httpreq.body_file);
 		}
 		elysian_fs_fremove(server, client->httpreq.body_filename);
@@ -1496,24 +1496,24 @@ elysian_err_t elysian_client_cleanup(elysian_t* server){
 #include <signal.h>
 
 elysian_t* elysian_new(){
-    elysian_t* server;
-    
-    if(!(server = elysian_mem_malloc(NULL, sizeof(elysian_t)))){
-        return NULL;
-    }
-    
-    server->controller_def = NULL;
+	elysian_t* server;
+	
+	if(!(server = elysian_mem_malloc(NULL, sizeof(elysian_t)))){
+		return NULL;
+	}
+	
+	server->controller_def = NULL;
 	server->file_rom_def = NULL;
 	server->file_vrt_def = NULL;
 
-    return server;
+	return server;
 }
 
 elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_mvc_controller_def_t controller_def[], const elysian_file_rom_def_t file_rom_def[], const elysian_file_vrt_def_t file_vrt_def[], const elysian_websocket_def_t websocket_def[], elysian_authentication_cb_t authentication_cb) {
-    elysian_err_t err;
+	elysian_err_t err;
 	
 #if defined(ELYSIAN_OS_ENV_UNIX)
-    if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) { 
+	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) { 
 		ELYSIAN_LOG("Could not ignore the SIGPIPE signal!")
 	}
 #endif
@@ -1526,9 +1526,9 @@ elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_mvc_
 	server->authentication_cb = authentication_cb;
 	
 	
-    err = elysian_schdlr_init(server, port, elysian_state_http_connection_accepted);
-    
-    return err;
+	err = elysian_schdlr_init(server, port, elysian_state_http_connection_accepted);
+	
+	return err;
 }
 
 void elysian_stop(elysian_t* server){
@@ -1536,8 +1536,8 @@ void elysian_stop(elysian_t* server){
 }
 
 elysian_err_t elysian_poll(elysian_t* server, uint32_t interval_ms){
-    elysian_schdlr_poll(server, interval_ms);
-    return ELYSIAN_ERR_OK;
+	elysian_schdlr_poll(server, interval_ms);
+	return ELYSIAN_ERR_OK;
 }
 
 elysian_client_t* elysian_current_client(elysian_t* server) {
