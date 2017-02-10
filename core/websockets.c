@@ -307,7 +307,8 @@ elysian_err_t elysian_websocket_process_rx(elysian_t* server) {
 	switch (err) {
 		case ELYSIAN_ERR_OK:
 		{
-			/* No pending Rx frames */
+			/* Processing finished, new input data are not required/expected */
+			ELYSIAN_ASSERT(0);
 		} break;
 		case ELYSIAN_ERR_READ:
 		{

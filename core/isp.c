@@ -1,6 +1,13 @@
 #include "elysian.h"
 
 /*
+** ELYSIAN_ERR_OK: Processing finished, new input data are not required/expected
+** ELYSIAN_ERR_FATAL: Processing error
+** ELYSIAN_ERR_POLL: zero or more output data generated, more memory is required to continue
+** ELYSIAN_ERR_READ: zero or more output data generated, new input is required to continue
+*/
+
+/*
 ** Parses the stream until a "\r\n\r\n" is detected
 */
 elysian_err_t elysian_isp_http_headers(elysian_t* server, elysian_cbuf_t** cbuf_list_in, elysian_cbuf_t** cbuf_list_out, uint8_t end_of_stream) {
@@ -709,10 +716,6 @@ elysian_err_t elysian_isp_websocket(elysian_t* server, elysian_cbuf_t** cbuf_lis
 		switch (args->state) {
 			case 0: /* Frame header, first 2 bytes */
 			{
-				if (cbuf_list_in_len == 0) {
-					/* Don't return ELYSIAN_ERR_READ if there is no reception */
-					return ELYSIAN_ERR_OK;
-				}
 				split_size = 2;
 				if (cbuf_list_in_len < split_size) {
 					return ELYSIAN_ERR_READ;

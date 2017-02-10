@@ -199,7 +199,7 @@ elysian_err_t elysian_state_http_request_store(elysian_t* server, elysian_schdlr
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
     elysian_cbuf_t* cbuf;
     elysian_err_t err;
-    
+    uint8_t poll_request = 0;
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
     switch(ev){
@@ -238,20 +238,14 @@ elysian_err_t elysian_state_http_request_store(elysian_t* server, elysian_schdlr
 			err = client->isp.func(server, &client->rcv_cbuf_list, &client->store_cbuf_list, 0);
 			switch(err){
                 case ELYSIAN_ERR_OK:
-					/*
-					** We have received the whole headers/body, set the correct store size.
-					** For HTTP headers this is going to happen only once.
-					** For HTTP body it is going to be happenning multiple times until we receive the body.
-					*/
+					/* We have received the whole headers/body, set the correct store size */
 					client->store_cbuf_list_size = elysian_cbuf_list_len(client->store_cbuf_list);
 					ELYSIAN_LOG("ISP finished, remaining store size is %u", client->store_cbuf_list_size);
 					break;
 				case ELYSIAN_ERR_READ:
-
                     break;
                 case ELYSIAN_ERR_POLL:
-                    elysian_schdlr_state_poll_backoff(server);
-					return ELYSIAN_ERR_OK;
+					poll_request = 1;
                     break;
                 case ELYSIAN_ERR_FATAL:
 					return elysian_schdlr_state_next(server, elysian_state_fatal_error_entry);
@@ -278,14 +272,9 @@ elysian_err_t elysian_state_http_request_store(elysian_t* server, elysian_schdlr
 					}
                     break;
                 case ELYSIAN_ERR_POLL:
-                    elysian_schdlr_state_poll_backoff(server);
-					return ELYSIAN_ERR_OK;
+					poll_request = 1;
                     break;
 				case ELYSIAN_ERR_READ:
-					/*
-					** Disable POLL, wait READ
-					*/
-                    elysian_schdlr_state_poll_disable(server);
                     break;
                 case ELYSIAN_ERR_FATAL:
 					return elysian_schdlr_state_next(server, elysian_state_fatal_error_entry);
@@ -295,6 +284,15 @@ elysian_err_t elysian_state_http_request_store(elysian_t* server, elysian_schdlr
                     ELYSIAN_ASSERT(0);
                     break;
             };
+			
+			if (poll_request) {
+				elysian_schdlr_state_poll_backoff(server);
+				return ELYSIAN_ERR_OK;
+			} else {
+				/* Disable POLL, wait READ */
+				elysian_schdlr_state_poll_disable(server);
+				return ELYSIAN_ERR_OK;
+			}
         }break;
 		case elysian_schdlr_EV_TIMER1:
         case elysian_schdlr_EV_ABORT:
