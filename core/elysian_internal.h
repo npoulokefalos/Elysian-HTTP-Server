@@ -340,18 +340,18 @@ typedef enum{
 }elysian_file_mode_t;
 
 
-typedef struct elysian_fs_ram_file_t elysian_fs_ram_file_t;
-struct elysian_fs_ram_file_t{
+typedef struct elysian_file_ram_def_t elysian_file_ram_def_t;
+struct elysian_file_ram_def_t{
 	char* name;
 	uint8_t read_handles;
 	uint8_t write_handles;
 	elysian_cbuf_t* cbuf;
-	elysian_fs_ram_file_t* next;
+	elysian_file_ram_def_t* next;
 };
 
 typedef struct elysian_file_ram_t elysian_file_ram_t;
 struct elysian_file_ram_t{
-	elysian_fs_ram_file_t* fd;
+	elysian_file_ram_def_t* fd;
 	uint32_t pos;
 };
 

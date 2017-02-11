@@ -25,7 +25,7 @@
  RAM filesystem
 ----------------------------------------------------------------------------------------------------------- */
 
-elysian_fs_ram_file_t fs_ram_files ={
+elysian_file_ram_def_t fs_ram_files ={
 	.name = NULL,
 	.cbuf = NULL,
 	.read_handles = 0,
@@ -35,36 +35,36 @@ elysian_fs_ram_file_t fs_ram_files ={
 
 elysian_err_t elysian_fs_ram_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file){
 	elysian_err_t err;
-	elysian_fs_ram_file_t* fs_ram_file;
+	elysian_file_ram_def_t* file_ram_def;
 
 	ELYSIAN_LOG("Opening RAM file with name %s, mode is %u", abs_path, mode);
 	
 	/*
 	* Findout if file exists
 	*/
-	fs_ram_file = fs_ram_files.next;
-	while(fs_ram_file != &fs_ram_files){
-		if(strcmp(abs_path, fs_ram_file->name) == 0){
+	file_ram_def = fs_ram_files.next;
+	while(file_ram_def != &fs_ram_files){
+		if(strcmp(abs_path, file_ram_def->name) == 0){
 			break;
 		}
-		fs_ram_file = fs_ram_file->next;
+		file_ram_def = file_ram_def->next;
 	};
 	
 	if(mode == ELYSIAN_FILE_MODE_READ){
 		
-		if(fs_ram_file == &fs_ram_files){
+		if(file_ram_def == &fs_ram_files){
 			ELYSIAN_LOG("Not found!\r\n");
 			return ELYSIAN_ERR_NOTFOUND;
 		}
 		
-		if(fs_ram_file->write_handles){
+		if(file_ram_def->write_handles){
 			/* File is opened for write, cannot read */
 			return ELYSIAN_ERR_FATAL;
 		}
 		
-		fs_ram_file->read_handles++;
+		file_ram_def->read_handles++;
 		
-		file->descriptor.ram.fd = fs_ram_file;
+		file->descriptor.ram.fd = file_ram_def;
 		file->descriptor.ram.pos = 0;
 		file->mode = ELYSIAN_FILE_MODE_READ;
 		
@@ -75,9 +75,9 @@ elysian_err_t elysian_fs_ram_fopen(elysian_t* server, char* abs_path, elysian_fi
 		/*
 		* If file exists, remove it first
 		*/
-		if(fs_ram_file != &fs_ram_files){
+		if(file_ram_def != &fs_ram_files){
 			ELYSIAN_LOG("Ram file exists, removing it");
-			if(fs_ram_file->read_handles == 0 && fs_ram_file->write_handles == 0){
+			if(file_ram_def->read_handles == 0 && file_ram_def->write_handles == 0){
 				err = elysian_fs_ram_fremove(server, abs_path);
 				if(err != ELYSIAN_ERR_OK){
 					return err;
@@ -90,30 +90,30 @@ elysian_err_t elysian_fs_ram_fopen(elysian_t* server, char* abs_path, elysian_fi
 		}
 		
 		ELYSIAN_LOG("allocating new ram file..");
-		fs_ram_file = elysian_mem_malloc(server, sizeof(elysian_fs_ram_file_t));
-		if(!fs_ram_file){
+		file_ram_def = elysian_mem_malloc(server, sizeof(elysian_file_ram_def_t));
+		if(!file_ram_def){
 			return ELYSIAN_ERR_POLL;
 		}
 		
-		fs_ram_file->name = elysian_mem_malloc(server, strlen(abs_path) + 1);
-		if(!fs_ram_file->name){
-			elysian_mem_free(server, fs_ram_file);
+		file_ram_def->name = elysian_mem_malloc(server, strlen(abs_path) + 1);
+		if(!file_ram_def->name){
+			elysian_mem_free(server, file_ram_def);
 			return ELYSIAN_ERR_POLL;
 		}
-		strcpy(fs_ram_file->name, abs_path);
-		fs_ram_file->cbuf = NULL;
-		fs_ram_file->write_handles = 1;
-		fs_ram_file->read_handles = 0;
+		strcpy(file_ram_def->name, abs_path);
+		file_ram_def->cbuf = NULL;
+		file_ram_def->write_handles = 1;
+		file_ram_def->read_handles = 0;
 		
-		file->descriptor.ram.fd = fs_ram_file;
+		file->descriptor.ram.fd = file_ram_def;
 		file->descriptor.ram.pos = 0;
 		file->mode = ELYSIAN_FILE_MODE_WRITE;
 		
 		/*
 		** Add the file to the list
 		*/
-		fs_ram_file->next = fs_ram_files.next;
-		fs_ram_files.next = fs_ram_file;
+		file_ram_def->next = fs_ram_files.next;
+		fs_ram_files.next = file_ram_def;
 
 		ELYSIAN_LOG("Ram file created..");
 		
@@ -125,14 +125,14 @@ elysian_err_t elysian_fs_ram_fopen(elysian_t* server, char* abs_path, elysian_fi
 
 elysian_err_t elysian_fs_ram_fsize(elysian_t* server, elysian_file_t* file, uint32_t* filesize){
 	elysian_cbuf_t* cbuf_next;
-	elysian_fs_ram_file_t* fs_ram_file;
+	elysian_file_ram_def_t* file_ram_def;
 	elysian_file_ram_t* file_ram;
 	
 	file_ram = &file->descriptor.ram;
-	fs_ram_file = file_ram->fd;
+	file_ram_def = file_ram->fd;
 	
 	*filesize = 0;
-	cbuf_next =	fs_ram_file->cbuf;
+	cbuf_next =	file_ram_def->cbuf;
 	while(cbuf_next){
 		*filesize = (*filesize) + (cbuf_next->len);
 		cbuf_next = cbuf_next->next;
@@ -171,7 +171,7 @@ elysian_err_t elysian_fs_ram_ftell(elysian_t* server,  elysian_file_t* file, uin
 
 
 int elysian_fs_ram_fread(elysian_t* server,  elysian_file_t* file, uint8_t* buf, uint32_t buf_size){
-	elysian_fs_ram_file_t* fs_ram_file;
+	elysian_file_ram_def_t* file_ram_def;
 	elysian_file_ram_t* file_ram;
 	uint32_t cpy_sz;
 	uint32_t read_sz;
@@ -179,9 +179,9 @@ int elysian_fs_ram_fread(elysian_t* server,  elysian_file_t* file, uint8_t* buf,
 	elysian_cbuf_t* cbuf;
 	
 	file_ram = &file->descriptor.ram;
-	fs_ram_file = file_ram->fd;
+	file_ram_def = file_ram->fd;
 	
-	cbuf = fs_ram_file->cbuf;
+	cbuf = file_ram_def->cbuf;
 	pos = file_ram->pos;
 	while(cbuf){
 		if(pos < cbuf->len){break;}
@@ -206,23 +206,23 @@ int elysian_fs_ram_fread(elysian_t* server,  elysian_file_t* file, uint8_t* buf,
 
 
 int elysian_fs_ram_fwrite(elysian_t* server, elysian_file_t* file, uint8_t* buf, uint32_t buf_size){
-	elysian_fs_ram_file_t* fs_ram_file;
+	elysian_file_ram_def_t* file_ram_def;
 	elysian_file_ram_t* file_ram;
 	elysian_cbuf_t* write_cbuf;
 	
 	file_ram = &file->descriptor.ram;
-	fs_ram_file = file_ram->fd;
+	file_ram_def = file_ram->fd;
 	
 	write_cbuf = elysian_cbuf_alloc(server, buf, buf_size);
 	if(!write_cbuf){
 		return 0;
 	}
 	
-	if(fs_ram_file->cbuf == NULL) {
-		fs_ram_file->cbuf = write_cbuf;
+	if(file_ram_def->cbuf == NULL) {
+		file_ram_def->cbuf = write_cbuf;
 	}else{
 		elysian_cbuf_t* cbuf;
-		cbuf = fs_ram_file->cbuf;
+		cbuf = file_ram_def->cbuf;
 		while(cbuf->next){
 			cbuf = cbuf->next;
 		}
@@ -232,21 +232,21 @@ int elysian_fs_ram_fwrite(elysian_t* server, elysian_file_t* file, uint8_t* buf,
 }
 
 elysian_err_t elysian_fs_ram_fclose(elysian_t* server, elysian_file_t* file){
-	elysian_fs_ram_file_t* fs_ram_file;
+	elysian_file_ram_def_t* file_ram_def;
 	elysian_file_ram_t* file_ram;
 	
 	file_ram = &file->descriptor.ram;
-	fs_ram_file = file_ram->fd;
+	file_ram_def = file_ram->fd;
 	
 	if(file->mode == ELYSIAN_FILE_MODE_READ){
-		ELYSIAN_ASSERT(fs_ram_file->read_handles > 0);
-		fs_ram_file->read_handles--;
+		ELYSIAN_ASSERT(file_ram_def->read_handles > 0);
+		file_ram_def->read_handles--;
 		return ELYSIAN_ERR_OK;
 	}
 	
 	if(file->mode == ELYSIAN_FILE_MODE_WRITE){
-		ELYSIAN_ASSERT(fs_ram_file->write_handles > 0);
-		fs_ram_file->write_handles--;
+		ELYSIAN_ASSERT(file_ram_def->write_handles > 0);
+		file_ram_def->write_handles--;
 		return ELYSIAN_ERR_OK;
 	}
 	
@@ -254,27 +254,27 @@ elysian_err_t elysian_fs_ram_fclose(elysian_t* server, elysian_file_t* file){
 }
 
 elysian_err_t elysian_fs_ram_fremove(elysian_t* server, char* abs_path){
-	elysian_fs_ram_file_t* fs_ram_file;
-	elysian_fs_ram_file_t* fs_ram_file_prev;
+	elysian_file_ram_def_t* file_ram_def;
+	elysian_file_ram_def_t* file_ram_def_prev;
 	
 	ELYSIAN_LOG("Removing ram file..%s",abs_path);
 	
 	/*
 	** Locate the file
 	*/
-	fs_ram_file_prev = &fs_ram_files;
-	fs_ram_file = fs_ram_files.next;
-	while(fs_ram_file != &fs_ram_files){
-		if(strcmp(abs_path, fs_ram_file->name) == 0){
-			fs_ram_file_prev->next = fs_ram_file->next;
+	file_ram_def_prev = &fs_ram_files;
+	file_ram_def = fs_ram_files.next;
+	while(file_ram_def != &fs_ram_files){
+		if(strcmp(abs_path, file_ram_def->name) == 0){
+			file_ram_def_prev->next = file_ram_def->next;
 			break;
 		}
-		fs_ram_file_prev = fs_ram_file;
-		fs_ram_file = fs_ram_file->next;
+		file_ram_def_prev = file_ram_def;
+		file_ram_def = file_ram_def->next;
 	};
 	
 	
-	if(fs_ram_file == &fs_ram_files){
+	if(file_ram_def == &fs_ram_files){
 		/*
 		** File not found
 		*/
@@ -282,15 +282,15 @@ elysian_err_t elysian_fs_ram_fremove(elysian_t* server, char* abs_path){
 		return ELYSIAN_ERR_FATAL;
 	}
 	
-	if(fs_ram_file->read_handles > 0 || fs_ram_file->write_handles > 0){
+	if(file_ram_def->read_handles > 0 || file_ram_def->write_handles > 0){
 		return ELYSIAN_ERR_FATAL;
 	}
 	
 	ELYSIAN_LOG("Removing cbufs of ram file..%s",abs_path);
 	
-	elysian_mem_free(server, fs_ram_file->name);
-	elysian_cbuf_list_free(server, fs_ram_file->cbuf);
-	elysian_mem_free(server, fs_ram_file);
+	elysian_mem_free(server, file_ram_def->name);
+	elysian_cbuf_list_free(server, file_ram_def->cbuf);
+	elysian_mem_free(server, file_ram_def);
 	return ELYSIAN_ERR_OK;
 }
 
