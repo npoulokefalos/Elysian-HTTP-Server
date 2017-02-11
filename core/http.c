@@ -112,7 +112,7 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 	if(!header_value){
 		client->httpreq.transfer_encoding = ELYSIAN_HTTP_TRANSFER_ENCODING_IDENTITY;
 	}else{
-		if(strcmp(header_value, "chunked") == 0){
+		if(elysian_strcasecmp(header_value, "chunked") == 0){
 			ELYSIAN_LOG("Chunked Request!");
 			client->httpreq.transfer_encoding = ELYSIAN_HTTP_TRANSFER_ENCODING_CHUNKED;
 		} else {
@@ -230,7 +230,7 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 		client->httpreq.content_type = ELYSIAN_HTTP_CONTENT_TYPE_NA;
 	}else{
 		ELYSIAN_LOG("Content-Type = '%s'!", header_value);
-		if(strcasecmp(header_value, "application/x-www-form-urlencoded") == 0){
+		if(elysian_strcasecmp(header_value, "application/x-www-form-urlencoded") == 0){
 			ELYSIAN_LOG("URL ENCODED!");
 			client->httpreq.content_type = ELYSIAN_HTTP_CONTENT_TYPE_APPLICATION__X_WWW_FORM_URLENCODED;
 		}else if(strncmp(header_value, "multipart/form-data", strlen("multipart/form-data")) == 0){
@@ -280,9 +280,9 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 	if (!header_value) {
 		client->httpreq.connection = ELYSIAN_HTTP_CONNECTION_CLOSE;
 	} else {
-		if (strcasecmp(header_value, "Keep-Alive") == 0) {
+		if (elysian_strcasecmp(header_value, "Keep-Alive") == 0) {
 			client->httpreq.connection = ELYSIAN_HTTP_CONNECTION_KEEPALIVE;
-		} else if (strcasecmp(header_value, "Upgrade") == 0) {
+		} else if (elysian_strcasecmp(header_value, "Upgrade") == 0) {
 			client->httpreq.connection = ELYSIAN_HTTP_CONNECTION_UPGRADE;
 		} else {
 			client->httpreq.connection = ELYSIAN_HTTP_CONNECTION_CLOSE;
@@ -301,7 +301,7 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 		if (!header_value) {
 			client->httpreq.connection_upgrade = ELYSIAN_HTTP_CONNECTION_UPGRADE_NO;
 		} else {
-			if (strcasecmp(header_value, "websocket") == 0) {
+			if (elysian_strcasecmp(header_value, "websocket") == 0) {
 				client->httpreq.connection_upgrade = ELYSIAN_HTTP_CONNECTION_UPGRADE_WEBSOCKET;
 			}
 			elysian_mem_free(server, header_value);
@@ -321,7 +321,7 @@ elysian_err_t elysian_http_request_headers_parse(elysian_t* server){
 		if (!header_value) {
 			client->httpreq.websocket_version = ELYSIAN_WEBSOCKET_VERSION_NA;
 		} else {
-			if (strcasecmp(header_value, "13") == 0) {
+			if (elysian_strcasecmp(header_value, "13") == 0) {
 				client->httpreq.websocket_version = ELYSIAN_WEBSOCKET_VERSION_13;
 			} else {
 				client->httpreq.websocket_version = ELYSIAN_WEBSOCKET_VERSION_NA;
@@ -1448,7 +1448,7 @@ char* elysian_http_get_mime_type(char* uri){
 	for(i = 0; i < sizeof(elysian_http_mime_types)/ sizeof(elysian_http_mime_types[0]); i++){
 		suffix_len = strlen(elysian_http_mime_types[i].suffix);
 		if(uri_len > suffix_len){
-			if(strcasecmp(&uri[uri_len - suffix_len], elysian_http_mime_types[i].suffix) == 0){
+			if(elysian_strcasecmp(&uri[uri_len - suffix_len], elysian_http_mime_types[i].suffix) == 0){
 				return elysian_http_mime_types[i].mime_type;
 			}
 		}

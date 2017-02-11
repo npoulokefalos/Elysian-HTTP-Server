@@ -613,7 +613,9 @@ uint32_t elysian_schdlr_time_correction(elysian_t* server, uint32_t* tic_ms){
 			task->poll_delta = (task->poll_delta > calibration_delta) ? task->poll_delta - calibration_delta : 0;
 		}
 		if(task->timer1_delta != ELYSIAN_TIME_INFINITE){
+			ELYSIAN_LOG("before: task->timer1_delta = %u", task->timer1_delta);
 			task->timer1_delta = (task->timer1_delta > calibration_delta) ? task->timer1_delta - calibration_delta : 0;
+			ELYSIAN_LOG("after: task->timer1_delta = %u", task->timer1_delta);
 		}
 		if(task->timer2_delta != ELYSIAN_TIME_INFINITE){
 			task->timer2_delta = (task->timer2_delta > calibration_delta) ? task->timer2_delta - calibration_delta : 0;

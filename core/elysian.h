@@ -197,6 +197,7 @@ elysian_err_t elysian_fs_fremove(elysian_t* server, char* vrt_path);
  ======================================================================================================================================*/
 char* elysian_strstr(char *haystack, char *needle);
 char* elysian_strcasestr(char *haystack, char *needle);
+int elysian_strcasecmp(char *a, char *b);
 elysian_err_t elysian_sprintf(char * buf, const char* format, ... );
 elysian_err_t elysian_str2uint(char* buf, uint32_t* uint_var);
 
