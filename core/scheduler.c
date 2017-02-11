@@ -102,7 +102,7 @@ void elysian_schdlr_throw_event(elysian_t* server, elysian_schdlr_task_t* task, 
 	//ELYSIAN_ASSERT(task->timer2_delta != ELYSIAN_TIME_INFINITE);
 }
 
-uint32_t elysian_schdlr_time_correction(elysian_t* server) {
+uint32_t elysian_schdlr_time_advance(elysian_t* server) {
 	elysian_schdlr_t* schdlr = &server->scheduler;
 	elysian_schdlr_task_t* task;
 	static uint32_t calibration_timestamp = 0;
@@ -322,7 +322,7 @@ void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 							
 							/* Should be done to properly align the timers set after the event is thrown.
 							If a new timer is set it should start counting from now on. */
-							elysian_schdlr_time_correction(server);
+							elysian_schdlr_time_advance(server);
 							elysian_schdlr_throw_event(server, new_task, elysian_schdlr_EV_ENTRY);
 							
 							/* Invalidate <task> and <client> alocations as they have been used and should not be freed. */
@@ -381,7 +381,7 @@ void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 									
 									/* Should be done to properly align the timers set after the event is thrown.
 									If a new timer is set it should start counting from now on. */
-									elysian_schdlr_time_correction(server);
+									elysian_schdlr_time_advance(server);
 									elysian_schdlr_throw_event(server, task, elysian_schdlr_EV_READ);
 									
 									/* Invalidate <cbuf> alocation as it has been used and should not be freed. */
@@ -747,7 +747,7 @@ void elysian_schdlr_poll(elysian_t* server, uint32_t intervalms){
 	/*
 	** Calibrate deltas due to application delays
 	*/
-	elysian_schdlr_time_correction(server);
+	elysian_schdlr_time_advance(server);
 	
 	/*
 	** Poll for the desired interval
@@ -766,7 +766,7 @@ void elysian_schdlr_poll(elysian_t* server, uint32_t intervalms){
 		/*
 		** Callibrate deltas
 		*/
-		calibration_ms = elysian_schdlr_time_correction(server);
+		calibration_ms = elysian_schdlr_time_advance(server);
 		intervalms = (intervalms >= calibration_ms) ? intervalms - calibration_ms : 0;
 	}
 }
