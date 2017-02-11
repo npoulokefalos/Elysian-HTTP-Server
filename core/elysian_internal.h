@@ -753,7 +753,6 @@ struct elysian_schdlr_t{
 	uint8_t disabled_acceptor_delta_init;
 	uint8_t disabled_reader_delta;
 	uint8_t disabled_reader_delta_init;
-	uint32_t non_poll_tic_ms;
 	
 	elysian_socket_t socket;
 	

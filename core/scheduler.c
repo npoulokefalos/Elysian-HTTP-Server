@@ -102,6 +102,40 @@ void elysian_schdlr_throw_event(elysian_t* server, elysian_schdlr_task_t* task, 
 	//ELYSIAN_ASSERT(task->timer2_delta != ELYSIAN_TIME_INFINITE);
 }
 
+uint32_t elysian_schdlr_time_correction(elysian_t* server) {
+	elysian_schdlr_t* schdlr = &server->scheduler;
+	elysian_schdlr_task_t* task;
+	static uint32_t calibration_timestamp = 0;
+	uint32_t calibration_delta;
+
+	if (!calibration_timestamp) {
+		/* First call */
+		calibration_timestamp = elysian_time_now();
+	}
+	
+	calibration_delta = elysian_time_elapsed(calibration_timestamp);
+	if (!calibration_delta) {
+		return 0;
+	}
+	calibration_timestamp = elysian_time_now();
+
+	task = schdlr->tasks.next;
+	while (task != &schdlr->tasks) {
+		if (task->poll_delta != ELYSIAN_TIME_INFINITE) {
+			task->poll_delta = (task->poll_delta > calibration_delta) ? task->poll_delta - calibration_delta : 0;
+		}
+		if (task->timer1_delta != ELYSIAN_TIME_INFINITE) {
+			task->timer1_delta = (task->timer1_delta > calibration_delta) ? task->timer1_delta - calibration_delta : 0;
+		}
+		if (task->timer2_delta != ELYSIAN_TIME_INFINITE) {
+			task->timer2_delta = (task->timer2_delta > calibration_delta) ? task->timer2_delta - calibration_delta : 0;
+		}
+		task = task->next;
+	}
+
+	return calibration_delta;
+}
+
 #define ELYSIAN_NOMEM_SLEEP_INTERVAL_MS	(33)
 uint32_t elysian_schdlr_free_client_slots(elysian_t* server){
 	elysian_schdlr_t* schdlr = &server->scheduler;
@@ -286,20 +320,21 @@ void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 							last_task->next->prev = new_task;
 							last_task->next = new_task;
 							
+							/* Should be done to properly align the timers set after the event is thrown.
+							If a new timer is set it should start counting from now on. */
+							elysian_schdlr_time_correction(server);
 							elysian_schdlr_throw_event(server, new_task, elysian_schdlr_EV_ENTRY);
 							
-							/*
-							** Invalidate <task> and <client> alocations as they have been used and should not be freed.
-							*/
+							/* Invalidate <task> and <client> alocations as they have been used and should not be freed. */
 							new_client = NULL;
 							new_task = NULL;
 						}
-					}else{
+					} else {
 						/*
 						** Client event
 						*/
 						task = elysian_schdlr_get_task(server, schdlr->socket_readset[i]);
-						if(!task){
+						if (!task) {
 							ELYSIAN_ASSERT(task);
 							continue;
 						}
@@ -310,7 +345,7 @@ void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 							continue;
 						}
 						
-						if(task->client->socket.passively_closed || task->client->socket.actively_closed){
+						if (task->client->socket.passively_closed || task->client->socket.actively_closed) {
 							ELYSIAN_ASSERT(0); /* This can never happen ??? */
 							continue;
 						}
@@ -319,18 +354,16 @@ void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 						elysian_err_t err;
 						uint32_t received;
 						elysian_cbuf_t* cbuf_alt;
-						if(!new_cbuf){
+						if (!new_cbuf) {
 							new_cbuf = elysian_cbuf_alloc(server, NULL, ELYSIAN_CBUF_LEN);
-							if(!new_cbuf){
-								/*
-								** Maybe some connection was closed, give a chance to read and detect this
-								** if ELYSIAN_CBUF_LEN has been set to a too big value.
-								*/
+							if (!new_cbuf) {
+								/* Maybe some connection was closed, give a chance to read and detect this
+								if ELYSIAN_CBUF_LEN has been set to a too big value. */
 								new_cbuf = elysian_cbuf_alloc(server, NULL, 32);
 							}
 						}
 
-						if(new_cbuf){
+						if (new_cbuf) {
 							err = elysian_socket_read(&task->client->socket, new_cbuf->data, new_cbuf->len, &received);
 							switch(err){
 								case ELYSIAN_ERR_OK:
@@ -345,10 +378,13 @@ void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 									}
 									new_cbuf->len = received;
 									elysian_cbuf_list_append(&task->cbuf_list, new_cbuf);
+									
+									/* Should be done to properly align the timers set after the event is thrown.
+									If a new timer is set it should start counting from now on. */
+									elysian_schdlr_time_correction(server);
 									elysian_schdlr_throw_event(server, task, elysian_schdlr_EV_READ);
-									/*
-									** Invalidate <cbuf> alocation as it has been used and should not be freed.
-									*/
+									
+									/* Invalidate <cbuf> alocation as it has been used and should not be freed. */
 									new_cbuf = NULL;
 								}break;
 								case ELYSIAN_ERR_POLL:
@@ -380,32 +416,24 @@ void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 		}
 		
 		if(socket_events){
-			/*
-			** One or more socket events took place, stop.
-			*/
+			/* One or more socket events took place, stop. */
 			return;
 		}else{
-			/*
-			** No socket events were received
-			*/
+			/* No socket events were received */
 			elapsed_ms = elysian_time_elapsed(tic_ms);
 			if(elapsed_ms >= interval_ms){
 				return;
 			}else{
 				if(!fdset_size){
-					/*
-					** No memory to process socket events, just sleep and check for deadlock.
-					*/
+					/* No memory to process socket events, just sleep and check for deadlock. */
 					if(interval_ms > elapsed_ms){
 						elysian_time_sleep(interval_ms - elapsed_ms);
 					}
 					ELYSIAN_LOG("CHECK Memory starvation HERE !!!");
 					return;
 				}else{
-					/*
-					** There is memory to process socket events, but no event received yet. 
-					** Backoff and retry.
-					*/
+					/* There is memory to process socket events, but no event received yet. 
+					Backoff and retry. */
 					uint32_t ELYSIAN_POLLING_INTERVAL_MS = ELYSIAN_INTERACTIVE_INTERVAL_MS;
 					backoff_ms = (backoff_ms == 0) ? 1 : backoff_ms * 2;
 					backoff_ms = (backoff_ms >  (interval_ms - elapsed_ms)) ? (interval_ms - elapsed_ms) : backoff_ms;
@@ -592,41 +620,6 @@ void elysian_schdlr_exec(elysian_t* server, uint32_t poll_period_ms){
 	elysian_schdlr_exec_socket_events(server, poll_period_ms);
 }
 
-uint32_t elysian_schdlr_time_correction(elysian_t* server, uint32_t* tic_ms){
-	elysian_schdlr_t* schdlr = &server->scheduler;
-	elysian_schdlr_task_t* task;
-	uint32_t calibration_delta;
-	//uint32_t toc_ms;
-	
-	//toc_ms = elysian_time_now();
-	//calibration_delta = (toc_ms >= (*tic_ms)) ? toc_ms - (*tic_ms) : toc_ms;
-	calibration_delta = elysian_time_elapsed(*tic_ms);
-	if(!calibration_delta){
-		return 0;
-	}
-	*tic_ms = elysian_time_now();
-
-
-	task = schdlr->tasks.next;
-	while(task != &schdlr->tasks){
-		if(task->poll_delta != ELYSIAN_TIME_INFINITE){
-			task->poll_delta = (task->poll_delta > calibration_delta) ? task->poll_delta - calibration_delta : 0;
-		}
-		if(task->timer1_delta != ELYSIAN_TIME_INFINITE){
-			ELYSIAN_LOG("before: task->timer1_delta = %u", task->timer1_delta);
-			task->timer1_delta = (task->timer1_delta > calibration_delta) ? task->timer1_delta - calibration_delta : 0;
-			ELYSIAN_LOG("after: task->timer1_delta = %u", task->timer1_delta);
-		}
-		if(task->timer2_delta != ELYSIAN_TIME_INFINITE){
-			task->timer2_delta = (task->timer2_delta > calibration_delta) ? task->timer2_delta - calibration_delta : 0;
-		}
-		task = task->next;
-	}
-
-	return calibration_delta;
-}
-
-
 void elysian_schdlr_yield(elysian_t* server){
 	elysian_schdlr_t* schdlr = &server->scheduler;
 	uint32_t yield_delta;
@@ -749,19 +742,16 @@ elysian_cbuf_t* elysian_schdlr_state_socket_read(elysian_t* server){
 }
 
 void elysian_schdlr_poll(elysian_t* server, uint32_t intervalms){
-	elysian_schdlr_t* schdlr = &server->scheduler;
-	uint32_t tic_ms;
 	uint32_t calibration_ms;
 	
 	/*
 	** Calibrate deltas due to application delays
 	*/
-	elysian_schdlr_time_correction(server, &schdlr->non_poll_tic_ms);
+	elysian_schdlr_time_correction(server);
 	
 	/*
 	** Poll for the desired interval
 	*/
-	tic_ms = elysian_time_now();
 	while(intervalms){
 		/*
 		** Make sure WS does not monopolize the CPU
@@ -776,11 +766,9 @@ void elysian_schdlr_poll(elysian_t* server, uint32_t intervalms){
 		/*
 		** Callibrate deltas
 		*/
-		calibration_ms = elysian_schdlr_time_correction(server, &tic_ms);
+		calibration_ms = elysian_schdlr_time_correction(server);
 		intervalms = (intervalms >= calibration_ms) ? intervalms - calibration_ms : 0;
 	}
-
-	schdlr->non_poll_tic_ms = elysian_time_now();
 }
 
 void elysian_schdlr_stop(elysian_t* server){
@@ -834,7 +822,6 @@ elysian_err_t elysian_schdlr_init(elysian_t* server, uint16_t port, elysian_schd
 	
 	schdlr->prev_yield_timestamp = elysian_time_now();
 	
-	schdlr->non_poll_tic_ms = elysian_time_now();
 	schdlr->client_connected_state = client_connected_state;
 	
 	//elysian_schdlr_set_disabled_acceptor_delta(schdlr, 0);
