@@ -1520,6 +1520,7 @@ elysian_err_t elysian_start(elysian_t* server, uint16_t port, const elysian_mvc_
 	}
 #endif
 	server->controller_def = (elysian_mvc_controller_def_t*) controller_def;
+	server->file_ram_def = NULL;
 	server->file_rom_def = (elysian_file_rom_def_t*) file_rom_def;
 	server->file_vrt_def = (elysian_file_vrt_def_t*) file_vrt_def;
 	server->websocket_def = (elysian_websocket_def_t*) websocket_def;

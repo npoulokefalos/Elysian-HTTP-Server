@@ -24,15 +24,6 @@
 /* -----------------------------------------------------------------------------------------------------------
  RAM filesystem
 ----------------------------------------------------------------------------------------------------------- */
-
-elysian_file_ram_def_t fs_ram_files ={
-	.name = NULL,
-	.cbuf = NULL,
-	.read_handles = 0,
-	.write_handles = 0,
-	.next = &fs_ram_files
-};
-
 elysian_err_t elysian_fs_ram_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file){
 	elysian_err_t err;
 	elysian_file_ram_def_t* file_ram_def;
@@ -42,8 +33,8 @@ elysian_err_t elysian_fs_ram_fopen(elysian_t* server, char* abs_path, elysian_fi
 	/*
 	* Findout if file exists
 	*/
-	file_ram_def = fs_ram_files.next;
-	while(file_ram_def != &fs_ram_files){
+	file_ram_def = server->file_ram_def;
+	while (file_ram_def != NULL) {
 		if(strcmp(abs_path, file_ram_def->name) == 0){
 			break;
 		}
@@ -52,7 +43,7 @@ elysian_err_t elysian_fs_ram_fopen(elysian_t* server, char* abs_path, elysian_fi
 	
 	if(mode == ELYSIAN_FILE_MODE_READ){
 		
-		if(file_ram_def == &fs_ram_files){
+		if(file_ram_def == NULL){
 			ELYSIAN_LOG("Not found!\r\n");
 			return ELYSIAN_ERR_NOTFOUND;
 		}
@@ -75,7 +66,7 @@ elysian_err_t elysian_fs_ram_fopen(elysian_t* server, char* abs_path, elysian_fi
 		/*
 		* If file exists, remove it first
 		*/
-		if(file_ram_def != &fs_ram_files){
+		if(file_ram_def != NULL){
 			ELYSIAN_LOG("Ram file exists, removing it");
 			if(file_ram_def->read_handles == 0 && file_ram_def->write_handles == 0){
 				err = elysian_fs_ram_fremove(server, abs_path);
@@ -112,8 +103,8 @@ elysian_err_t elysian_fs_ram_fopen(elysian_t* server, char* abs_path, elysian_fi
 		/*
 		** Add the file to the list
 		*/
-		file_ram_def->next = fs_ram_files.next;
-		fs_ram_files.next = file_ram_def;
+		file_ram_def->next = server->file_ram_def;
+		server->file_ram_def = file_ram_def;
 
 		ELYSIAN_LOG("Ram file created..");
 		
@@ -262,19 +253,22 @@ elysian_err_t elysian_fs_ram_fremove(elysian_t* server, char* abs_path){
 	/*
 	** Locate the file
 	*/
-	file_ram_def_prev = &fs_ram_files;
-	file_ram_def = fs_ram_files.next;
-	while(file_ram_def != &fs_ram_files){
-		if(strcmp(abs_path, file_ram_def->name) == 0){
-			file_ram_def_prev->next = file_ram_def->next;
+	file_ram_def_prev = NULL;
+	file_ram_def = server->file_ram_def;
+	while (file_ram_def != NULL) {
+		if (strcmp(abs_path, file_ram_def->name) == 0) {
+			if (!file_ram_def_prev) {
+				server->file_ram_def = file_ram_def->next;
+			} else {
+				file_ram_def_prev->next = file_ram_def->next;
+			}
 			break;
 		}
 		file_ram_def_prev = file_ram_def;
 		file_ram_def = file_ram_def->next;
 	};
 	
-	
-	if(file_ram_def == &fs_ram_files){
+	if (file_ram_def == NULL) {
 		/*
 		** File not found
 		*/
@@ -282,7 +276,7 @@ elysian_err_t elysian_fs_ram_fremove(elysian_t* server, char* abs_path){
 		return ELYSIAN_ERR_FATAL;
 	}
 	
-	if(file_ram_def->read_handles > 0 || file_ram_def->write_handles > 0){
+	if (file_ram_def->read_handles > 0 || file_ram_def->write_handles > 0) {
 		return ELYSIAN_ERR_FATAL;
 	}
 	
@@ -408,7 +402,7 @@ elysian_err_t elysian_fs_rom_fremove(elysian_t* server, char* abs_path){
 
 
 /* -----------------------------------------------------------------------------------------------------------
- Web Server internal filesystem
+ Virtual filesystem
 ----------------------------------------------------------------------------------------------------------- */
 elysian_err_t elysian_fs_vrt_fopen(elysian_t* server, char* abs_path, elysian_file_mode_t mode, elysian_file_t* file) {
 	elysian_err_t err;

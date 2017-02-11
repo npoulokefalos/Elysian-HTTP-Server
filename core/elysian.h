@@ -58,6 +58,7 @@ struct elysian_t{
 	uint16_t listening_port;
 	elysian_schdlr_t scheduler;
 	elysian_mvc_controller_def_t* controller_def;
+	elysian_file_ram_def_t* file_ram_def;
 	elysian_file_rom_def_t* file_rom_def;
 	elysian_file_vrt_def_t* file_vrt_def;
 	elysian_websocket_def_t* websocket_def;
