@@ -51,6 +51,10 @@ typedef enum{
 	ELYSIAN_MVC_CONTROLLER_FLAG_USE_EXT_FS		= 1 << 3, // While processing, temporary save the HTTP body using the EXT filesystem (instead of the RAM filesystem)
 }elysian_mvc_controller_flag_e;
 
+typedef enum {
+	ELYSIAN_FALSE = 0,
+	ELYSIAN_TRUE,
+} elysian_bool_t;
 
 #include "elysian_internal.h"
 
@@ -137,7 +141,7 @@ elysian_err_t elysian_mvc_controller(elysian_t* server, const char* url, elysian
  */
 elysian_client_t* elysian_mvc_client(elysian_t* server);
 
-elysian_err_t elysian_mvc_attribute_set(elysian_t* server, char* name, char* value);
+elysian_err_t elysian_mvc_attribute_set(elysian_t* server, char* name, char* value, elysian_bool_t perform_html_escape);
 elysian_err_t elysian_mvc_httpresp_header_add(elysian_t* server, char* header_name, char* header_value);
 elysian_err_t elysian_mvc_status_code_set(elysian_t* server, elysian_http_status_code_e status_code);
 elysian_err_t elysian_mvc_transfer_encoding_set(elysian_t* server, elysian_http_transfer_encoding_t transfer_encoding);

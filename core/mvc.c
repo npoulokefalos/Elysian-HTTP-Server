@@ -104,13 +104,13 @@ elysian_err_t elysian_http_status_page_controller(elysian_t* server){
 	client->mvc.range_end = ELYSIAN_HTTP_RANGE_WF;
 	
 	elysian_sprintf(msg, "%u", elysian_http_get_status_code_num(client->httpresp.current_status_code));
-	err = elysian_mvc_attribute_set(server, "http_status_code_num", msg);
+	err = elysian_mvc_attribute_set(server, "http_status_code_num", msg, ELYSIAN_TRUE);
 	if(err != ELYSIAN_ERR_OK){ 
 		return err;
 	}
 	
 	elysian_sprintf(msg, "%s", elysian_http_get_status_code_msg(client->httpresp.current_status_code));
-	err = elysian_mvc_attribute_set(server, "http_status_code_description", msg);
+	err = elysian_mvc_attribute_set(server, "http_status_code_description", msg, ELYSIAN_TRUE);
 	if(err != ELYSIAN_ERR_OK){ 
 		return err;
 	}
@@ -448,7 +448,7 @@ elysian_mvc_controller_def_t* elysian_mvc_controller_def_get(elysian_t* server, 
 /* --------------------------------------------------------------------------------------------------------------------------------
 | Attributes
 -------------------------------------------------------------------------------------------------------------------------------- */
-elysian_err_t elysian_mvc_attribute_set(elysian_t* server, char* name, char* value){
+elysian_err_t elysian_mvc_attribute_set(elysian_t* server, char* name, char* value, elysian_bool_t perform_html_escape) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	elysian_mvc_attribute_t* attribute;
 	
@@ -469,22 +469,22 @@ elysian_err_t elysian_mvc_attribute_set(elysian_t* server, char* name, char* val
 	
 	strcpy(attribute->name, name);
 	
-#if 0
-	attribute->value = elysian_mem_malloc(server, strlen(value) + 1);
-	if(!attribute->value){
-		elysian_mem_free(server, attribute->name);
-		elysian_mem_free(server, attribute);
-		return ELYSIAN_ERR_POLL;
+	if (perform_html_escape == ELYSIAN_FALSE) {
+		attribute->value = elysian_mem_malloc(server, strlen(value) + 1);
+		if(!attribute->value){
+			elysian_mem_free(server, attribute->name);
+			elysian_mem_free(server, attribute);
+			return ELYSIAN_ERR_POLL;
+		}
+		strcpy(attribute->value, value);
+	} else {
+		attribute->value = elysian_html_escape(server, value);
+		if(!attribute->value){
+			elysian_mem_free(server, attribute->name);
+			elysian_mem_free(server, attribute);
+			return ELYSIAN_ERR_POLL;
+		}
 	}
-	strcpy(attribute->value, value);
-#else
-	attribute->value = elysian_html_escape(server, value);
-	if(!attribute->value){
-		elysian_mem_free(server, attribute->name);
-		elysian_mem_free(server, attribute);
-		return ELYSIAN_ERR_POLL;
-	}
-#endif
 
 	ELYSIAN_LOG("ATTRIBUTE VALUE SET TO <%s>\r\n", attribute->value);
 	
