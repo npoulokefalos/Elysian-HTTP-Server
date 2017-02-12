@@ -1003,7 +1003,7 @@ struct elysian_html_escape_chars_t {
 const elysian_html_escape_chars_t escape_chars[] = {
 	{.symbol = '™', .code= "&#8482;" },
 	{.symbol = '€', .code= "&euro;" },
-	{.symbol = ' ', .code= "&#160;" /* Braking = "&#32;" */ },
+	{.symbol = ' ', .code= "&#160;" /* We use non-braking space. Braking alternative is "&#32;" */ },
 	{.symbol = '!', .code= "&#33;" },
 	{.symbol = '"', .code= "&#34;" },
 	{.symbol = '#', .code= "&#35;" },
@@ -1039,8 +1039,7 @@ const elysian_html_escape_chars_t escape_chars[] = {
 	{.symbol = '|', .code= "&#124;" },
 	{.symbol = '}', .code= "&#125;" },
 	{.symbol = '~', .code= "&#126;" },
-	
-	//{.symbol = ' ', .code= "&#160;" }, -> {.symbol = ' ', .code= "&#32;" },
+
 	{.symbol = '©', .code= "&#169;" },
 	{.symbol = '«', .code= "&#171;" },
 	{.symbol = '»', .code= "&#187;" },
