@@ -20,15 +20,15 @@
 
 #include "elysian.h"
 
-elysian_cbuf_t* elysian_cbuf_alloc(elysian_t* server, uint8_t* data, uint32_t len){
+elysian_cbuf_t* elysian_cbuf_alloc(elysian_t* server, uint8_t* data, uint32_t len) {
 	elysian_cbuf_t* cbuf = elysian_mem_malloc(server, sizeof(elysian_cbuf_t) + len + 1 /* '\0' */);
-	if(cbuf){
+	if (cbuf) {
 		cbuf->next = NULL;
 		cbuf->len = len;
 		cbuf->data = cbuf->wa;
-		if(data){
+		if (data) {
 			memcpy(cbuf->data, data, len);
-		}else{
+		} else{
 			memset(cbuf->data, 0, len);
 		}
 		cbuf->data[len] = '\0';
@@ -36,20 +36,18 @@ elysian_cbuf_t* elysian_cbuf_alloc(elysian_t* server, uint8_t* data, uint32_t le
 	return cbuf;
 }
 
-void elysian_cbuf_free(elysian_t* server, elysian_cbuf_t* cbuf){
+void elysian_cbuf_free(elysian_t* server, elysian_cbuf_t* cbuf) {
 	elysian_mem_free(server, cbuf);
 }
 
-void elysian_cbuf_list_append(elysian_cbuf_t** cbuf_list, elysian_cbuf_t* cbuf_new){
+void elysian_cbuf_list_append(elysian_cbuf_t** cbuf_list, elysian_cbuf_t* cbuf_new) {
 	elysian_cbuf_t* cbuf;
-	// TODO, ensure that last cbuf->next = NULL
-	
-	if(*cbuf_list == NULL) {
+	if (*cbuf_list == NULL) {
 		*cbuf_list = cbuf_new;
 		return;
 	}
 	cbuf = *cbuf_list;
-	while(cbuf->next){
+	while (cbuf->next) {
 		cbuf = cbuf->next;
 	}
 	cbuf->next = cbuf_new;
@@ -57,7 +55,7 @@ void elysian_cbuf_list_append(elysian_cbuf_t** cbuf_list, elysian_cbuf_t* cbuf_n
 
 void elysian_cbuf_list_free(elysian_t* server, elysian_cbuf_t* cbuf_list){
 	elysian_cbuf_t* cbuf_next;
-	while(cbuf_list){
+	while (cbuf_list) {
 		cbuf_next = cbuf_list->next;
 		elysian_cbuf_free(server, cbuf_list);
 		cbuf_list = cbuf_next;
@@ -67,7 +65,7 @@ void elysian_cbuf_list_free(elysian_t* server, elysian_cbuf_t* cbuf_list){
 uint32_t elysian_cbuf_list_len(elysian_cbuf_t* cbuf_list){
 	elysian_cbuf_t* cbuf = cbuf_list;
 	uint32_t len = 0;
-	while(cbuf){
+	while (cbuf) {
 		len += cbuf->len;
 		cbuf = cbuf->next;
 	}
@@ -114,22 +112,8 @@ elysian_err_t elysian_cbuf_list_split(elysian_t* server, elysian_cbuf_t** cbuf_l
 	return ELYSIAN_ERR_FATAL;
 }
 
-#if 0
-elysian_cbuf_t* elysian_cbuf_chain(elysian_cbuf_t* cbuf0, elysian_cbuf_t* cbuf1){
-	elysian_cbuf_t* cbuf = cbuf0;
-	if(!cbuf) {
-		return cbuf1;
-	}
-	while(cbuf->next){
-		cbuf = cbuf->next;
-	}
-	cbuf->next = cbuf1;
-	return cbuf0;
-}
-#endif
-
 /*
-** Splits the first cbuf of the cahin so it has exactly "size" len
+** Splits the first N cbufs of the chain so they have exactly "size" len
 */
 elysian_err_t elysian_cbuf_rechain(elysian_t* server, elysian_cbuf_t** cbuf_list, uint32_t size){
 	elysian_cbuf_t* cbuf_new;
@@ -137,7 +121,7 @@ elysian_err_t elysian_cbuf_rechain(elysian_t* server, elysian_cbuf_t** cbuf_list
 	elysian_cbuf_t* cbuf;
 	uint16_t alloc_sz1, alloc_sz2;
 	
-	if(size == 0){
+	if (size == 0) {
 		return ELYSIAN_ERR_OK;
 	}
 	
@@ -145,8 +129,8 @@ elysian_err_t elysian_cbuf_rechain(elysian_t* server, elysian_cbuf_t** cbuf_list
 	
 	cbuf_prev = NULL;
 	cbuf = *cbuf_list;
-	while(cbuf){
-		if(size == cbuf->len){
+	while (cbuf) {
+		if (size == cbuf->len) {
 			return ELYSIAN_ERR_OK;
 		}else if(size < cbuf->len){
 			break;
@@ -160,7 +144,6 @@ elysian_err_t elysian_cbuf_rechain(elysian_t* server, elysian_cbuf_t** cbuf_list
 	ELYSIAN_ASSERT(cbuf != NULL);
 	ELYSIAN_ASSERT(cbuf->len > size);
 
-   
 	/*
 	** Required allocation size if we are going to prepend a cbuf
 	*/
@@ -228,7 +211,6 @@ void elysian_cbuf_strget(elysian_cbuf_t* cbuf, uint32_t cbuf_index, char* buf, u
 	}
 }
 
-#if 1
 uint8_t elysian_cbuf_strcmp(elysian_cbuf_t* cbuf, uint32_t index, char* str, uint8_t matchCase){
 	unsigned char c1;
 	unsigned char c2;
@@ -322,7 +304,6 @@ void elysian_cbuf_memcpy(elysian_cbuf_t* cbuf, uint32_t index0, uint32_t index1,
 		}
 	}
 }
-#endif
 
 uint32_t elysian_cbuf_strstr(elysian_cbuf_t* cbuf0, uint32_t index, char* str, uint8_t matchCase){
 	unsigned char c1;
@@ -390,71 +371,6 @@ uint32_t elysian_cbuf_strstr(elysian_cbuf_t* cbuf0, uint32_t index, char* str, u
 }
 
 #if 0
-void elysian_cbuf_copy_escape(elysian_cbuf_t* cbuf, uint32_t index0, uint32_t index1, uint8_t* str){//} uint32_t copyLen){
-	uint32_t index;
-	uint16_t encodedStrIndex;
-	uint8_t encodedStr[3];
-	uint16_t len;
-	//HS_ENSURE(parentBuf != NULL,"hsPbufStrCpyN(): parrentPbuf != NULL");
-
-	*str = '\0';
-
-	while(index0 >= cbuf->len){
-		index0 -= cbuf->len;
-		cbuf = cbuf->next;
-	};
-	
-	encodedStrIndex = 0;
-	len = index1 - index0;
-	for(index = 0; index <= len; index++){
-		encodedStr[encodedStrIndex] = cbuf->data[index0];
-		if((encodedStrIndex == 0) && (encodedStr[encodedStrIndex] != '%')){
-			*str++ = encodedStr[encodedStrIndex];
-		}else if(encodedStrIndex == 2){
-			encodedStrIndex = 0;
-			// copy escaped
-			//*str++ =
-		}else{
-			encodedStrIndex++;
-		}
-		
-		if(index0 == cbuf->len){
-			cbuf = cbuf->next;
-			index0 = 0;
-			//if(!parentBuf) {HS_ENSURE(0,"hsPbufStrCpyN(): invalid index [2]!"); return; }
-		}
-	}
-}
-
-elysian_cbuf_t* elysian_cbuf_list_dropn(elysian_cbuf_t* cbuf, uint32_t n){
-	elysian_cbuf_t* cbuf_next;
-
-	while(cbuf){
-		cbuf_next = cbuf->next;
-		if(n < cbuf->len){
-			cbuf->data = &cbuf->data[n];
-			cbuf->len -= n;
-			break;
-		}
-		n -= cbuf->len;
-		elysian_cbuf_free(server, cbuf);
-		cbuf = cbuf_next;
-	}
-	
-	return cbuf;
-}
-#endif
-
-#if 0
-cbuf_t* elysian_cbuf_get(cbuf_t* cbuf, uint32_t absolute_index, uint32_t* relative_index){
-	while(cbuf){
-		if(absolute_index < cbuf->len){*relative_index = absolute_index; return cbuf;}
-		absolute_index -= cbuf->len;
-		cbuf = cbuf->next;
-	}
-	ENSURE(0);
-	return NULL;
-}
 cbuf_t* elysian_cbuf_replace(cbuf_t* cbuf, char* str0, char* str1){
 	uint32_t index0;
 	uint32_t index1;
@@ -491,8 +407,8 @@ void cbuf_list_print(elysian_cbuf_t* cbuf){
 	uint32_t index = 0;
 	
 	ELYSIAN_LOG("Printing cbuf chain..\r\n");
-	while(cbuf){
-		ELYSIAN_LOG("[cbuf_%u, len %u] -> '%s'\r\n", index++, cbuf->len,  cbuf->data);
+	while (cbuf) {
+		ELYSIAN_LOG("\r\n[cbuf_%u, len %u] ->\r\n'%s'\r\n", index++, cbuf->len,  cbuf->data);
 		cbuf = cbuf->next;
 	}
 }

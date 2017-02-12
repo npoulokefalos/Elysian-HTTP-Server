@@ -992,6 +992,103 @@ elysian_err_t elysian_http_add_response_empty_line(elysian_t* server){
 }
 
 /* --------------------------------------------------------------------------------------------------------------------------------
+| HTTP character escape
+-------------------------------------------------------------------------------------------------------------------------------- */
+typedef struct elysian_html_escape_chars_t elysian_html_escape_chars_t;
+struct elysian_html_escape_chars_t {
+	char symbol;
+	char* code;
+};
+
+const elysian_html_escape_chars_t escape_chars[] = {
+	{.symbol = '™', .code= "&#8482;" },
+	{.symbol = '€', .code= "&euro;" },
+	{.symbol = ' ', .code= "&#160;" /* Braking = "&#32;" */ },
+	{.symbol = '!', .code= "&#33;" },
+	{.symbol = '"', .code= "&#34;" },
+	{.symbol = '#', .code= "&#35;" },
+	{.symbol = '$', .code= "&#36;" },
+	{.symbol = '%', .code= "&#37;" },
+	{.symbol = '&', .code= "&#38;" },
+	{.symbol = '\'', .code= "&#39;" },
+	{.symbol = '(', .code= "&#40;" },
+	{.symbol = ')', .code= "&#41;" },
+	{.symbol = '*', .code= "&#42;" },
+	{.symbol = '+', .code= "&#43;" },
+	{.symbol = ',', .code= "&#44;" },
+	{.symbol = '-', .code= "&#45;" },
+	{.symbol = '.', .code= "&#46;" },
+	{.symbol = '/', .code= "&#47;" },
+	
+	{.symbol = ':', .code= "&#58;" },
+	{.symbol = ';', .code= "&#59;" },
+	{.symbol = '<', .code= "&#60;" },
+	{.symbol = '=', .code= "&#61;" },
+	{.symbol = '>', .code= "&#62;" },
+	{.symbol = '?', .code= "&#63;" },
+	{.symbol = '@', .code= "&#64;" },
+	
+	{.symbol = '[', .code= "&#91;" },
+	{.symbol = '\\', .code= "&#92;" },
+	{.symbol = ']', .code= "&#93;" },
+	{.symbol = '^', .code= "&#94;" },
+	{.symbol = '_', .code= "&#95;" },
+	{.symbol = '`', .code= "&#96;" },
+	
+	{.symbol = '{', .code= "&#123;" },
+	{.symbol = '|', .code= "&#124;" },
+	{.symbol = '}', .code= "&#125;" },
+	{.symbol = '~', .code= "&#126;" },
+	
+	//{.symbol = ' ', .code= "&#160;" }, -> {.symbol = ' ', .code= "&#32;" },
+	{.symbol = '©', .code= "&#169;" },
+	{.symbol = '«', .code= "&#171;" },
+	{.symbol = '»', .code= "&#187;" },
+};
+
+char* elysian_html_escape(elysian_t* server, char* str) {
+	uint32_t i, k;
+	uint32_t str_len;
+	uint32_t escaped_str_len;
+	char* escaped_str;
+	
+	escaped_str = NULL;
+	str_len = strlen(str);
+
+again:
+	escaped_str_len = 0;
+	for (i = 0; i < str_len; i++) {
+		if (escaped_str) {
+			escaped_str[escaped_str_len] = str[i];
+		}
+		escaped_str_len++;
+		for (k = 0; k < sizeof(escape_chars)/sizeof(escape_chars[0]); k++) {
+			if (str[i] == escape_chars[k].symbol) {
+				ELYSIAN_LOG(">>>>>>>>>>>>>>>>>>>>> Escaping character %c", str[i]);
+				escaped_str_len--;
+				if (escaped_str) {
+					strcpy(&escaped_str[escaped_str_len], escape_chars[k].code);
+				}
+				escaped_str_len += strlen(escape_chars[k].code);
+				break;
+			}
+		}
+	}
+	
+	if (escaped_str) {
+		escaped_str[escaped_str_len] = '\0';
+		return escaped_str;
+	}
+	
+	escaped_str = elysian_mem_malloc(server, escaped_str_len + 1);
+	if (!escaped_str) {
+		return NULL;
+	} else {
+		goto again;
+	}
+}
+
+/* --------------------------------------------------------------------------------------------------------------------------------
 | HTTP decoding
 -------------------------------------------------------------------------------------------------------------------------------- */
 void elysian_http_decode(char *encoded) {

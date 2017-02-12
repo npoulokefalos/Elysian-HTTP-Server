@@ -249,6 +249,7 @@ elysian_err_t elysian_http_add_response_status_line(elysian_t* server);
 elysian_err_t elysian_http_add_response_header_line(elysian_t* server, char* header_name, char* header_value);
 elysian_err_t elysian_http_add_response_empty_line(elysian_t* server);
 
+char* elysian_html_escape(elysian_t* server, char* str);
 void elysian_http_decode(char *encoded);
 
 char* elysian_http_get_method_name(elysian_http_method_e method_id);

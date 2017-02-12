@@ -469,15 +469,23 @@ elysian_err_t elysian_mvc_attribute_set(elysian_t* server, char* name, char* val
 	
 	strcpy(attribute->name, name);
 	
+#if 0
 	attribute->value = elysian_mem_malloc(server, strlen(value) + 1);
 	if(!attribute->value){
 		elysian_mem_free(server, attribute->name);
 		elysian_mem_free(server, attribute);
 		return ELYSIAN_ERR_POLL;
 	}
-	
 	strcpy(attribute->value, value);
-	
+#else
+	attribute->value = elysian_html_escape(server, value);
+	if(!attribute->value){
+		elysian_mem_free(server, attribute->name);
+		elysian_mem_free(server, attribute);
+		return ELYSIAN_ERR_POLL;
+	}
+#endif
+
 	ELYSIAN_LOG("ATTRIBUTE VALUE SET TO <%s>\r\n", attribute->value);
 	
 	attribute->next = client->mvc.attributes;
