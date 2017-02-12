@@ -25,7 +25,7 @@ div#page_el_header h1{
 div#page_el_header h3{
 	color: white;
 	background-color:black;
-	font-size:90%;
+	font-size:80%;
 	font-weight: normal;
 }
 
@@ -143,17 +143,19 @@ div#page_el_main_graph  {
 }
 
 div#page_el_footer  {
-	font-size:90%;
-	position: absolute;
+	margin-top: 20px;
+	font-size:70%;
+	/*position: absolute;
 	right: 0;
 	bottom: 0;
-	left: 0;
+	left: 0; */
+	
 	padding: 10px;
-	color:white;
-	background-color: black;
+	color:black;
+	/*background-color: black;*/
 	text-align: right;
-	border-bottom-style:solid;
-	border-bottom-width:1px;
+	/*border-bottom-style:solid;
+	border-bottom-width:1px; */
 }
 
 div.page_el_cleaner {

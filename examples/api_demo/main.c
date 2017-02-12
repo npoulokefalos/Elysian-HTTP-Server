@@ -127,7 +127,7 @@ elysian_err_t controller_form_get(elysian_t* server){
 	}
 	ELYSIAN_LOG("param3 = %s", str3);
 	
-	elysian_sprintf(msg, "param1 value was '%s'<br>param2 value was '%s'<br>param3 value was '%s'<br>param4 value was '%s'<br>", str1, str2, str3, str4);
+	elysian_sprintf(msg, "param1 value was '%s'<br/>param2 value was '%s'<br/>param3 value was '%s'<br/>param4 value was '%s'<br/>", str1, str2, str3, str4);
 	ELYSIAN_LOG("MSG = %s", msg);
 	
 	err = elysian_mvc_attribute_set(server, "response_message", msg);
@@ -199,7 +199,7 @@ elysian_err_t controller_form_post(elysian_t* server){
 	}
 	ELYSIAN_LOG("param3 = %s", str3);
 	
-	elysian_sprintf(msg, "param1 value was '%s'<br>param2 value was '%s'<br>param3 value was '%s'<br>param4 value was '%s'<br>", str1, str2, str3, str4);
+	elysian_sprintf(msg, "param1 value was '%s'<br/>param2 value was '%s'<br/>param3 value was '%s'<br/>param4 value was '%s'<br/>", str1, str2, str3, str4);
 	ELYSIAN_LOG("MSG = %s", msg);
 	
 	err = elysian_mvc_attribute_set(server, "response_message", msg);
@@ -314,7 +314,7 @@ elysian_err_t controller_file_upload(elysian_t* server){
 		return err;
 	}
 	
-	elysian_sprintf(data, "<b>The size of the uploaded file (%s) was %u bytes.</b><br>param1 value was '%s'. <br><br>", param_file1_filename, param_file1_size, param1_data);
+	elysian_sprintf(data, "<b>The size of the uploaded file (%s) was %u bytes.</b><br/>param1 value was '%s'. <br/><br/>", param_file1_filename, param_file1_size, param1_data);
 	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_size", data);
 	if(err != ELYSIAN_ERR_OK){ 
 		return err;
@@ -323,7 +323,7 @@ elysian_err_t controller_file_upload(elysian_t* server){
 	/*
 	** Set the value to the attr_uploaded_file_data attribute
 	*/
-	elysian_sprintf(data, "<b>The first %u bytes of the uploaded file were:</b><br>'%s'", read_size, file1_data);
+	elysian_sprintf(data, "<b>The first %u bytes of the uploaded file were:</b><br/>'%s'", read_size, file1_data);
 	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_data", (char*) data);
 	if(err != ELYSIAN_ERR_OK){ 
 		return err;
