@@ -244,8 +244,8 @@ elysian_err_t controller_file_upload(elysian_t* server){
 	uint8_t param_found;
 	elysian_req_param_t param_file1;
 	uint32_t read_size;
-	uint8_t file1_data[128];
-	char data[256];
+	uint8_t file1_data[128 + 1];
+	char data[32];
 	elysian_err_t err;
 	char* requested_url;
 	char* param_file1_filename;
@@ -314,21 +314,27 @@ elysian_err_t controller_file_upload(elysian_t* server){
 		return err;
 	}
 	
-	elysian_sprintf(data, "<b>The size of the uploaded file (%s) was %u bytes.</b><br/>param1 value was '%s'. <br/><br/>", param_file1_filename, param_file1_size, param1_data);
-	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_size", data, ELYSIAN_FALSE);
+	err = elysian_mvc_attribute_set(server, "attr_param1_value", param1_data, ELYSIAN_TRUE);
 	if(err != ELYSIAN_ERR_OK){ 
 		return err;
 	}
 	
-	/*
-	** Set the value to the attr_uploaded_file_data attribute
-	*/
-	elysian_sprintf(data, "<b>The first %u bytes of the uploaded file were:</b><br/>'%s'", read_size, file1_data);
-	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_data", (char*) data, ELYSIAN_FALSE);
+	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_name", param_file1_filename, ELYSIAN_TRUE);
 	if(err != ELYSIAN_ERR_OK){ 
 		return err;
 	}
 	
+	elysian_sprintf(data, "%u", param_file1_size);
+	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_size", data, ELYSIAN_TRUE);
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
+	
+	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_data", (char*) file1_data, ELYSIAN_TRUE);
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
+
 	if (strcmp(requested_url, "/fs_rom/file_upload_ram_controller") == 0) {
 		err = elysian_mvc_view_set(server, "/fs_rom/file_upload_ram.html");
 	} else {
@@ -370,6 +376,16 @@ elysian_err_t controller_file_upload_html(elysian_t* server){
 		return err;
 	}
 
+	err = elysian_mvc_attribute_set(server, "attr_param1_value", "", ELYSIAN_TRUE);
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
+	
+	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_name", "", ELYSIAN_TRUE);
+	if(err != ELYSIAN_ERR_OK){ 
+		return err;
+	}
+	
 	err = elysian_mvc_attribute_set(server, "attr_uploaded_file_size", "", ELYSIAN_TRUE);
 	if(err != ELYSIAN_ERR_OK){ 
 		return err;
