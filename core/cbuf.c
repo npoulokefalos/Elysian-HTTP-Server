@@ -72,6 +72,28 @@ uint32_t elysian_cbuf_list_len(elysian_cbuf_t* cbuf_list){
 	return len;
 }
 
+uint32_t elysian_cbuf_len(elysian_cbuf_t* cbuf) {
+	return cbuf->len;
+}
+
+uint8_t* elysian_cbuf_data(elysian_cbuf_t* cbuf) {
+	return cbuf->data;
+}
+
+void elysian_cbuf_shrink(elysian_cbuf_t* cbuf, uint32_t len) {
+	ELYSIAN_ASSERT(cbuf->len >= len);
+	cbuf->len = len;
+}
+
+elysian_cbuf_t* elysian_cbuf_list_pop(elysian_t* server, elysian_cbuf_t** cbuf_list) {
+	elysian_cbuf_t* cbuf;
+	ELYSIAN_ASSERT(*cbuf_list != NULL);
+	cbuf = *cbuf_list;
+	*cbuf_list = cbuf->next;
+	cbuf->next = NULL;
+	return cbuf;
+}
+
 elysian_err_t elysian_cbuf_list_split(elysian_t* server, elysian_cbuf_t** cbuf_list0, uint32_t size, elysian_cbuf_t** cbuf_list1) {
 	elysian_cbuf_t* cbuf;
 	elysian_cbuf_t* cbuf_next;

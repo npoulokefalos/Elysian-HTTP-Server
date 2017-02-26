@@ -34,6 +34,12 @@
 #define ELYSIAN_SERVER_NAME							"Elysian Web Server"
 
 /*
+** Simulates network unavailability. Expressed in percentage, valid range is [0 = disable simulation, 99].
+** For stress test purposes only.
+*/
+#define ELYSIAN_NETWORK_STRESS_TEST					(0)
+
+/*
 ** Virtual and absolute root paths for the RAM, ROM, EXT and internal Web Server's storage devices. 
 **
 ** After receiving a new HTTP request requesting the resource {ELYSIAN_FS_xxx_VRT_ROOT}resource, 
@@ -158,6 +164,11 @@ void elysian_cbuf_free(elysian_t* server, elysian_cbuf_t* cbuf);
 void elysian_cbuf_list_append(elysian_cbuf_t** cbuf_list, elysian_cbuf_t* cbuf_new);
 void elysian_cbuf_list_free(elysian_t* server, elysian_cbuf_t* cbuf_list);
 uint32_t elysian_cbuf_list_len(elysian_cbuf_t* cbuf_list);
+uint32_t elysian_cbuf_len(elysian_cbuf_t* cbuf);
+uint8_t* elysian_cbuf_data(elysian_cbuf_t* cbuf);
+
+void elysian_cbuf_shrink(elysian_cbuf_t* cbuf, uint32_t len);
+elysian_cbuf_t* elysian_cbuf_list_pop(elysian_t* server, elysian_cbuf_t** cbuf_list);
 elysian_err_t elysian_cbuf_list_split(elysian_t* server, elysian_cbuf_t** cbuf_list0, uint32_t size, elysian_cbuf_t** cbuf_list1);
 elysian_err_t elysian_cbuf_rechain(elysian_t* server, elysian_cbuf_t** cbuf_list, uint32_t size);
 void elysian_cbuf_strget(elysian_cbuf_t* cbuf, uint32_t cbuf_index, char* buf, uint32_t buf_len);
@@ -712,6 +723,7 @@ typedef enum{
 	elysian_schdlr_EV_ENTRY,
 	elysian_schdlr_EV_READ, 
 	elysian_schdlr_EV_POLL,
+	elysian_schdlr_EV_SENT,
 	elysian_schdlr_EV_TIMER1,
 	elysian_schdlr_EV_TIMER2,
 	elysian_schdlr_EV_ABORT,
@@ -738,9 +750,13 @@ struct elysian_schdlr_task_t{
 	uint32_t timer1_delta_init;
 	uint32_t timer2_delta;
 	uint32_t timer2_delta_init;
-
+	
+	uint32_t network_tx_delta;
+	uint32_t cbuf_list_tx_index;
+	
 	elysian_client_t* client;
-	elysian_cbuf_t* cbuf_list;
+	elysian_cbuf_t* cbuf_list_rx;
+	elysian_cbuf_t* cbuf_list_tx;
 
 	elysian_schdlr_task_t* next;
 	elysian_schdlr_task_t* prev;
@@ -784,7 +800,7 @@ void elysian_schdlr_state_timer2_set(elysian_t* server, uint32_t timer_delta);
 void elysian_schdlr_state_timer2_reset(elysian_t* server);
 void elysian_schdlr_state_priority_set(elysian_t* server, elysian_schdlr_task_prio_t priority);
 elysian_cbuf_t* elysian_schdlr_state_socket_read(elysian_t* server);
-
+void elysian_schdlr_state_socket_write(elysian_t* server, elysian_cbuf_t* cbuf);
 
 
 
@@ -876,10 +892,10 @@ struct elysian_httpreq_t{
 */
 typedef struct elysian_httpresp_t elysian_httpresp_t;
 struct elysian_httpresp_t{
-	uint8_t* buf;
-	uint16_t buf_index;
-	uint16_t buf_len; /* Current length, <= buf_size */
-	uint16_t buf_size; /* Total allocation size */
+	elysian_cbuf_t* cbuf;
+	uint16_t cbuf_index;
+	//uint16_t buf_len; /* Current length, <= buf_size */
+	//uint16_t buf_size; /* Total allocation size */
 	
 
 	/*

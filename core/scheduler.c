@@ -74,11 +74,16 @@ void elysian_schdlr_throw_event(elysian_t* server, elysian_schdlr_task_t* task, 
 		
 		if(!task->state){
 			/* Task quit request */
-			if(task->cbuf_list){
-				elysian_cbuf_list_free(server, task->cbuf_list);
-				task->cbuf_list = NULL;
+			if (task->cbuf_list_rx) {
+				elysian_cbuf_list_free(server, task->cbuf_list_rx);
+				task->cbuf_list_rx = NULL;
 			}
 
+			if (task->cbuf_list_tx) {
+				elysian_cbuf_list_free(server, task->cbuf_list_tx);
+				task->cbuf_list_tx = NULL;
+			}
+			
 			if(!task->client->socket.actively_closed){
 				elysian_socket_close(&task->client->socket);
 				task->client->socket.actively_closed = 1;
@@ -123,6 +128,9 @@ uint32_t elysian_schdlr_time_advance(elysian_t* server) {
 	while (task != &schdlr->tasks) {
 		if (task->poll_delta != ELYSIAN_TIME_INFINITE) {
 			task->poll_delta = (task->poll_delta > calibration_delta) ? task->poll_delta - calibration_delta : 0;
+		}
+		if (task->network_tx_delta != ELYSIAN_TIME_INFINITE) {
+			task->network_tx_delta = (task->network_tx_delta > calibration_delta) ? task->network_tx_delta - calibration_delta : 0;
 		}
 		if (task->timer1_delta != ELYSIAN_TIME_INFINITE) {
 			task->timer1_delta = (task->timer1_delta > calibration_delta) ? task->timer1_delta - calibration_delta : 0;
@@ -297,6 +305,7 @@ void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 							//new_task->allocated_memory = 0;
 							new_task->client = new_client;
 							new_task->client->socket = client_socket;
+							new_task->network_tx_delta = ELYSIAN_TIME_INFINITE;
 							
 							schdlr->current_task = new_task;
 							elysian_schdlr_state_poll_set(server, ELYSIAN_TIME_INFINITE);
@@ -305,7 +314,8 @@ void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 							elysian_schdlr_state_priority_set(server, elysian_schdlr_TASK_PRIO_NORMAL);
 							schdlr->current_task = NULL;
 							
-							new_task->cbuf_list = NULL;
+							new_task->cbuf_list_rx = NULL;
+							new_task->cbuf_list_tx = NULL;
 							new_task->state = schdlr->client_connected_state;
 							new_task->new_state = new_task->state;
 							
@@ -377,7 +387,7 @@ void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 										}
 									}
 									new_cbuf->len = received;
-									elysian_cbuf_list_append(&task->cbuf_list, new_cbuf);
+									elysian_cbuf_list_append(&task->cbuf_list_rx, new_cbuf);
 									
 									/* Should be done to properly align the timers set after the event is thrown.
 									If a new timer is set it should start counting from now on. */
@@ -446,10 +456,20 @@ void elysian_schdlr_exec_socket_events(elysian_t* server, uint32_t interval_ms){
 
 }
 
+void elysian_schdlr_exec_socket_tx_events(elysian_t* server, elysian_schdlr_task_t* task) {
+	
+}
+
 void elysian_schdlr_exec_immediate_events(elysian_t* server, uint32_t* max_sleep_ms){
 	elysian_schdlr_t* schdlr = &server->scheduler;
 	elysian_schdlr_task_t* task;
 	elysian_schdlr_task_t* next_task;
+	uint8_t* write_buf;
+	uint32_t write_len;
+	uint32_t written_len;
+	elysian_cbuf_t* sent_cbuf;
+	elysian_err_t err;
+	
 #if (ELYSIAN_STARVATION_ENABLED == 1)
 	uint8_t starvation_detected;
 	uint32_t polling_tasks;
@@ -489,7 +509,40 @@ void elysian_schdlr_exec_immediate_events(elysian_t* server, uint32_t* max_sleep
 				ELYSIAN_LOG("Timer2 expired!");
 				elysian_schdlr_throw_event(server, task, elysian_schdlr_EV_TIMER2);
 			}
-			if(!task->state){
+			if ((!task->network_tx_delta) && (task->state)) {
+				ELYSIAN_LOG("Sending queued Tx data..");
+				ELYSIAN_ASSERT(task->cbuf_list_tx);
+				while (task->cbuf_list_tx) {
+					write_buf = &task->cbuf_list_tx->data[task->cbuf_list_tx_index];
+					write_len = task->cbuf_list_tx->len - task->cbuf_list_tx_index;
+					err = elysian_socket_write(&task->client->socket, write_buf, write_len, &written_len);
+					if (err == ELYSIAN_ERR_OK) {
+						task->network_tx_delta = 0;
+						task->cbuf_list_tx_index += written_len;
+						if (task->cbuf_list_tx_index == task->cbuf_list_tx->len) {
+							task->cbuf_list_tx_index = 0;
+							sent_cbuf = elysian_cbuf_list_pop(server, &task->cbuf_list_tx);
+							elysian_cbuf_free(server, sent_cbuf);
+							if (!task->cbuf_list_tx) {
+								ELYSIAN_LOG("Queued Tx data sent!");
+								task->network_tx_delta = ELYSIAN_TIME_INFINITE;
+								elysian_schdlr_throw_event(server, task, elysian_schdlr_EV_SENT);
+							}
+						} else {
+						}
+					} else if (err == ELYSIAN_ERR_POLL) {
+						//ELYSIAN_LOG("ELYSIAN_ERR_POLL [client #%u]!", task->client->id);
+						task->network_tx_delta = ((task->network_tx_delta == 0) ? 1 : (((task->network_tx_delta) < (333 / 2)) ? (task->network_tx_delta * 2) : (333)));
+						break;
+					} else {
+						/* Flush queue and abort */
+						elysian_cbuf_list_free(server, task->cbuf_list_tx);
+						task->cbuf_list_tx = NULL;
+						elysian_schdlr_throw_event(server, task, elysian_schdlr_EV_ABORT);
+					}
+				}
+			}
+			if (!task->state) {
 				/*
 				** Remove client if processing has been finished
 				*/
@@ -500,6 +553,7 @@ void elysian_schdlr_exec_immediate_events(elysian_t* server, uint32_t* max_sleep
 			** Calculate max sleeping interval
 			*/
 			*max_sleep_ms = (*max_sleep_ms > task->poll_delta) ? task->poll_delta : *max_sleep_ms;
+			*max_sleep_ms = (*max_sleep_ms > task->network_tx_delta) ? task->network_tx_delta : *max_sleep_ms;
 			*max_sleep_ms = (*max_sleep_ms > task->timer1_delta) ? task->timer1_delta : *max_sleep_ms;
 			*max_sleep_ms = (*max_sleep_ms > task->timer2_delta) ? task->timer2_delta : *max_sleep_ms;
 		
@@ -734,11 +788,26 @@ elysian_cbuf_t* elysian_schdlr_state_socket_read(elysian_t* server){
 	elysian_schdlr_task_t* task = schdlr->current_task;
 	elysian_cbuf_t* cbuf_list;
 	ELYSIAN_ASSERT(task != NULL);
-	cbuf_list = task->cbuf_list;
-	task->cbuf_list = NULL;
+	cbuf_list = task->cbuf_list_rx;
+	task->cbuf_list_rx = NULL;
 	
 	//task->allocated_memory += elysian_cbuf_list_len(cbuf_list);
 	return cbuf_list;
+}
+
+void elysian_schdlr_state_socket_write(elysian_t* server, elysian_cbuf_t* cbuf) {
+	elysian_schdlr_t* schdlr = &server->scheduler;
+	elysian_schdlr_task_t* task = schdlr->current_task;
+	
+	ELYSIAN_ASSERT(task != NULL);
+	ELYSIAN_ASSERT(cbuf != NULL);
+	
+	if (!task->cbuf_list_tx) {
+		task->network_tx_delta = 0;
+		task->cbuf_list_tx_index = 0;
+	}
+	
+	elysian_cbuf_list_append(&task->cbuf_list_tx, cbuf);
 }
 
 void elysian_schdlr_poll(elysian_t* server, uint32_t intervalms){

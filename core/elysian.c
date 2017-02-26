@@ -32,6 +32,7 @@ const char* elysian_schdlr_ev_name[]= {
 	[elysian_schdlr_EV_ENTRY] = "EV_ENTRY",
 	[elysian_schdlr_EV_READ] = "EV_READ",
 	[elysian_schdlr_EV_POLL] = "EV_POLL",
+	[elysian_schdlr_EV_SENT] = "EV_SENT",
 	[elysian_schdlr_EV_TIMER1] = "EV_TIMER1",
 	[elysian_schdlr_EV_TIMER2] = "EV_TIMER2",
 	[elysian_schdlr_EV_ABORT] = "EV_ABORT",
@@ -87,7 +88,7 @@ elysian_err_t elysian_state_http_connection_accepted(elysian_t* server, elysian_
 
 			elysian_mvc_init(server);
 			
-			client->httpresp.buf = NULL;
+			client->httpresp.cbuf = NULL;
 
 			elysian_resource_init(server);
 			
@@ -469,10 +470,8 @@ elysian_err_t elysian_state_http_request_headers_parse(elysian_t* server, elysia
 
 elysian_err_t elysian_state_http_expect_reply(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-	uint32_t send_size_actual;
 	char http_expect_response[64];
-	elysian_err_t err;
-	
+
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	
 	switch(ev){
@@ -480,41 +479,34 @@ elysian_err_t elysian_state_http_expect_reply(elysian_t* server, elysian_schdlr_
 		{
 			elysian_schdlr_state_timer1_set(server, 4000);
 			elysian_schdlr_state_poll_enable(server);
-			
-			client->httpresp.buf_index = 0;
 		}break;
 		case elysian_schdlr_EV_READ:
 		{
 		}break;
 		case elysian_schdlr_EV_POLL:
 		{
-			elysian_sprintf(http_expect_response, "HTTP/1.1 %u %s\r\n\r\n", elysian_http_get_status_code_num(client->httpreq.expect_status_code), 
-			elysian_http_get_status_code_msg(client->httpreq.expect_status_code));
-
-			client->httpresp.buf = 	(uint8_t*) http_expect_response;
-			client->httpresp.buf_len = strlen(http_expect_response);		
-			err = elysian_socket_write(&client->socket, &client->httpresp.buf[client->httpresp.buf_index], client->httpresp.buf_len, &send_size_actual);
-			client->httpresp.buf = NULL;
-			switch(err){
-				case ELYSIAN_ERR_OK:
-					client->httpresp.buf_index += send_size_actual;
-					if(client->httpresp.buf_index == client->httpresp.buf_len){
-						if (client->httpreq.expect_status_code == ELYSIAN_HTTP_STATUS_CODE_100) {
-							return elysian_schdlr_state_next(server, elysian_state_http_request_body_receive);
-						} else {
-							return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-						}
-					}
-					break;
-				case ELYSIAN_ERR_POLL:
-					elysian_schdlr_state_poll_backoff(server);
-					return ELYSIAN_ERR_OK;
-					break;
-				default:
-					return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-					break;
-			};
+			elysian_sprintf(http_expect_response, "HTTP/1.1 %u %s\r\n\r\n", 
+												elysian_http_get_status_code_num(client->httpreq.expect_status_code), 
+												elysian_http_get_status_code_msg(client->httpreq.expect_status_code));
+			
+			client->httpresp.cbuf = elysian_cbuf_alloc(server, (uint8_t*) http_expect_response, strlen(http_expect_response));
+			if (!client->httpresp.cbuf) {
+				elysian_schdlr_state_poll_backoff(server);
+				return ELYSIAN_ERR_OK;
+			} else {
+				elysian_schdlr_state_socket_write(server, client->httpresp.cbuf);
+				client->httpresp.cbuf = NULL;
+				return ELYSIAN_ERR_OK;
+			}
 		}break;
+		case elysian_schdlr_EV_SENT:
+		{
+			if (client->httpreq.expect_status_code == ELYSIAN_HTTP_STATUS_CODE_100) {
+				return elysian_schdlr_state_next(server, elysian_state_http_request_body_receive);
+			} else {
+				return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
+			}
+		} break;
 		case elysian_schdlr_EV_TIMER1:
 		case elysian_schdlr_EV_ABORT:
 		{
@@ -913,6 +905,7 @@ elysian_err_t elysian_state_mvc_post_configuration(elysian_t* server, elysian_sc
 
 elysian_err_t elysian_state_build_http_response(elysian_t* server, elysian_schdlr_ev_t ev){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	uint32_t cbuf_len;
 	elysian_err_t err;
 	
 	ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
@@ -924,7 +917,7 @@ elysian_err_t elysian_state_build_http_response(elysian_t* server, elysian_schdl
 			elysian_schdlr_state_timer1_set(server, 5000);
 			elysian_schdlr_state_poll_enable(server);
 			
-			client->httpresp.buf_size = ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX;
+			ELYSIAN_ASSERT(client->httpresp.cbuf == NULL);
 		}break;
 		case elysian_schdlr_EV_READ:
 		{
@@ -932,37 +925,42 @@ elysian_err_t elysian_state_build_http_response(elysian_t* server, elysian_schdl
 		}break;
 		case elysian_schdlr_EV_POLL:
 		{
-			/*
-			** Build HTTP response headers
-			*/
-			client->httpresp.buf = elysian_mem_malloc(server, client->httpresp.buf_size);
-			if(!client->httpresp.buf){
+			/* Allocate buffer for HTTP response */
+			cbuf_len = ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX;
+			
+			cbuf_alloc:
+			client->httpresp.cbuf = elysian_cbuf_alloc(server, NULL, cbuf_len);
+			if (!client->httpresp.cbuf) {
 				elysian_schdlr_state_poll_backoff(server);
 				return ELYSIAN_ERR_OK;
 			}
+			
+			/* Build HTTP response headers */
 			err = elysian_http_response_build(server);
-			switch(err){
+			switch (err) {
 				case ELYSIAN_ERR_OK:
-					client->httpresp.headers_size = client->httpresp.buf_len;
-					if(client->httpreq.method == ELYSIAN_HTTP_METHOD_HEAD){
+					client->httpresp.headers_size = client->httpresp.cbuf_index;
+					if (client->httpreq.method == ELYSIAN_HTTP_METHOD_HEAD) {
 						client->httpresp.body_size = 0;
 					}
 					return elysian_schdlr_state_next(server, elysian_state_http_response_send);
 					break;
 				case ELYSIAN_ERR_BUF:
-					elysian_mem_free(server, client->httpresp.buf);
-					client->httpresp.buf = NULL;
-					client->httpresp.buf_size += 128; /* The response could not fit, try increasing the buffer */
-					elysian_schdlr_state_poll_enable(server); /* This is not a mem issue, reset backoff */
-					return ELYSIAN_ERR_OK;
+					/* The response could not fit, try increasing the buffer */
+					elysian_cbuf_free(server, client->httpresp.cbuf);
+					client->httpresp.cbuf = NULL;
+					cbuf_len += 128;
+					goto cbuf_alloc;
 					break;
 				case ELYSIAN_ERR_POLL:
-					elysian_mem_free(server, client->httpresp.buf);
-					client->httpresp.buf = NULL;
+					elysian_cbuf_free(server, client->httpresp.cbuf);
+					client->httpresp.cbuf = NULL;
 					elysian_schdlr_state_poll_backoff(server);
 					return ELYSIAN_ERR_OK;
 					break;
 				case ELYSIAN_ERR_FATAL:
+					elysian_cbuf_free(server, client->httpresp.cbuf);
+					client->httpresp.cbuf = NULL;
 					elysian_resource_close(server);
 					return elysian_schdlr_state_next(server, elysian_state_fatal_error_entry);
 					break;
@@ -991,11 +989,7 @@ elysian_err_t elysian_state_http_response_send(elysian_t* server, elysian_schdlr
 	elysian_err_t err;
 	uint32_t read_size;
 	uint32_t read_size_actual;
-	//uint32_t send_size;
-	uint32_t send_size_actual;
-	//uint32_t i;
-	uint32_t packet_count;
-	uint8_t read_complete;
+	uint32_t cbuf_len;
 	
 	//ELYSIAN_LOG("[event = %s, client %u]", elysian_schdlr_ev_name[ev], client->id);
 	switch(ev){
@@ -1014,163 +1008,102 @@ elysian_err_t elysian_state_http_response_send(elysian_t* server, elysian_schdlr
 		}break;
 		case elysian_schdlr_EV_POLL:
 		{
-			if (!client->httpresp.buf) {
-#if 1
-				client->httpresp.buf_size = (30 * ELYSIAN_MAX_MEMORY_USAGE_KB * 1024) / 100;
-				client->httpresp.buf_size = client->httpresp.buf_size / 3;
-				if (client->httpresp.buf_size > ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX) {
-					client->httpresp.buf_size = ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX;
+			/*
+			** Allocate working buffer
+			*/
+			if (!client->httpresp.cbuf) {
+				cbuf_len = (30 * ELYSIAN_MAX_MEMORY_USAGE_KB * 1024) / 100;
+				cbuf_len = cbuf_len / 3;
+				if (cbuf_len > ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX) {
+					cbuf_len = ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX;
 				}
-				if (client->httpresp.buf_size < 128) {
-					client->httpresp.buf_size = 128;
+				if (cbuf_len < 128) {
+					cbuf_len = 128;
 				}	
-#else
-				client->httpresp.buf_size = ELYSIAN_HTTP_RESPONSE_BODY_BUF_SZ_MAX;
-#endif
+
 				while (1) {
-					client->httpresp.buf = elysian_mem_malloc(server, client->httpresp.buf_size);
-					if (!client->httpresp.buf) {
-						/*
-						** HTTP response buffer allocation failed, try allocating a smaller buffer
-						*/
-						client->httpresp.buf_size = (client->httpresp.buf_size > 128) ? client->httpresp.buf_size - 128 : 0;
-						if (client->httpresp.buf_size < 128) {
+					client->httpresp.cbuf = elysian_cbuf_alloc(server, NULL, cbuf_len);
+					if (!client->httpresp.cbuf) {
+						cbuf_len = (cbuf_len >= 256) ? cbuf_len - 128 : 0;
+						if (!cbuf_len) {
 							elysian_schdlr_state_poll_backoff(server);
 							return ELYSIAN_ERR_OK;
 						}
 					} else {
-						/*
-						** HTTP response buffer allocated
-						*/
-						client->httpresp.buf_index = 0;
-						client->httpresp.buf_len = 0;
+						elysian_schdlr_state_timer1_reset(server);
+						client->httpresp.cbuf_index = 0;
 						break;
 					}
 				};
 			}
-
-			packet_count = 0;
-			do {
-				/*
-				** Defrag
-				*/
-#if 0
-				if (client->httpresp.buf_len == 0) {
-					client->httpresp.buf_index = 0;
-				} else {
-					if((client->httpresp.buf_index * 100) / client->httpresp.buf_size >= 25){
-						ELYSIAN_LOG("Defragging, index = %u/%u", client->httpresp.buf_index, client->httpresp.buf_size);
-						for(i = 0; i < client->httpresp.buf_size - client->httpresp.buf_index; i++){
-							client->httpresp.buf[i] = client->httpresp.buf[client->httpresp.buf_index + i];
-						}
-						client->httpresp.buf_index = 0;
-					}
-				}
-#else
-				if (client->httpresp.buf_len == 0) {
-					client->httpresp.buf_index = 0;
-				}
-#endif
-				
-				/*
-				** Read
-				*/
-				read_complete = 0;
-				if (client->httpresp.body_size == (uint32_t) -1 ) {
-					// Read until EOF (Chunked HTTP Response)
-					read_size = -1;
-				} else {
-					// Read only partial range
-					read_size = client->httpresp.headers_size + client->httpresp.body_size - (client->httpresp.sent_size + client->httpresp.buf_len);
-				}
-				
-				if (read_size) {
-					/*
-					** We haven't read the whole resource, read more data if possible
-					*/
-					if (read_size > client->httpresp.buf_size - (client->httpresp.buf_index + client->httpresp.buf_len)) {
-						read_size = client->httpresp.buf_size - (client->httpresp.buf_index + client->httpresp.buf_len);
-					}
-					
-					if (read_size) {
-						err = elysian_resource_read(server, &client->httpresp.buf[client->httpresp.buf_index + client->httpresp.buf_len], read_size, &read_size_actual);
-						switch(err){
-							case ELYSIAN_ERR_OK:
-								client->httpresp.buf_len += read_size_actual;
-								//ELYSIAN_LOG("Client %u HTTP response: read %u bytes.", read_size_actual);
-								if (read_size_actual < read_size) {
-									/*
-									** The whole resource was read
-									*/
-									read_complete = 1;
-								}
-								break;
-							case ELYSIAN_ERR_FATAL:
-								return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-								break;
-							default:
-								ELYSIAN_ASSERT(0);
-								return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-								break;
-						};
-					}
-				} else {
-					/*
-					** The whole resource was read
-					*/
-					read_complete = 1;
-				}
-
-				/*
-				** Send
-				*/
-				if (client->httpresp.buf_len) {
-					err = elysian_socket_write(&client->socket, &client->httpresp.buf[client->httpresp.buf_index], client->httpresp.buf_len, &send_size_actual);
-					switch(err){
-						case ELYSIAN_ERR_OK:
-							//ELYSIAN_LOG("Client %u HTTP response: sent %u bytes.", send_size_actual);
-							elysian_schdlr_state_timer1_reset(server);
-							client->httpresp.buf_index += send_size_actual;
-							client->httpresp.buf_len -= send_size_actual;
-							client->httpresp.sent_size += send_size_actual;
-							packet_count++;
-							break;
-						case ELYSIAN_ERR_POLL:
-							elysian_schdlr_state_poll_backoff(server); 
-							return ELYSIAN_ERR_OK;
-							break;
-						default:
-							return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-							break;
-					};
-				} 
-
-				/*
-				** Check if finished
-				*/
-				if ((read_complete == 1) && (client->httpresp.buf_len == 0)) {
-					ELYSIAN_LOG("Client %u HTTP response: Completed!", client->id);
-					if ((client->httpreq.connection == ELYSIAN_HTTP_CONNECTION_UPGRADE) && (client->httpreq.connection_upgrade == ELYSIAN_HTTP_CONNECTION_UPGRADE_WEBSOCKET)) {
-						return elysian_schdlr_state_next(server, elysian_state_websocket);
-					}
-					
-					if ((client->mvc.connection == ELYSIAN_HTTP_CONNECTION_KEEPALIVE) && (client->http_pipelining_enabled)) {
-						return elysian_schdlr_state_next(server, elysian_state_http_keepalive);
-					}else{
-						return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
-					}
-				}
-			} while (packet_count < 8);
 			
 			/*
-			** Check if we can release the response buffer so it can be used by other clients
+			** Read resource data
 			*/
-			if(client->httpresp.buf_len == 0){
-				elysian_mem_free(server, client->httpresp.buf);
-				client->httpresp.buf = NULL;
+			if (client->httpresp.body_size == (uint32_t) -1 ) {
+				/* Read until EOF (Chunked HTTP Response) */
+				read_size = -1;
+			} else {
+				/* Read the whole file or partial range */
+				read_size = client->httpresp.headers_size + client->httpresp.body_size - (client->httpresp.sent_size + client->httpresp.cbuf_index);
 			}
+
+			if (read_size > elysian_cbuf_len(client->httpresp.cbuf) - client->httpresp.cbuf_index) {
+				read_size = elysian_cbuf_len(client->httpresp.cbuf) - client->httpresp.cbuf_index;
+			}
+				
+			if (read_size) {
+				uint8_t* cbuf_data = elysian_cbuf_data(client->httpresp.cbuf);
+				err = elysian_resource_read(server, &cbuf_data[client->httpresp.cbuf_index], read_size, &read_size_actual);
+				switch (err) {
+					case ELYSIAN_ERR_OK:
+						client->httpresp.cbuf_index += read_size_actual;
+						//ELYSIAN_LOG("Client %u HTTP response: read %u bytes.", read_size_actual);
+						if (read_size_actual < read_size) {
+							/* EOF, the whole resource was read */
+							if (client->httpresp.body_size == (uint32_t) -1) {
+								client->httpresp.body_size = client->httpresp.sent_size + client->httpresp.cbuf_index - client->httpresp.headers_size;
+							}
+						}
+						break;
+					case ELYSIAN_ERR_FATAL:
+						return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
+						break;
+					default:
+						ELYSIAN_ASSERT(0);
+						return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
+						break;
+				};
+			}
+
+			/*
+			** Send
+			*/
+			elysian_cbuf_shrink(client->httpresp.cbuf, client->httpresp.cbuf_index);
+			elysian_schdlr_state_socket_write(server, client->httpresp.cbuf);
+			client->httpresp.cbuf = NULL;
 			
-			elysian_schdlr_state_poll_enable(server);
+			elysian_schdlr_state_poll_disable(server);
+		}break;
+		case elysian_schdlr_EV_SENT:
+		{
+			client->httpresp.sent_size += client->httpresp.cbuf_index;
+			if ((client->httpresp.body_size != (uint32_t) -1 ) && (client->httpresp.sent_size == client->httpresp.headers_size + client->httpresp.body_size)) {
+				/* HTTP request served */
+				ELYSIAN_LOG("Client %u HTTP response sent!", client->id);
+				if ((client->httpreq.connection == ELYSIAN_HTTP_CONNECTION_UPGRADE) && (client->httpreq.connection_upgrade == ELYSIAN_HTTP_CONNECTION_UPGRADE_WEBSOCKET)) {
+					return elysian_schdlr_state_next(server, elysian_state_websocket);
+				}
+				
+				if ((client->mvc.connection == ELYSIAN_HTTP_CONNECTION_KEEPALIVE) && (client->http_pipelining_enabled)) {
+					return elysian_schdlr_state_next(server, elysian_state_http_keepalive);
+				}else{
+					return elysian_schdlr_state_next(server, elysian_state_http_disconnect);
+				}
+			} else {
+				/* There are more data */
+				elysian_schdlr_state_poll_enable(server);
+			}
 		}break;
 		case elysian_schdlr_EV_TIMER1:
 		case elysian_schdlr_EV_ABORT:
@@ -1434,9 +1367,9 @@ elysian_err_t elysian_client_cleanup(elysian_t* server){
 	/*
 	** Release response
 	*/
-	if(client->httpresp.buf){
-		elysian_mem_free(server, client->httpresp.buf);
-		client->httpresp.buf = NULL;
+	if(client->httpresp.cbuf){
+		elysian_cbuf_free(server, client->httpresp.cbuf);
+		client->httpresp.cbuf = NULL;
 	}
 	
 	if(client->httpreq.url){

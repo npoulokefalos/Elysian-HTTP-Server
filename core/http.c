@@ -818,8 +818,7 @@ elysian_err_t elysian_http_response_build(elysian_t* server){
 	char header_value[64];
 	uint32_t resource_size;
 	
-	client->httpresp.buf_index = 0;
-	client->httpresp.buf_len = 0;
+	client->httpresp.cbuf_index = 0;
 				
 	/*
 	** Initiate HTTP Response
@@ -935,17 +934,19 @@ elysian_err_t elysian_http_response_build(elysian_t* server){
 		return err;
 	}
 
-	printf("[%s]",client->httpresp.buf);
+	printf("[%s]",client->httpresp.cbuf->data);
 	
 	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_http_add_response_status_line(elysian_t* server){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	char* cbuf_data = (char*) elysian_cbuf_data(client->httpresp.cbuf);
 	uint16_t status_line_len = strlen("HTTP/1.1 ") + 3 /* Status code */ + 1 /* Space */ + strlen(elysian_http_get_status_code_msg(client->mvc.status_code)) + 2 /* \r\n */;
-	if(client->httpresp.buf_len + status_line_len + 1 /* '\0' */ < client->httpresp.buf_size){
-		elysian_sprintf((char*)client->httpresp.buf, "HTTP/1.1 %u %s\r\n", elysian_http_get_status_code_num(client->mvc.status_code), elysian_http_get_status_code_msg(client->mvc.status_code));
-		client->httpresp.buf_len = strlen((char*)client->httpresp.buf);
+	
+	if(client->httpresp.cbuf_index + status_line_len + 1 /* '\0' */ < elysian_cbuf_len(client->httpresp.cbuf)){
+		elysian_sprintf((char*)cbuf_data, "HTTP/1.1 %u %s\r\n", elysian_http_get_status_code_num(client->mvc.status_code), elysian_http_get_status_code_msg(client->mvc.status_code));
+		client->httpresp.cbuf_index = strlen((char*)cbuf_data);
 		return ELYSIAN_ERR_OK;
 	}else{
 		return ELYSIAN_ERR_BUF;
@@ -956,21 +957,22 @@ elysian_err_t elysian_http_add_response_header_line(elysian_t* server, char* hea
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
 	uint16_t header_name_len;
 	uint16_t header_value_len;
+	char* cbuf_data = (char*) elysian_cbuf_data(client->httpresp.cbuf);
 	
 	/*
 	** Add HTTP Header
 	*/
 	header_name_len = strlen(header_name);
 	header_value_len = strlen(header_value);
-	if(client->httpresp.buf_len + header_name_len + header_value_len + 4 < client->httpresp.buf_size){
-		memcpy(&client->httpresp.buf[client->httpresp.buf_len], header_name, header_name_len);
-		client->httpresp.buf_len += header_name_len;
-		memcpy(&client->httpresp.buf[client->httpresp.buf_len], ": ", 2);
-		client->httpresp.buf_len += 2;
-		memcpy(&client->httpresp.buf[client->httpresp.buf_len], header_value, header_value_len);
-		client->httpresp.buf_len += header_value_len;
-		memcpy(&client->httpresp.buf[client->httpresp.buf_len], "\r\n", 2);
-		client->httpresp.buf_len += 2;
+	if(client->httpresp.cbuf_index + header_name_len + header_value_len + 4 < elysian_cbuf_len(client->httpresp.cbuf)){
+		memcpy(&cbuf_data[client->httpresp.cbuf_index], header_name, header_name_len);
+		client->httpresp.cbuf_index += header_name_len;
+		memcpy(&cbuf_data[client->httpresp.cbuf_index], ": ", 2);
+		client->httpresp.cbuf_index += 2;
+		memcpy(&cbuf_data[client->httpresp.cbuf_index], header_value, header_value_len);
+		client->httpresp.cbuf_index += header_value_len;
+		memcpy(&cbuf_data[client->httpresp.cbuf_index], "\r\n", 2);
+		client->httpresp.cbuf_index += 2;
 		return ELYSIAN_ERR_OK;
 	}else{
 		return ELYSIAN_ERR_BUF;
@@ -980,11 +982,12 @@ elysian_err_t elysian_http_add_response_header_line(elysian_t* server, char* hea
 
 elysian_err_t elysian_http_add_response_empty_line(elysian_t* server){
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	char* cbuf_data = (char*) elysian_cbuf_data(client->httpresp.cbuf);
 	
-	if(client->httpresp.buf_len + 2 + 1 /* '\0' */ < client->httpresp.buf_size){
-		memcpy(&client->httpresp.buf[client->httpresp.buf_len], "\r\n", 2);
-		client->httpresp.buf_len += 2;
-		client->httpresp.buf[client->httpresp.buf_len] = '\0';
+	if(client->httpresp.cbuf_index + 2 + 1 /* '\0' */ < elysian_cbuf_len(client->httpresp.cbuf)){
+		memcpy(&cbuf_data[client->httpresp.cbuf_index], "\r\n", 2);
+		client->httpresp.cbuf_index += 2;
+		cbuf_data[client->httpresp.cbuf_index] = '\0';
 		return ELYSIAN_ERR_OK;
 	}else{
 		return ELYSIAN_ERR_BUF;

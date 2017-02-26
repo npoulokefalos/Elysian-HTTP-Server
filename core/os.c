@@ -66,7 +66,7 @@ struct elysian_mem_block_t{
 uint32_t elysian_mem_usage_bytes = 0;
 
 uint32_t elysian_mem_usage(){
-	ELYSIAN_LOG("elysian_mem_usage() =============================== %u", elysian_mem_usage_bytes);
+	ELYSIAN_LOG("elysian_mem_usage() %u", elysian_mem_usage_bytes);
 	return elysian_mem_usage_bytes;
 }
 
@@ -185,11 +185,27 @@ elysian_err_t elysian_socket_write(elysian_socket_t* client_socket, uint8_t* dat
 	int result;
 	
 	ELYSIAN_ASSERT(client_socket->actively_closed == 0);
+	ELYSIAN_ASSERT(datalen);
 	
 	*sent = 0;
 	if((client_socket->passively_closed) || (client_socket->actively_closed)){
 		return ELYSIAN_ERR_FATAL;
 	}
+	
+#if (ELYSIAN_NETWORK_STRESS_TEST > 0)
+	uint8_t random = rand() % 100;
+	
+	if (random <= ELYSIAN_NETWORK_STRESS_TEST / 2) {
+		printf("ELYSIAN_NETWORK_STRESS_TEST: ELYSIAN_ERR_POLL\r\n");
+		return ELYSIAN_ERR_POLL;
+	} if (random <= ELYSIAN_NETWORK_STRESS_TEST) {
+		datalen = rand() % datalen;
+		if (!datalen) {
+			datalen++;
+		}
+		printf("ELYSIAN_NETWORK_STRESS_TEST: %u\r\n", datalen);
+	}
+#endif
 	
 	result = elysian_port_socket_write(client_socket, data, datalen);
 	if(result > 0){
