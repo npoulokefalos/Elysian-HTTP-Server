@@ -278,7 +278,7 @@ int elysian_snprintf(char* buf, uint32_t buf_size, const char* format, va_list v
 			format += 1;
 		}else if(format[1] == 's'){
 			str_var = va_arg(valist, char *);
-			while(*str_var && (i < buf_size - 1)){
+			while(str_var != NULL && *str_var && (i < buf_size - 1)){
 				buf[i++] = *str_var++;
 			}
 			format += 2;
