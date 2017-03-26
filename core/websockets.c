@@ -149,50 +149,36 @@ void elysian_websocket_frame_deallocate(elysian_t* server, elysian_websocket_fra
 }
 
 elysian_err_t elysian_websocket_send(elysian_t* server,  elysian_websocket_opcode_e opcode, uint8_t* frame_data, uint32_t frame_len) {
-	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-	elysian_websocket_frame_t* tx_frame;
-	elysian_websocket_frame_t* frame;
-	uint32_t index;
+	//elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	elysian_cbuf_t* cbuf;
+	uint8_t* cbuf_data;
+	uint32_t cbuf_data_index;
 	
 	if (frame_len > 0xffff) {
 		return ELYSIAN_ERR_FATAL;
 	}
 	
-	frame = elysian_websocket_frame_allocate(server, 2 + 2 /* if len > 125 */ + frame_len);
-	if (!frame) {
+	cbuf = elysian_cbuf_alloc(server, NULL, 2 + 2 /* if len > 125 */ + frame_len);
+	if (!cbuf) {
 		return ELYSIAN_ERR_POLL;
 	}
-
-	index = 0;
 	
-	frame->data[index++] = 0x80 | opcode;
+	cbuf_data = elysian_cbuf_data(cbuf);
+	cbuf_data_index = 0;
+
+	cbuf_data[cbuf_data_index++] = 0x80 | opcode;
 	
 	if (frame_len <= 125) {
-		frame->data[index++] = frame_len;
+		cbuf_data[cbuf_data_index++] = frame_len;
 	} else {
-		frame->data[index++] = 126;
-		frame->data[index++] = (frame_len >> 8) & 0xff;
-		frame->data[index++] = (frame_len) & 0xff;
+		cbuf_data[cbuf_data_index++] = 126;
+		cbuf_data[cbuf_data_index++] = (frame_len >> 8) & 0xff;
+		cbuf_data[cbuf_data_index++] = (frame_len) & 0xff;
 	}
 	
-	memcpy(&frame->data[index], frame_data, frame_len);
-	frame->len = index + frame_len;
-	frame->sent_len = 0;
-	frame->next = NULL;
-	
-	if (!client->websocket.tx_frames) {
-		client->websocket.tx_frames = frame;
-	} else {
-		tx_frame = client->websocket.tx_frames;
-		while (tx_frame) {
-			if (tx_frame->next == NULL) {
-				tx_frame->next = frame;
-				break;
-			} else {
-				tx_frame = tx_frame->next;
-			}
-		}
-	}
+	memcpy(&cbuf_data[cbuf_data_index], frame_data, frame_len);
+	elysian_cbuf_shrink(cbuf, cbuf_data_index + frame_len);
+	elysian_schdlr_state_socket_write(server, cbuf);
 
 	return ELYSIAN_ERR_OK;
 }
@@ -207,83 +193,80 @@ elysian_err_t elysian_websocket_send_binary(elysian_t* server, uint8_t* frame_da
 
 elysian_err_t elysian_websocket_process_tx (elysian_t* server) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
-	elysian_websocket_frame_t* tx_frame;
-	uint32_t actual_sent_len;
+	uint8_t poll_request = 0;
 	elysian_err_t err;
 	
 	ELYSIAN_LOG("elysian_websocket_process_tx()");
 	
-	/* Inject a close frame if the application requested a disconnection or if the peer sent a close frame */
-	if ((client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING) && (client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_CLOSE_PENDING)) {
-		err = elysian_websocket_send(server, ELYSIAN_WEBSOCKET_FRAME_OPCODE_CLOSE, NULL, 0);
-		switch (err) {
-			case ELYSIAN_ERR_OK:
-			{
-				client->websocket.flags &= ~ELYSIAN_WEBSOCKET_FLAG_CLOSE_PENDING;
-			} break;
-			case ELYSIAN_ERR_POLL:
-			{
-				return ELYSIAN_ERR_POLL;
-			} break;
-			case ELYSIAN_ERR_FATAL:
-			default:
-			{
-				return ELYSIAN_ERR_FATAL;
-			} break;
-		};
+	if ((client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING) == 0 && 
+			(client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTED) == 0) {
+		/* Websocket connected */
+		if (client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_PING_PENDING) {
+			err = elysian_websocket_send(server, ELYSIAN_WEBSOCKET_FRAME_OPCODE_PING, NULL, 0);
+			switch (err) {
+				case ELYSIAN_ERR_OK:
+				{
+					client->websocket.flags &= ~ELYSIAN_WEBSOCKET_FLAG_PING_PENDING;
+				} break;
+				case ELYSIAN_ERR_POLL:
+				{
+					poll_request = 1;
+				} break;
+				case ELYSIAN_ERR_FATAL:
+				{
+
+				} // no break
+				default:
+				{
+					return ELYSIAN_ERR_FATAL;
+				} break;
+			};
+		}
 	}
 	
-	/* Inject any pending ping packets */
-	if (!(client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING) && (client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_PING_PENDING)) {
-		err = elysian_websocket_send(server, ELYSIAN_WEBSOCKET_FRAME_OPCODE_PING, NULL, 0);
-		switch (err) {
-			case ELYSIAN_ERR_OK:
-			{
-				client->websocket.flags &= ~ELYSIAN_WEBSOCKET_FLAG_PING_PENDING;
-			} break;
-			case ELYSIAN_ERR_POLL:
-			{
-				return ELYSIAN_ERR_POLL;
-			} break;
-			case ELYSIAN_ERR_FATAL:
-			default:
-			{
-				return ELYSIAN_ERR_FATAL;
-			} break;
-		};
-	}
+	if ((client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING) == 1 && 
+			(client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTED) == 0) {
+		/* Websocket is disconnecting */
+		
+		/* Inject a close frame if the application requested a disconnection or if the peer sent a close frame */
+		if (client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_CLOSE_PENDING) {
+			err = elysian_websocket_send(server, ELYSIAN_WEBSOCKET_FRAME_OPCODE_CLOSE, NULL, 0);
+			switch (err) {
+				case ELYSIAN_ERR_OK:
+				{
+					client->websocket.flags &= ~ELYSIAN_WEBSOCKET_FLAG_CLOSE_PENDING;
+					client->websocket.flags |= ELYSIAN_WEBSOCKET_FLAG_DISCONNECTED;
+				} break;
+				case ELYSIAN_ERR_POLL:
+				{
+					poll_request = 1;
+				} break;
+				case ELYSIAN_ERR_FATAL:
+				{
+
+				} // no break
+				default:
+				{
+					return ELYSIAN_ERR_FATAL;
+				} break;
+			};
+		}
+	} 
 	
-	/* Send any pending Tx packets */
-	while (1) {
-		tx_frame = client->websocket.tx_frames;
-		if (!tx_frame) {
-			/* No frames for transmission */
-			if (client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING) {
-				/* No pending Tx frames and we are in the 'disconnecting' state, force a disconnect */
-				return ELYSIAN_ERR_FATAL;
-			} else {
-				return ELYSIAN_ERR_OK;
-			}
-		} else {
-			err = elysian_socket_write(&client->socket, &tx_frame->data[tx_frame->sent_len], tx_frame->len - tx_frame->sent_len, &actual_sent_len);
-			if (err == ELYSIAN_ERR_OK) {
-				tx_frame->sent_len += actual_sent_len;
-				if (tx_frame->sent_len == tx_frame->len) {
-					/* The whole frame transmitted */
-					client->websocket.tx_frames = tx_frame->next;
-					elysian_websocket_frame_deallocate(server, tx_frame);
-				} else {
-					/* Cannot sent more frames, first frame in queue has pending tx data */
-					return ELYSIAN_ERR_POLL;
-				}
-			} else {
-				return err;
-			}
+	if ((client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING) == 1 || 
+			(client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTED) == 1) {
+		/* Websocket disconnected */
+		if (!elysian_schdlr_state_socket_write_pending(server)) {
+			/* Close frame sent, succesfully disconnected */
+			return ELYSIAN_ERR_FATAL;
 		}
 	}
 
-	/* Never reach here */
-	return ELYSIAN_ERR_FATAL;
+	if (poll_request) {
+		return ELYSIAN_ERR_POLL;
+	} else {
+		return ELYSIAN_ERR_OK;
+	}
 }
 
 elysian_err_t elysian_websocket_process_rx(elysian_t* server) {
@@ -296,7 +279,8 @@ elysian_err_t elysian_websocket_process_rx(elysian_t* server) {
 	ELYSIAN_LOG("elysian_websocket_process_rx()");
 	
 	/* Avoid processing if a close frame was received or disconnection was requested */
-	if (client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING) {
+	if ((client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING) == 1 || 
+			(client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTED) == 1) {
 		return ELYSIAN_ERR_OK;
 	}
 	
@@ -374,7 +358,7 @@ elysian_err_t elysian_websocket_process_rx(elysian_t* server) {
 				case ELYSIAN_WEBSOCKET_FRAME_OPCODE_CLOSE:
 				{
 					/* Close frame */
-					client->websocket.flags |= ELYSIAN_WEBSOCKET_FLAG_CLOSE_RECEIVED;
+					client->websocket.flags |= ELYSIAN_WEBSOCKET_FLAG_CLOSE_REQUESTED_BY_PEER;
 					client->websocket.flags |= ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING;
 				} break;
 				case ELYSIAN_WEBSOCKET_FRAME_OPCODE_PING:
@@ -398,14 +382,15 @@ elysian_err_t elysian_websocket_process_rx(elysian_t* server) {
 				if ((rx_frame->len > 1) && (client->websocket.def->frame_handler)) {
 					err = client->websocket.def->frame_handler(server, client->websocket.handler_args, &rx_frame->data[1], rx_frame->len - 1);
 					if (err != ELYSIAN_ERR_OK) {
-						/* Application rquested disconnection */
+						/* Application requested disconnection */
+						client->websocket.flags |= ELYSIAN_WEBSOCKET_FLAG_CLOSE_REQUESTED_BY_APP;
 						client->websocket.flags |= ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING;
 					} else {
-						/* A Tx packet might have benn sent, enable fast poll */
-						poll_request = 1;
+						/* A Tx packet might have been sent, enable fast poll */
+						//poll_request = 1;
 					}
 				} else {
-					/* Ignore the frame */
+					/* Ignore the frame, no data */
 				}
 			} else {
 				/* Ignore the frame */
@@ -413,9 +398,11 @@ elysian_err_t elysian_websocket_process_rx(elysian_t* server) {
 
 			client->websocket.rx_frames = rx_frame->next;
 			elysian_websocket_frame_deallocate(server, rx_frame);
-			
-			if (client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING) {
-				break;
+
+			/* Stop processing if websocket is not connected */
+			if ((client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING) == 1 || 
+					(client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTED) == 1) {
+				return ELYSIAN_ERR_OK;
 			}
 		}	
 	}
@@ -479,6 +466,12 @@ elysian_err_t elysian_websocket_process(elysian_t* server) {
 
 elysian_err_t elysian_websocket_timer_config(elysian_t* server, uint32_t timer_interval_ms) {
 	elysian_client_t* client = elysian_schdlr_current_client_get(server);
+	
+	if ((client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING) == 1 || 
+			(client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTED) == 1) {
+		return ELYSIAN_ERR_OK;
+	}
+	
 	if (timer_interval_ms) {
 		client->websocket.timer_interval_ms = timer_interval_ms;
 		elysian_schdlr_state_timer1_set(server, client->websocket.timer_interval_ms);
@@ -493,7 +486,8 @@ elysian_err_t elysian_websocket_app_timer(elysian_t* server) {
 	elysian_err_t err;
 	
 	/* Avoid processing if a close frame was received or disconnection was requested */
-	if (client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING) {
+	if ((client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING) == 1 || 
+			(client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTED) == 1) {
 		return ELYSIAN_ERR_OK;
 	}
 	
@@ -501,6 +495,7 @@ elysian_err_t elysian_websocket_app_timer(elysian_t* server) {
 		err = client->websocket.def->timer_handler(server, client->websocket.handler_args);
 		if (err != ELYSIAN_ERR_OK) {
 			/* Application rquested disconnection */
+			client->websocket.flags |= ELYSIAN_WEBSOCKET_FLAG_CLOSE_REQUESTED_BY_APP;
 			client->websocket.flags |= ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING;
 		}
 	} 
@@ -515,6 +510,12 @@ elysian_err_t elysian_websocket_ping_timer(elysian_t* server) {
 		/* Peer did not responded to our last ping, abort */
 		return ELYSIAN_ERR_FATAL;
 	} else {
+		/* Avoid sending ping frame if a close frame was received or disconnection was requested */
+		if ((client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING) == 1 || 
+				(client->websocket.flags & ELYSIAN_WEBSOCKET_FLAG_DISCONNECTED) == 1) {
+			return ELYSIAN_ERR_OK;
+		}
+		
 		client->websocket.flags &=~ ELYSIAN_WEBSOCKET_FLAG_PONG_RECEIVED;
 		client->websocket.flags |= ELYSIAN_WEBSOCKET_FLAG_PING_PENDING;
 		elysian_schdlr_state_timer2_set(server, ELYSIAN_WEBSOCKET_TIMEOUT_PING_MS);
@@ -563,7 +564,6 @@ elysian_err_t elysian_websocket_init(elysian_t* server) {
 	client->websocket.handler_args = NULL;
 	client->websocket.flags = 0;
 	client->websocket.rx_frames = NULL;
-	client->websocket.tx_frames = NULL;
 	
 	return ELYSIAN_ERR_OK;
 }
@@ -578,12 +578,6 @@ elysian_err_t elysian_websocket_cleanup(elysian_t* server) {
 		}
 		client->websocket.def = NULL;
 	}
-	
-	while (client->websocket.tx_frames) {
-		frame = client->websocket.tx_frames;
-		client->websocket.tx_frames = client->websocket.tx_frames->next;
-		elysian_websocket_frame_deallocate(server, frame);
-	};
 	
 	while (client->websocket.rx_frames) {
 		frame = client->websocket.rx_frames;

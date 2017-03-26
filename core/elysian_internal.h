@@ -500,12 +500,16 @@ typedef enum {
 } elysian_websocket_opcode_e;
 
 typedef enum {
-	ELYSIAN_WEBSOCKET_FLAG_PING_PENDING = 1 << 0,
-	ELYSIAN_WEBSOCKET_FLAG_PONG_RECEIVED = 1 << 1,
-	ELYSIAN_WEBSOCKET_FLAG_CLOSE_PENDING = 1 << 2,
-	ELYSIAN_WEBSOCKET_FLAG_CLOSE_RECEIVED = 1 << 3,
-	ELYSIAN_WEBSOCKET_FLAG_CLOSE_REQUESTED = 1 << 4,
-	ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING = 1 << 5,
+	/* State */
+	ELYSIAN_WEBSOCKET_FLAG_DISCONNECTING = 1 << 0,
+	ELYSIAN_WEBSOCKET_FLAG_DISCONNECTED = 1 << 1,
+	
+	/* Other flags */
+	ELYSIAN_WEBSOCKET_FLAG_PING_PENDING = 1 << 2,
+	ELYSIAN_WEBSOCKET_FLAG_PONG_RECEIVED = 1 << 3,
+	ELYSIAN_WEBSOCKET_FLAG_CLOSE_PENDING = 1 << 4,
+	ELYSIAN_WEBSOCKET_FLAG_CLOSE_REQUESTED_BY_PEER = 1 << 5,
+	ELYSIAN_WEBSOCKET_FLAG_CLOSE_REQUESTED_BY_APP = 1 << 6,
 } elysian_websocket_flag_e;
 
 /* 
@@ -801,7 +805,7 @@ void elysian_schdlr_state_timer2_reset(elysian_t* server);
 void elysian_schdlr_state_priority_set(elysian_t* server, elysian_schdlr_task_prio_t priority);
 elysian_cbuf_t* elysian_schdlr_state_socket_read(elysian_t* server);
 void elysian_schdlr_state_socket_write(elysian_t* server, elysian_cbuf_t* cbuf);
-
+uint8_t elysian_schdlr_state_socket_write_pending(elysian_t* server) ;
 
 
 #if 0
@@ -1036,18 +1040,11 @@ struct elysian_websocket_t {
 	void* handler_args;
 	
 	elysian_websocket_frame_t* rx_frames;
-	elysian_websocket_frame_t* tx_frames;
 	
 	elysian_websocket_flag_e flags;
 	
 	uint32_t rx_path_healthy_ms;
 	uint32_t timer_interval_ms;
-	
-	//uint8_t pong_received;
-	//uint16_t timer_ms;
-	//uint16_t ping_timer_ms;
-	//uint16_t rx_timer_ms;
-	//uint32_t prev_timer_ms;
 };
 
 //typedef struct elysian_client_t elysian_client_t;

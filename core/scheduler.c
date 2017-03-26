@@ -810,6 +810,12 @@ void elysian_schdlr_state_socket_write(elysian_t* server, elysian_cbuf_t* cbuf) 
 	elysian_cbuf_list_append(&task->cbuf_list_tx, cbuf);
 }
 
+uint8_t elysian_schdlr_state_socket_write_pending(elysian_t* server) {
+	elysian_schdlr_t* schdlr = &server->scheduler;
+	elysian_schdlr_task_t* task = schdlr->current_task;
+	return task->cbuf_list_tx == NULL ? 0 : 1;
+}
+
 void elysian_schdlr_poll(elysian_t* server, uint32_t intervalms){
 	uint32_t calibration_ms;
 	

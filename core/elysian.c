@@ -1181,6 +1181,11 @@ elysian_err_t elysian_state_websocket(elysian_t* server, elysian_schdlr_ev_t ev)
 					break;
 			};		  
 		}break;
+		case elysian_schdlr_EV_SENT:
+		{
+			/* Process websocket -- close frame might have been sent */
+			elysian_schdlr_state_poll_enable(server);
+		} break;
 		case elysian_schdlr_EV_TIMER1:
 		{
 			err = elysian_websocket_app_timer(server);
@@ -1190,7 +1195,6 @@ elysian_err_t elysian_state_websocket(elysian_t* server, elysian_schdlr_ev_t ev)
 			
 			/* Timer might have generated Tx packets, enable poll */
 			elysian_schdlr_state_poll_enable(server);
-			
 		} break;
 		case elysian_schdlr_EV_TIMER2:
 		{
@@ -1201,7 +1205,6 @@ elysian_err_t elysian_state_websocket(elysian_t* server, elysian_schdlr_ev_t ev)
 			
 			/* Timer might have generated Tx packets, enable poll */
 			elysian_schdlr_state_poll_enable(server);
-			
 		} break;
 		case elysian_schdlr_EV_ABORT:
 		{
