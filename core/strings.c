@@ -79,6 +79,10 @@ int elysian_strcmp(const char *str1, const char *str2, uint8_t match_case){
 	register unsigned char *s2 = (unsigned char *) str2;
 	unsigned char c1, c2;
 	
+	if ((!str1) || (!str2)) {
+		return 1;
+	}
+	
 	if(!match_case){
 		do{
 			c1 = (unsigned char) toupper((int)*s1++);
@@ -106,6 +110,10 @@ int elysian_strncmp(const char *str1, const char *str2, uint32_t n, uint8_t matc
 	register unsigned char *s2 = (unsigned char *) str2;
 	unsigned char c1, c2;
 	uint32_t i;
+	
+	if ((!str1) || (!str2)) {
+		return 1;
+	}
 	
 	if(!match_case){
 		for(i = 0; i < n; i++){
@@ -136,10 +144,16 @@ int elysian_strhex2uint(char* hexstr, uint32_t* dec) {
 
 	*dec = 0;
 	
-	if((hexstr[0] == '0') && ((hexstr[1] == 'x') || (hexstr[1] == 'X'))){ hexstr += 2;}
+	if (!hexstr) {
+		return -1;
+	}
+	
+	if ((hexstr[0] == '0') && ((hexstr[1] == 'x') || (hexstr[1] == 'X'))) { 
+		hexstr += 2;
+	}
 	
 	i = 0;
-	while(*hexstr){
+	while (*hexstr) {
 		if(*hexstr > 47 && *hexstr < 58){ 
 			/* 0 -> 9 */
 			*dec += (*hexstr - 48);
@@ -177,6 +191,11 @@ int elysian_strhex2uint(char* hexstr, uint32_t* dec) {
 elysian_err_t elysian_str2uint(char* buf, uint32_t* uint_var){
 	uint32_t uint_len = 0;
 	*uint_var = 0;
+	
+	if (!buf) {
+		return ELYSIAN_ERR_FATAL;
+	}
+	
 	while(buf[0] > 47 && buf[0] < 58){
 		*uint_var += (buf[0] - 48);
 		uint_len++;
@@ -202,29 +221,34 @@ elysian_err_t elysian_uint2str(uint32_t uint_var, char* buf, uint32_t buf_size){
 	char const digit[] = "0123456789";
 	uint32_t uint_len = 0;
 	uint32_t uint_tmp = uint_var;
-	if(buf_size == 0){
+	if ((!buf) || (buf_size == 0)) {
 		return ELYSIAN_ERR_FATAL;
 	}
-	do{
+	do {
 		uint_len++;
 		uint_tmp = uint_tmp/10;
-	}while(uint_tmp);
-	if(uint_len + 1 > buf_size){
+	} while(uint_tmp);
+	if (uint_len + 1 > buf_size) {
 		*buf = '\0';
 		return ELYSIAN_ERR_FATAL;
-	}else{
+	} else{
 		buf[uint_len] = '\0';
 	}
-	do{
+	do {
 		buf[--uint_len] = digit[uint_var%10];
 		uint_var = uint_var/10;
-	}while(uint_var);
+	} while(uint_var);
 	ELYSIAN_ASSERT(uint_len == 0);
 	return ELYSIAN_ERR_OK;
 }
 
 elysian_err_t elysian_int2str(int32_t int_var, char* buf, uint32_t buf_size){
 	elysian_err_t err;
+	
+	if ((!buf) || (buf_size == 0)) {
+		return ELYSIAN_ERR_FATAL;
+	}
+	
 	if(int_var < 0){
 		int_var = - int_var;
 		err = elysian_uint2str((uint32_t) int_var, &buf[1], buf_size - 1);

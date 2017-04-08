@@ -678,24 +678,18 @@ elysian_err_t elysian_mvc_param_get_raw(elysian_t* server, char* param_name, uin
 	uint8_t* buf;
 	elysian_err_t err;
 	
-	*param_value = NULL;
+	*param_value = (uint8_t*) "";
 	*param_found = 0;
 	*param_size = 0;
+	
 	err = elysian_mvc_param_get(server, param_name, &param);
 	if(err != ELYSIAN_ERR_OK){
 		return err;
 	}
 	if(param.data_index == ELYSIAN_INDEX_OOB32){
-		/*
-		** Parameter not found
-		*/
+		/* Parameter not found */
 		return ELYSIAN_ERR_OK;
 	}
-	
-	/*
-	** Parameter found
-	*/
-	*param_found = 1;
 
 	/*
 	** Allocate size +1 so it can be used as raw bytes or string
@@ -727,6 +721,7 @@ elysian_err_t elysian_mvc_param_get_raw(elysian_t* server, char* param_name, uin
 	
 	*param_value = buf;
 	*param_size = param.data_size;
+	*param_found = 1;
 	
 	return ELYSIAN_ERR_OK;
 }
@@ -778,8 +773,10 @@ elysian_err_t elysian_mvc_param_get_uint(elysian_t* server, char* param_name, ui
 		return err;
 	}
 	
-	elysian_str2uint(param_value_str, param_value);
-
+	if (param_found) {
+		elysian_str2uint(param_value_str, param_value);
+	}
+	
 	return ELYSIAN_ERR_OK;
 }
 
@@ -793,7 +790,9 @@ elysian_err_t elysian_mvc_param_get_int(elysian_t* server, char* param_name, int
 		return err;
 	}
 	
-	*param_value = atoi(param_value_str);
+	if (param_found) {
+		*param_value = atoi(param_value_str);
+	}
 	
 	return ELYSIAN_ERR_OK;
 }
